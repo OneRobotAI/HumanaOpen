@@ -67,8 +67,8 @@ class OpenArmsXConfig(RobotConfig):
     To run 2-bus mode set ``port3 = None``:
         bus2 then also hosts the lift and wheel motors.
 
-    Follower arm kinematics (open-arms-mini style):
-        3 shoulder (pan/lift/roll) + 1 elbow + 1 forearm rotation + 2 wrist + 1 gripper.
+    Follower arm kinematics (human-like):
+        3 shoulder (pan/lift/roll) + 1 elbow + 1 forearm rotation + 2 wrist (flex/yaw) + 1 gripper.
     """
 
     # ---- Serial ports (leave empty to skip the bus entirely) ----------------

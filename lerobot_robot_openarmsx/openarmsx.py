@@ -36,7 +36,7 @@ def _make_arm_joint_names(prefix: str) -> list[str]:
         f"{prefix}_elbow_flex",
         f"{prefix}_forearm_rotation",
         f"{prefix}_wrist_flex",
-        f"{prefix}_wrist_roll",
+        f"{prefix}_wrist_yaw",
         f"{prefix}_gripper",
     ]
 
