@@ -3,9 +3,9 @@ requires = ["setuptools>=64"]
 build-backend = "setuptools.backends._legacy:_Backend"
 
 [project]
-name = "lerobot-robot-openarmsx"
+name = "lerobot-robot-humanalite"
 version = "0.1.0"
-description = "OpenArmsX — open-source semi-humanoid robot for LeRobot"
+description = "HumanaLite — open-source semi-humanoid robot for LeRobot"
 requires-python = ">=3.10"
 dependencies = [
     "lerobot[feetech]>=1.0",
@@ -14,5 +14,5 @@ dependencies = [
 ]
 
 [project.entry-points."lerobot.robots"]
-openarmsx = "lerobot_robot_openarmsx:OpenArmsX"
-openarmsx_client = "lerobot_robot_openarmsx:OpenArmsXClientConfig"
+humanalite = "lerobot_robot_humanalite:HumanaLite"
+humanalite_client = "lerobot_robot_humanalite:HumanaLiteClientConfig"

@@ -1,4 +1,4 @@
-# OpenArmsX
+# HumanaLite
 
 **Open-source semi-humanoid robot — 7-DOF dual arms, differential drive, and leadscrew lift.**
 
@@ -19,16 +19,16 @@ Built on [LeRobot](https://github.com/huggingface/lerobot) and
 ## Software
 
 ```
-openarmsx/
-├── __init__.py           # Package exports
-├── config_openarmsx.py   # OpenArmsXConfig, host/client configs
-├── openarmsx.py          # OpenArmsX Robot class
-├── lift_axis.py          # Lift axis with stall-detection homing
-├── openarmsx_host.py     # ZMQ host (robot-side, for dual-machine mode)
-└── openarmsx_client.py   # ZMQ client (teleop-side)
+lerobot_robot_humanalite/
+├── __init__.py              # Package exports
+├── config_humanalite.py     # HumanaLiteConfig, host/client configs
+├── humanalite.py            # HumanaLite Robot class
+├── lift_axis.py             # Lift axis with stall-detection homing
+├── humanalite_host.py       # ZMQ host (robot-side, for dual-machine mode)
+└── humanalite_client.py     # ZMQ client (teleop-side)
 examples/
-├── single_machine.py     # Single machine operation
-└── teleop_keyboard.py    # Keyboard teleoperation via ZMQ
+├── single_machine.py        # Single machine operation
+└── teleop_keyboard.py       # Keyboard teleoperation via ZMQ
 ```
 
 ## Quick Start
@@ -37,21 +37,21 @@ examples/
 # 1. Install lerobot with feetech support
 pip install lerobot[feetech]
 
-# 2. Install OpenArmsX (editable)
-pip install -e /path/to/OpenArmsX
+# 2. Install HumanaLite (editable)
+pip install -e /path/to/HumanaLite
 
 # 3. Single-machine operation
 python -c "
-from openarmsx import OpenArmsX, OpenArmsXConfig
-config = OpenArmsXConfig(port1='/dev/ttyACM0', port2='/dev/ttyACM1')
-robot = OpenArmsX(config)
+from lerobot_robot_humanalite import HumanaLite, HumanaLiteConfig
+config = HumanaLiteConfig(port1='/dev/ttyACM0', port2='/dev/ttyACM1')
+robot = HumanaLite(config)
 robot.connect()
 print(robot.get_observation().keys())
 "
 
 # 4. Dual-machine ZMQ mode (run on robot)
-from openarmsx.openarmsx_host import OpenArmsXHost
-OpenArmsXHost(OpenArmsXConfig()).run()
+from lerobot_robot_humanalite.humanalite_host import HumanaLiteHost
+HumanaLiteHost(HumanaLiteConfig()).run()
 ```
 
 ## License
