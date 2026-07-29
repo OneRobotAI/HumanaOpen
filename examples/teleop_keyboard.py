@@ -1,4 +1,4 @@
-"""Keyboard teleoperation for a locally-connected OpenArmsX.
+"""Keyboard teleoperation for a locally-connected HumanaLite.
 
 Keys
 ----
@@ -12,13 +12,13 @@ import time
 
 import keyboard
 
-from openarmsx import OpenArmsX, OpenArmsXConfig
+from lerobot_robot_humanalite import HumanaLite, HumanaLiteConfig
 
 FPS = 50
 
 def main():
-    config = OpenArmsXConfig(port1="/dev/ttyACM0", port2="/dev/ttyACM1")
-    robot = OpenArmsX(config)
+    config = HumanaLiteConfig(port1="/dev/ttyACM0", port2="/dev/ttyACM1")
+    robot = HumanaLite(config)
     robot.connect(calibrate=True)
 
     speed_levels = [

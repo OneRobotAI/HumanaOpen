@@ -2,23 +2,23 @@
 
 import time
 
-from openarmsx import OpenArmsX, OpenArmsXConfig
+from lerobot_robot_humanalite import HumanaLite, HumanaLiteConfig
 
 # ── 3-bus mode (default) ──────────────────────────────────────
-config = OpenArmsXConfig(
+config = HumanaLiteConfig(
     port1="/dev/ttyACM0",   # left arm (1-8) + head (12,13)
     port2="/dev/ttyACM1",   # right arm (1-8)
     port3="/dev/ttyACM2",   # lift (9) + wheels (10,11)
 )
 
 # ── 2-bus mode (uncomment) ────────────────────────────────────
-# config = OpenArmsXConfig(
+# config = HumanaLiteConfig(
 #     port1="/dev/ttyACM0",
 #     port2="/dev/ttyACM1",
 #     port3=None,           # wheels & lift merge into bus 2
 # )
 
-robot = OpenArmsX(config)
+robot = HumanaLite(config)
 
 try:
     robot.connect(calibrate=True)
