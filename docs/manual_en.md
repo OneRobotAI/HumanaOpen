@@ -1,8 +1,8 @@
-# OpenArmsX Operation Manual
+# HumanaLite Operation Manual
 
 ## Overview
 
-OpenArmsX is an open-source semi-humanoid robot built on LeRobot, featuring:
+HumanaLite is an open-source semi-humanoid robot built on LeRobot, featuring:
 
 - **Dual arms**: 2 × 7 DOF + gripper (8× ST3215 C018 servos each)
 - **Head**: 2 DOF (2× ST3215 C018 servos)
@@ -57,17 +57,17 @@ Leader arms use STS3215 C046 servos (7.4V), connected to a separate laptop. Comm
 pip install lerobot[feetech]
 ```
 
-### 2.2 Install OpenArmsX
+### 2.2 Install HumanaLite
 
 ```bash
-git clone <your-repo-url> /home/zach/OpenArmsX
-pip install -e /home/zach/OpenArmsX
+git clone <your-repo-url> /home/zach/HumanaLite
+pip install -e /home/zach/HumanaLite
 ```
 
 ### 2.3 Verify Installation
 
 ```bash
-python3 -c "from lerobot_robot_openarmsx import OpenArmsX; print('OK')"
+python3 -c "from lerobot_robot_humanalite import HumanaLite; print('OK')"
 ```
 
 ---
@@ -85,10 +85,10 @@ Configure IDs for new servos. **Connect one servo at a time to the Waveshare boa
 ### 3.2 Run Setup
 
 ```python
-from lerobot_robot_openarmsx import OpenArmsX, OpenArmsXConfig
+from lerobot_robot_humanalite import HumanaLite, HumanaLiteConfig
 
-config = OpenArmsXConfig(port1="/dev/ttyACM0", port2="/dev/ttyACM1")
-robot = OpenArmsX(config)
+config = HumanaLiteConfig(port1="/dev/ttyACM0", port2="/dev/ttyACM1")
+robot = HumanaLite(config)
 
 # Prompts you to connect each servo one by one
 robot.setup_motors()
@@ -113,8 +113,8 @@ Calibration covers:
 
 ```bash
 python3 -c "
-from lerobot_robot_openarmsx import OpenArmsX, OpenArmsXConfig
-robot = OpenArmsX(OpenArmsXConfig())
+from lerobot_robot_humanalite import HumanaLite, HumanaLiteConfig
+robot = HumanaLite(HumanaLiteConfig())
 robot.connect(calibrate=True)
 "
 ```
@@ -129,7 +129,7 @@ Follow the prompts:
 
 ### 4.2 Calibration File Location
 
-`~/.cache/huggingface/lerobot/calibration/robots/openarmsx/{id}.json`
+`~/.cache/huggingface/lerobot/calibration/robots/humanalite/{id}.json`
 
 Auto-loaded on next connection.
 
@@ -142,14 +142,14 @@ Auto-loaded on next connection.
 All Waveshare boards and cameras connected to the same machine (laptop or Jetson):
 
 ```python
-from lerobot_robot_openarmsx import OpenArmsX, OpenArmsXConfig
+from lerobot_robot_humanalite import HumanaLite, HumanaLiteConfig
 
-config = OpenArmsXConfig(
-    port1="/dev/ttyACM0",   # Left arm + head
-    port2="/dev/ttyACM1",   # Right arm
-    port3="/dev/ttyACM2",   # Lift + wheels
+config = HumanaLiteConfig(
+    port1="/dev/ttyACM0",   # left arm + head
+    port2="/dev/ttyACM1",   # right arm
+    port3="/dev/ttyACM2",   # lift + wheels
 )
-robot = OpenArmsX(config)
+robot = HumanaLite(config)
 robot.connect()
 
 # Read observation
@@ -172,10 +172,10 @@ robot.disconnect()
 
 ```bash
 python3 -c "
-from lerobot_robot_openarmsx import OpenArmsXConfig
-from lerobot_robot_openarmsx.openarmsx_host import OpenArmsXHost
+from lerobot_robot_humanalite import HumanaLiteConfig
+from lerobot_robot_humanalite.humanalite_host import HumanaLiteHost
 
-host = OpenArmsXHost(OpenArmsXConfig())
+host = HumanaLiteHost(HumanaLiteConfig())
 host.run()
 "
 ```
@@ -185,11 +185,11 @@ Default ports: obs 5556 / cmd 5555.
 **Teleop side (Laptop):**
 
 ```python
-from lerobot_robot_openarmsx.openarmsx_client import OpenArmsXClient
-from lerobot_robot_openarmsx import OpenArmsXClientConfig
+from lerobot_robot_humanalite.humanalite_client import HumanaLiteClient
+from lerobot_robot_humanalite import HumanaLiteClientConfig
 
-client = OpenArmsXClient(
-    OpenArmsXClientConfig(remote_ip="192.168.1.100")  # Robot IP
+client = HumanaLiteClient(
+    HumanaLiteClientConfig(remote_ip="192.168.1.100")  # Robot IP
 )
 client.connect()
 
@@ -209,14 +209,14 @@ client.disconnect()
 
 ```bash
 lerobot-record \
-    --robot.type=openarmsx \
+    --robot.type=humanalite \
     --robot.port1=/dev/ttyACM0 \
     --robot.port2=/dev/ttyACM1 \
     --robot.port3=/dev/ttyACM2 \
     --robot.cameras='{"head": {"type": "opencv", "index_or_path": 0, "fps": 30, "width": 640, "height": 480}, "left_wrist": {"type": "opencv", "index_or_path": 2, "fps": 30, "width": 640, "height": 480}, "right_wrist": {"type": "opencv", "index_or_path": 4, "fps": 30, "width": 640, "height": 480}}' \
     --teleop.type=openarm_mini \
     --teleop.port=/dev/ttyACM_leader \
-    --dataset.repo_id=your_name/my_openarmsx_data \
+    --dataset.repo_id=your_name/my_humanalite_data \
     --dataset.num_episodes=10 \
     --dataset.single_task="describe your task"
 ```
@@ -227,9 +227,9 @@ lerobot-record \
 
 ```bash
 python3 -c "
-from lerobot_robot_openarmsx import OpenArmsXConfig
-from lerobot_robot_openarmsx.openarmsx_host import OpenArmsXHost
-OpenArmsXHost(OpenArmsXConfig()).run()
+from lerobot_robot_humanalite import HumanaLiteConfig
+from lerobot_robot_humanalite.humanalite_host import HumanaLiteHost
+HumanaLiteHost(HumanaLiteConfig()).run()
 "
 ```
 
@@ -244,7 +244,7 @@ After data collection, train on any machine:
 ```bash
 lerobot-train \
     --policy=act \
-    --dataset.repo_id=your_name/my_openarmsx_data \
+    --dataset.repo_id=your_name/my_humanalite_data \
     --output_dir=./outputs
 ```
 
@@ -265,7 +265,7 @@ Supported policies: `act`, `diffusion`, `pi0`, etc.
 ```bash
 lerobot-rollout \
     --policy.path=./outputs/checkpoints/last \
-    --robot.type=openarmsx \
+    --robot.type=humanalite \
     --robot.port1=/dev/ttyACM0 \
     --robot.port2=/dev/ttyACM1 \
     --robot.port3=/dev/ttyACM2
@@ -278,9 +278,9 @@ lerobot-rollout \
 ```bash
 # Robot side
 python3 -c "
-from lerobot_robot_openarmsx import OpenArmsXConfig
-from lerobot_robot_openarmsx.openarmsx_host import OpenArmsXHost
-OpenArmsXHost(OpenArmsXConfig()).run()
+from lerobot_robot_humanalite import HumanaLiteConfig
+from lerobot_robot_humanalite.humanalite_host import HumanaLiteHost
+HumanaLiteHost(HumanaLiteConfig()).run()
 "
 ```
 
@@ -318,7 +318,7 @@ action["lift_axis.vel"] = 500  # raw velocity, positive=up, negative=down
 
 ## 10. Configuration Reference
 
-### 10.1 OpenArmsXConfig
+### 10.1 HumanaLiteConfig
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
@@ -380,20 +380,20 @@ A: Check `/dev/video*` devices exist. Adjust camera indices in `default_cameras(
 ## 12. Project Structure
 
 ```
-/home/zach/OpenArmsX/
-├── pyproject.toml                          # Package config + lerobot entry point
-├── lerobot_robot_openarmsx/               # Main package
-│   ├── __init__.py                        # Exports OpenArmsX
-│   ├── config_openarmsx.py               # Config classes
-│   ├── openarmsx.py                      # Main Robot class
-│   ├── lift_axis.py                      # Lift axis control
-│   ├── openarmsx_host.py                 # ZMQ host (robot side)
-│   └── openarmsx_client.py               # ZMQ client (teleop side)
+/home/zach/HumanaLite/
+├── pyproject.toml                              # Package config + lerobot entry points
+├── lerobot_robot_humanalite/                   # Main package
+│   ├── __init__.py                             # Exports HumanaLite
+│   ├── config_humanalite.py                    # Config classes
+│   ├── humanalite.py                          # Main Robot class
+│   ├── lift_axis.py                           # Lift axis control
+│   ├── humanalite_host.py                     # ZMQ host (robot side)
+│   └── humanalite_client.py                   # ZMQ client (teleop side)
 ├── examples/
-│   ├── single_machine.py                 # Single machine example
-│   └── teleop_keyboard.py                # Keyboard teleop example
+│   ├── single_machine.py                      # Single machine example
+│   └── teleop_keyboard.py                     # Keyboard teleop example
 ├── docs/
-│   ├── manual_zh.md                      # Chinese manual
-│   └── manual_en.md                      # This file
+│   ├── manual_en.md                           # This file
+│   └── manual_zh.md                           # 中文手册
 └── README.md
 ```

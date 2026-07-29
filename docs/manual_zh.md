@@ -1,8 +1,8 @@
-# OpenArmsX 操作手册
+# HumanaLite 操作手册
 
 ## 概述
 
-OpenArmsX 是一款基于 LeRobot 的开源半人形机器人，拥有：
+HumanaLite 是一款基于 LeRobot 的开源半人形机器人，拥有：
 
 - **双臂**：2 × 7 自由度 + 夹爪（各 8 个 ST3215 C018 舵机）
 - **头部**：2 自由度（ST3215 C018 舵机 × 2）
@@ -57,17 +57,17 @@ Bus 2 ── 右从臂(1-8) + 升降(9) + 左轮(10) + 右轮(11) ── 混合�
 pip install lerobot[feetech]
 ```
 
-### 2.2 安装 OpenArmsX
+### 2.2 安装 HumanaLite
 
 ```bash
-git clone <你的仓库地址> /home/zach/OpenArmsX
-pip install -e /home/zach/OpenArmsX
+git clone <你的仓库地址> /home/zach/HumanaLite
+pip install -e /home/zach/HumanaLite
 ```
 
 ### 2.3 验证安装
 
 ```bash
-python3 -c "from lerobot_robot_openarmsx import OpenArmsX; print('OK')"
+python3 -c "from lerobot_robot_humanalite import HumanaLite; print('OK')"
 ```
 
 ---
@@ -85,10 +85,10 @@ python3 -c "from lerobot_robot_openarmsx import OpenArmsX; print('OK')"
 ### 3.2 运行配置
 
 ```python
-from lerobot_robot_openarmsx import OpenArmsX, OpenArmsXConfig
+from lerobot_robot_humanalite import HumanaLite, HumanaLiteConfig
 
-config = OpenArmsXConfig(port1="/dev/ttyACM0", port2="/dev/ttyACM1")
-robot = OpenArmsX(config)
+config = HumanaLiteConfig(port1="/dev/ttyACM0", port2="/dev/ttyACM1")
+robot = HumanaLite(config)
 
 # 这会逐个提示你连接舵机并设置 ID
 robot.setup_motors()
@@ -113,8 +113,8 @@ robot.setup_motors()
 
 ```bash
 python3 -c "
-from lerobot_robot_openarmsx import OpenArmsX, OpenArmsXConfig
-robot = OpenArmsX(OpenArmsXConfig())
+from lerobot_robot_humanalite import HumanaLite, HumanaLiteConfig
+robot = HumanaLite(HumanaLiteConfig())
 robot.connect(calibrate=True)
 "
 ```
@@ -129,7 +129,7 @@ robot.connect(calibrate=True)
 
 ### 4.2 标定文件存储位置
 
-`~/.cache/huggingface/lerobot/calibration/robots/openarmsx/{id}.json`
+`~/.cache/huggingface/lerobot/calibration/robots/humanalite/{id}.json`
 
 下次连接时会自动加载。
 
@@ -142,14 +142,14 @@ robot.connect(calibrate=True)
 所有 Waveshare 板和相机都插在同一台电脑（笔记本或 Jetson）：
 
 ```python
-from lerobot_robot_openarmsx import OpenArmsX, OpenArmsXConfig
+from lerobot_robot_humanalite import HumanaLite, HumanaLiteConfig
 
-config = OpenArmsXConfig(
+config = HumanaLiteConfig(
     port1="/dev/ttyACM0",   # 左臂+头
     port2="/dev/ttyACM1",   # 右臂
     port3="/dev/ttyACM2",   # 升降+车轮
 )
-robot = OpenArmsX(config)
+robot = HumanaLite(config)
 robot.connect()
 
 # 采集一帧观察
@@ -172,10 +172,10 @@ robot.disconnect()
 
 ```bash
 python3 -c "
-from lerobot_robot_openarmsx import OpenArmsXConfig
-from lerobot_robot_openarmsx.openarmsx_host import OpenArmsXHost
+from lerobot_robot_humanalite import HumanaLiteConfig
+from lerobot_robot_humanalite.humanalite_host import HumanaLiteHost
 
-host = OpenArmsXHost(OpenArmsXConfig())
+host = HumanaLiteHost(HumanaLiteConfig())
 host.run()
 "
 ```
@@ -185,11 +185,11 @@ host.run()
 **遥操端（笔记本）：**
 
 ```python
-from lerobot_robot_openarmsx.openarmsx_client import OpenArmsXClient
-from lerobot_robot_openarmsx import OpenArmsXClientConfig
+from lerobot_robot_humanalite.humanalite_client import HumanaLiteClient
+from lerobot_robot_humanalite import HumanaLiteClientConfig
 
-client = OpenArmsXClient(
-    OpenArmsXClientConfig(remote_ip="192.168.1.100")  # Jetson/树莓派 IP
+client = HumanaLiteClient(
+    HumanaLiteClientConfig(remote_ip="192.168.1.100")  # Jetson/树莓派 IP
 )
 client.connect()
 
@@ -209,14 +209,14 @@ client.disconnect()
 
 ```bash
 lerobot-record \
-    --robot.type=openarmsx \
+    --robot.type=humanalite \
     --robot.port1=/dev/ttyACM0 \
     --robot.port2=/dev/ttyACM1 \
     --robot.port3=/dev/ttyACM2 \
     --robot.cameras='{"head": {"type": "opencv", "index_or_path": 0, "fps": 30, "width": 640, "height": 480}, "left_wrist": {"type": "opencv", "index_or_path": 2, "fps": 30, "width": 640, "height": 480}, "right_wrist": {"type": "opencv", "index_or_path": 4, "fps": 30, "width": 640, "height": 480}}' \
     --teleop.type=openarm_mini \
     --teleop.port=/dev/ttyACM_leader \
-    --dataset.repo_id=你的名字/my_openarmsx_data \
+    --dataset.repo_id=你的名字/my_humanalite_data \
     --dataset.num_episodes=10 \
     --dataset.single_task="描述你的任务"
 ```
@@ -228,9 +228,9 @@ lerobot-record \
 ```bash
 # 运行 ZMQ host（它会自动发布 obs 并接收 action）
 python3 -c "
-from lerobot_robot_openarmsx import OpenArmsXConfig
-from lerobot_robot_openarmsx.openarmsx_host import OpenArmsXHost
-OpenArmsXHost(OpenArmsXConfig()).run()
+from lerobot_robot_humanalite import HumanaLiteConfig
+from lerobot_robot_humanalite.humanalite_host import HumanaLiteHost
+HumanaLiteHost(HumanaLiteConfig()).run()
 "
 ```
 
@@ -250,7 +250,7 @@ OpenArmsXHost(OpenArmsXConfig()).run()
 ```bash
 lerobot-train \
     --policy=act \
-    --dataset.repo_id=你的名字/my_openarmsx_data \
+    --dataset.repo_id=你的名字/my_humanalite_data \
     --output_dir=./outputs
 ```
 
@@ -271,7 +271,7 @@ lerobot-train --policy=act --dataset.repo_id=... --training.batch_size=32 --trai
 ```bash
 lerobot-rollout \
     --policy.path=./outputs/checkpoints/last \
-    --robot.type=openarmsx \
+    --robot.type=humanalite \
     --robot.port1=/dev/ttyACM0 \
     --robot.port2=/dev/ttyACM1 \
     --robot.port3=/dev/ttyACM2
@@ -284,9 +284,9 @@ lerobot-rollout \
 ```bash
 # 机器端
 python3 -c "
-from lerobot_robot_openarmsx import OpenArmsXConfig
-from lerobot_robot_openarmsx.openarmsx_host import OpenArmsXHost
-OpenArmsXHost(OpenArmsXConfig()).run()
+from lerobot_robot_humanalite import HumanaLiteConfig
+from lerobot_robot_humanalite.humanalite_host import HumanaLiteHost
+HumanaLiteHost(HumanaLiteConfig()).run()
 "
 ```
 
@@ -324,7 +324,7 @@ action["lift_axis.vel"] = 500  # 原始速度值，正=上升，负=下降
 
 ## 十、配置参数说明
 
-### 10.1 OpenArmsXConfig
+### 10.1 HumanaLiteConfig
 
 | 参数 | 默认值 | 说明 |
 |------|--------|------|
@@ -386,20 +386,20 @@ A: 检查 `/dev/video*` 设备是否存在。可能需要调整 `default_cameras
 ## 十二、项目结构
 
 ```
-/home/zach/OpenArmsX/
-├── pyproject.toml                          # 包配置 + lerobot 入口点
-├── lerobot_robot_openarmsx/               # 主包
-│   ├── __init__.py                        # 导出 OpenArmsX
-│   ├── config_openarmsx.py               # 配置类
-│   ├── openarmsx.py                      # 主 Robot 类
-│   ├── lift_axis.py                      # 升降轴控制
-│   ├── openarmsx_host.py                 # ZMQ 双机模式 Host
-│   └── openarmsx_client.py               # ZMQ 双机模式 Client
+/home/zach/HumanaLite/
+├── pyproject.toml                              # 包配置 + lerobot 入口点
+├── lerobot_robot_humanalite/                   # 主包
+│   ├── __init__.py                             # 导出 HumanaLite
+│   ├── config_humanalite.py                    # 配置类
+│   ├── humanalite.py                          # 主 Robot 类
+│   ├── lift_axis.py                           # 升降轴控制
+│   ├── humanalite_host.py                     # ZMQ 双机模式 Host
+│   └── humanalite_client.py                   # ZMQ 双机模式 Client
 ├── examples/
-│   ├── single_machine.py                 # 单机使用示例
-│   └── teleop_keyboard.py                # 键盘遥操示例
+│   ├── single_machine.py                      # 单机使用示例
+│   └── teleop_keyboard.py                     # 键盘遥操示例
 ├── docs/
-│   ├── manual_zh.md                      # 本文件
-│   └── manual_en.md                      # English manual
+│   ├── manual_zh.md                           # 本文件
+│   └── manual_en.md                           # English manual
 └── README.md
 ```
