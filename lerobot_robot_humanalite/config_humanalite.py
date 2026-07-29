@@ -1,4 +1,4 @@
-"""OpenArmsX robot configuration."""
+"""HumanaLite robot configuration."""
 
 from __future__ import annotations
 
@@ -39,10 +39,10 @@ def default_cameras() -> dict[str, CameraConfig]:
     }
 
 
-@RobotConfig.register_subclass("openarmsx")
+@RobotConfig.register_subclass("humanalite")
 @dataclass
-class OpenArmsXConfig(RobotConfig):
-    """Configuration for the OpenArmsX semi-humanoid robot.
+class HumanaLiteConfig(RobotConfig):
+    """Configuration for the HumanaLite semi-humanoid robot.
 
     Follower motors (12V — all ST3215 C018 except lift uses ST3250):
 
@@ -116,7 +116,7 @@ class OpenArmsXConfig(RobotConfig):
 # ---------------------------------------------------------------------------
 
 @dataclass
-class OpenArmsXHostConfig:
+class HumanaLiteHostConfig:
     """Configuration for the robot-side ZMQ host process."""
 
     port_zmq_cmd: int = 5555
@@ -126,9 +126,9 @@ class OpenArmsXHostConfig:
     max_loop_freq_hz: int = 30
 
 
-@RobotConfig.register_subclass("openarmsx_client")
+@RobotConfig.register_subclass("humanalite_client")
 @dataclass
-class OpenArmsXClientConfig(RobotConfig):
+class HumanaLiteClientConfig(RobotConfig):
     """Configuration for the teleoperation-side ZMQ client."""
 
     remote_ip: str = "127.0.0.1"

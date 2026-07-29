@@ -1,7 +1,7 @@
 """ZMQ host — runs on the robot side (Jetson / Raspberry Pi).
 
 Connects to the real hardware and forwards observations / receives
-action commands from a remote ``OpenArmsXClient`` over ZMQ.
+action commands from a remote ``HumanaLiteClient`` over ZMQ.
 """
 
 from __future__ import annotations
@@ -15,8 +15,8 @@ from typing import Any
 import numpy as np
 import zmq
 
-from .config_openarmsx import OpenArmsXConfig, OpenArmsXHostConfig
-from .openarmsx import OpenArmsX
+from .config_humanalite import HumanaLiteConfig, HumanaLiteHostConfig
+from .humanalite import HumanaLite
 
 logger = logging.getLogger(__name__)
 
@@ -79,29 +79,29 @@ def _deserialize_cmd(data: bytes) -> dict[str, Any]:
     return action
 
 
-class OpenArmsXHost:
+class HumanaLiteHost:
     """Robot-side ZMQ host that serves observations and accepts commands.
 
     Usage
     -----
     .. code-block:: python
 
-        host = OpenArmsXHost(robot_config, host_config)
+        host = HumanaLiteHost(robot_config, host_config)
         host.run()  # blocks until interrupted
     """
 
     def __init__(
         self,
-        robot_cfg: OpenArmsXConfig,
-        host_cfg: OpenArmsXHostConfig | None = None,
+        robot_cfg: HumanaLiteConfig,
+        host_cfg: HumanaLiteHostConfig | None = None,
     ):
         self.robot_cfg = robot_cfg
-        self.host_cfg = host_cfg or OpenArmsXHostConfig()
-        self._robot: OpenArmsX | None = None
+        self.host_cfg = host_cfg or HumanaLiteHostConfig()
+        self._robot: HumanaLite | None = None
         self._ctx: zmq.Context | None = None
 
     def run(self) -> None:
-        robot = OpenArmsX(self.robot_cfg)
+        robot = HumanaLite(self.robot_cfg)
         robot.connect(calibrate=True)
         self._robot = robot
 

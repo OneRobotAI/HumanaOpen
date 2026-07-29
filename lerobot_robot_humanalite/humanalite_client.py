@@ -1,6 +1,6 @@
 """ZMQ client — runs on the teleoperation laptop.
 
-Receives observations from ``OpenArmsXHost`` and sends action commands.
+Receives observations from ``HumanaLiteHost`` and sends action commands.
 """
 
 from __future__ import annotations
@@ -14,7 +14,7 @@ from typing import Any
 import numpy as np
 import zmq
 
-from .config_openarmsx import OpenArmsXClientConfig
+from .config_humanalite import HumanaLiteClientConfig
 
 logger = logging.getLogger(__name__)
 
@@ -64,12 +64,12 @@ def _serialize_cmd(action: dict[str, Any]) -> bytes:
     return bytes(buf)
 
 
-class OpenArmsXClient:
+class HumanaLiteClient:
     """Teleop-side ZMQ client that receives observations and sends actions.
 
     Typical usage with a local leader arm / keyboard teleoperator::
 
-        client = OpenArmsXClient(client_config)
+        client = HumanaLiteClient(client_config)
         client.connect()
 
         while running:
@@ -80,7 +80,7 @@ class OpenArmsXClient:
         client.disconnect()
     """
 
-    def __init__(self, config: OpenArmsXClientConfig):
+    def __init__(self, config: HumanaLiteClientConfig):
         self.config = config
         self._ctx: zmq.Context | None = None
         self._sub: zmq.Socket | None = None

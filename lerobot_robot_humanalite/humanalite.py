@@ -1,4 +1,4 @@
-"""OpenArmsX — Bimanual 7-DOF mobile robot with lift and differential drive."""
+"""HumanaLite — Bimanual 7-DOF mobile robot with lift and differential drive."""
 
 from __future__ import annotations
 
@@ -17,8 +17,8 @@ from lerobot.robots.robot import Robot
 from lerobot.robots.utils import ensure_safe_goal_position
 from lerobot.utils.errors import DeviceAlreadyConnectedError, DeviceNotConnectedError
 
-from .config_openarmsx import OpenArmsXConfig
-from .lift_axis import OpenArmsXLiftAxis
+from .config_humanalite import HumanaLiteConfig
+from .lift_axis import HumanaLiteLiftAxis
 
 logger = logging.getLogger(__name__)
 
@@ -82,7 +82,7 @@ def _motor_specs(use_degrees: bool) -> dict[str, tuple[int, str, MotorNormMode]]
 # Robot class
 # ---------------------------------------------------------------------------
 
-class OpenArmsX(Robot):
+class HumanaLite(Robot):
     """7-DOF dual-arm semi-humanoid robot with differential drive and lift.
 
     Motor bus topology
@@ -101,10 +101,10 @@ class OpenArmsX(Robot):
     All arms are 7-DOF (3 shoulder + 1 elbow + 1 forearm + 2 wrist) + 1 gripper.
     """
 
-    config_class = OpenArmsXConfig
-    name = "openarmsx"
+    config_class = HumanaLiteConfig
+    name = "humanalite"
 
-    def __init__(self, config: OpenArmsXConfig):
+    def __init__(self, config: HumanaLiteConfig):
         super().__init__(config)
         self.config = config
         self._motor_specs = _motor_specs(config.use_degrees)
@@ -167,7 +167,7 @@ class OpenArmsX(Robot):
             # already set lift_bus = self.bus2 above
 
         # ── Lift Axis (always separate from the main feature dict) ──────
-        self.lift_axis = OpenArmsXLiftAxis(self.config.lift, lift_bus)
+        self.lift_axis = HumanaLiteLiftAxis(self.config.lift, lift_bus)
 
         # ── Motor-group listings (for sync_read/write) ──────────────────
         self.left_arm_motors = LEFT_ARM_JOINTS[:]
