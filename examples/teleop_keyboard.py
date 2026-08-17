@@ -48,7 +48,7 @@ def main():
             # Lift
             lift_h = obs.get("lift_axis.height_mm", 0)
             if keyboard.is_pressed("u"): lift_h += 2
-            if keyboard.is_pressed("d"): lift_h -= 2
+            if keyboard.is_pressed("h"): lift_h -= 2
             action["lift_axis.height_mm"] = lift_h
 
             # Speed

@@ -180,7 +180,7 @@ class HumanaLiteClient:
                 # Lift
                 if keyboard.is_pressed("u"):
                     action["lift_axis.height_mm"] = obs.get("lift_axis.height_mm", 0) + 2
-                if keyboard.is_pressed("d"):
+                if keyboard.is_pressed("h"):
                     action["lift_axis.height_mm"] = obs.get("lift_axis.height_mm", 0) - 2
 
                 self.send_action(action)

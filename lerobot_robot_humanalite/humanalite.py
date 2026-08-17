@@ -115,9 +115,12 @@ class HumanaLite(Robot):
         cal = self.calibration
 
         def _maybe_cal(name: str) -> dict:
-            return {k: v for k, v in cal.items() if k.startswith(name)} or None
+            return {k: v for k, v in cal.items() if k.startswith(name)}
 
-        cal_left = _maybe_cal("left_arm") or _maybe_cal("head") or None
+        # Bus 1 hosts left arm AND head — both calibration prefixes must go
+        # together (left_arm_* and head_*). Merging (|) instead of or-else
+        # guarantees head calibration is not dropped.
+        cal_left = _maybe_cal("left_arm") | _maybe_cal("head") or None
         cal_right = _maybe_cal("right_arm") or None
         cal_wheels = _maybe_cal("base") or None
 
@@ -136,14 +139,12 @@ class HumanaLite(Robot):
             n: Motor(*self._motor_specs[n]) for n in RIGHT_ARM_JOINTS
         }
 
-        if self.config.port3 is None:
+        if self.config.port3 is None and self.config.enable_base:
             # 2-bus mode — wheels & lift share bus 2
             for n in WHEEL_JOINTS:
                 bus2_motors[n] = Motor(*self._motor_specs[n])
-            lift_bus = self.bus2  # will be assigned below
             wheel_cal = cal_wheels
         else:
-            lift_bus = None  # placeholder; bus 3 not created yet
             wheel_cal = cal_wheels
 
         self.bus2 = FeetechMotorsBus(
@@ -151,9 +152,14 @@ class HumanaLite(Robot):
             motors=bus2_motors,
             calibration=cal_right or {},
         )
+        if self.config.port3 is None and self.config.enable_base:
+            # 2-bus mode — lift shares bus 2 (bus2 now exists)
+            lift_bus = self.bus2
+        else:
+            lift_bus = None
 
         # ── Bus 3 (3-bus mode only) ──────────────────────────────────────
-        if self.config.port3 is not None:
+        if self.config.port3 is not None and self.config.enable_base:
             self.bus3 = FeetechMotorsBus(
                 port=self.config.port3,
                 motors={
@@ -237,13 +243,19 @@ class HumanaLite(Robot):
         elif calibrate:
             self.calibrate()
 
-        # ── Lift homing ─────────────────────────────────────────────────
+        # ── Lift homing / zero restoration ─────────────────────────────
         self.lift_axis.attach()
         self.lift_axis.configure()
-        # Run homing if not yet homed (check / cache a simple flag)
+        # 优先从持久化文件恢复绝对位置 (免归零); 恢复失败才降到底部归零.
+        # home_lift_on_connect=False 时完全跳过 (需自行保证位置正确).
         if not getattr(self, "_lift_homed", False):
-            logger.info("Running lift homing (stall-detection) ...")
-            self.lift_axis.home()
+            if self.config.home_lift_on_connect and not self.lift_axis.restore_zero():
+                logger.info("Running lift homing (stall-detection) ...")
+                self.lift_axis.home()
+                # 数据采集场景: 归零后升降在底部, 允许操作者手动升到期望高度,
+                # 按 ENTER 确认后才继续 (保证第 0 条数据从期望高度开始).
+                if self.config.confirm_lift_after_home:
+                    self._confirm_lift_height_with_keyboard()
             self._lift_homed = True
 
         # ── Cameras ─────────────────────────────────────────────────────
@@ -252,6 +264,66 @@ class HumanaLite(Robot):
 
         self.configure()
         logger.info(f"{self} connected.")
+        # 注册到全局表, 供 HumanaLiteTeleop 读取头部/升降初始位置 (record 场景)
+        try:
+            from .leader import register_robot
+            register_robot(self)
+        except Exception:
+            pass
+
+    def _confirm_lift_height_with_keyboard(self) -> None:
+        """归零后手动升降确认: 后台线程轮询 u/h 驱动升降, 直到回车.
+
+        input() 是阻塞的, 期间没有任何代码调用 get_action/send_action,
+        升降不会动. 此方法在 input() 期间用后台线程轮询全局键盘回调,
+        按住 u/h 直接写 Goal_Velocity 驱动升降, 回车后停止.
+        """
+        import threading
+
+        from .leader import register_keyboard_callback
+
+        stop = threading.Event()
+        lift = self.lift_axis
+        name = lift.cfg.name
+        vel = 0.0
+        lock = threading.Lock()
+        lift_speed = 60  # raw velocity (BIT2=0: 60*50=3000 step/s ≈ 5.9mm/s)
+
+        def on_key(ch: str, is_pressed: bool) -> None:
+            nonlocal vel
+            if ch in ("u", "h"):
+                with lock:
+                    vel = (lift_speed if ch == "u" else -lift_speed) if is_pressed else 0.0
+
+        def drive():
+            while not stop.is_set():
+                with lock:
+                    v = vel
+                # 走 apply_action → _apply_safety_limits (soft_max 200mm /
+                # descent_floor 3mm 限位生效); v=0 时写 0 停止电机
+                try:
+                    lift.apply_action({f"{name}.vel": v})
+                except Exception:
+                    pass
+                time.sleep(0.05)
+
+        register_keyboard_callback(on_key)
+        thread = threading.Thread(target=drive, daemon=True)
+        thread.start()
+        try:
+            input(
+                "Lift homed to bottom (0mm). Hold u/h to raise/lower the lift to the desired "
+                "height, then press ENTER to start recording..."
+            )
+        finally:
+            stop.set()
+            thread.join(timeout=0.5)
+            try:
+                lift._bus.write("Goal_Velocity", name, 0)
+            except Exception:
+                pass
+            # 保存用户手动调整后的位置, 下次连接免归零
+            lift.save_zero()
 
     def _restore_calibration(self) -> None:
         """Load saved calibration data into bus memory and write to motors."""
@@ -273,9 +345,13 @@ class HumanaLite(Robot):
     def calibrate(self) -> None:
         """Interactive calibration: half-turn homing + range recording.
 
-        * Arm/head motors: place in middle of travel → record ranges.
+        * Arm/head motors: zero at natural hanging pose + gripper closed →
+          record ranges (gripper gets a dedicated closed/open two-point calibration).
         * Wheel motors: full 0-4095 range (continuous rotation).
         * Lift motor: uses stall-detection homing (run separately).
+
+        Zero convention: arms hanging straight down, gripper closed — matching
+        the leader teleoperator so teleoperation maps pose-to-pose.
         """
         logger.info("Running calibration of %s", self)
         self.bus1.disable_torque()
@@ -290,7 +366,10 @@ class HumanaLite(Robot):
             self.bus2.write("Operating_Mode", name, OperatingMode.POSITION.value)
 
         # ── Bus 1: left arm + head ──────────────────────────────────────
-        input("Move LEFT ARM and HEAD motors to mid-range, then press ENTER...")
+        input(
+            "Move LEFT ARM and HEAD motors to zero pose (arms hanging straight down, "
+            "gripper closed), then press ENTER..."
+        )
         homing1 = self.bus1.set_half_turn_homings(self.left_arm_motors + self.head_motors)
         print("Move all left arm + head joints through full range.\nPress ENTER when done...")
         rmin1, rmax1 = self.bus1.record_ranges_of_motion(
@@ -298,29 +377,38 @@ class HumanaLite(Robot):
         )
         cal1 = {}
         for name in self.left_arm_motors + self.head_motors:
-            cal1[name] = MotorCalibration(
-                id=self.bus1.motors[name].id,
-                drive_mode=0,
-                homing_offset=homing1.get(name, 0),
-                range_min=rmin1.get(name, 0),
-                range_max=rmax1.get(name, 4095),
-            )
+            if name.endswith("gripper"):
+                cal1[name] = self._calibrate_gripper(self.bus1, name, homing1)
+            else:
+                cal1[name] = MotorCalibration(
+                    id=self.bus1.motors[name].id,
+                    drive_mode=0,
+                    homing_offset=homing1.get(name, 0),
+                    range_min=rmin1.get(name, 0),
+                    range_max=rmax1.get(name, 4095),
+                )
         self.bus1.write_calibration(cal1)
 
         # ── Bus 2: right arm ────────────────────────────────────────────
-        input("Move RIGHT ARM motors to mid-range, then press ENTER...")
+        input(
+            "Move RIGHT ARM motors to zero pose (arms hanging straight down, "
+            "gripper closed), then press ENTER..."
+        )
         homing2 = self.bus2.set_half_turn_homings(self.right_arm_motors)
         print("Move all right arm joints through full range.\nPress ENTER when done...")
         rmin2, rmax2 = self.bus2.record_ranges_of_motion(self.right_arm_motors)
         cal2 = {}
         for name in self.right_arm_motors:
-            cal2[name] = MotorCalibration(
-                id=self.bus2.motors[name].id,
-                drive_mode=0,
-                homing_offset=homing2.get(name, 0),
-                range_min=rmin2.get(name, 0),
-                range_max=rmax2.get(name, 4095),
-            )
+            if name.endswith("gripper"):
+                cal2[name] = self._calibrate_gripper(self.bus2, name, homing2)
+            else:
+                cal2[name] = MotorCalibration(
+                    id=self.bus2.motors[name].id,
+                    drive_mode=0,
+                    homing_offset=homing2.get(name, 0),
+                    range_min=rmin2.get(name, 0),
+                    range_max=rmax2.get(name, 4095),
+                )
 
         # Wheels & lift on same bus (2-bus mode)
         if self.config.port3 is None:
@@ -359,6 +447,48 @@ class HumanaLite(Robot):
 
     # ── Configure ──────────────────────────────────────────────────────────
 
+    def _calibrate_gripper(
+        self, bus, name: str, homing_offsets: dict
+    ) -> MotorCalibration:
+        """Two-point gripper calibration: closed → 0, open → 100 (RANGE_0_100).
+
+        Mirrors the leader's gripper convention so teleoperation maps open/close
+        pose-to-pose.
+        """
+        input(f"\nGripper '{name}' calibration\nStep 1: CLOSE the gripper fully\nPress ENTER when closed...")
+        # 等待舵机停稳再读数 (防运动中被读成中间值)
+        closed_pos = self._read_stable(bus, "Present_Position", name)
+        input("Step 2: OPEN the gripper fully\nPress ENTER when fully open...")
+        open_pos = self._read_stable(bus, "Present_Position", name)
+
+        if closed_pos < open_pos:
+            range_min, range_max, drive_mode = int(closed_pos), int(open_pos), 0
+        else:
+            range_min, range_max, drive_mode = int(open_pos), int(closed_pos), 1
+        logger.info(
+            f"  {name}: closed={closed_pos} open={open_pos} → range "
+            f"[{range_min}, {range_max}] (0=closed, 100=open, drive_mode={drive_mode})"
+        )
+        return MotorCalibration(
+            id=bus.motors[name].id,
+            drive_mode=drive_mode,
+            homing_offset=homing_offsets.get(name, 0),
+            range_min=range_min,
+            range_max=range_max,
+        )
+
+    @staticmethod
+    def _read_stable(bus, item: str, name: str, num_tries: int = 8, tolerance: float = 1.0) -> float:
+        """Read a register until two consecutive readings agree (within tolerance)."""
+        prev = None
+        for _ in range(num_tries):
+            val = bus.read(item, name, normalize=False)
+            if prev is not None and abs(val - prev) <= tolerance:
+                return val
+            prev = val
+            time.sleep(0.15)
+        return prev
+
     def configure(self) -> None:
         """Set operating modes and PID gains after connection/calibration."""
         self.bus1.disable_torque()
@@ -383,7 +513,7 @@ class HumanaLite(Robot):
         if self.config.port3 is None:
             # 2-bus: wheels live on bus 2
             _config_wheels(self.bus2, self.wheel_motors)
-        else:
+        elif self.bus3 is not None:
             _config_wheels(self.bus3, self.wheel_motors)
 
         self.bus1.enable_torque()
@@ -454,14 +584,19 @@ class HumanaLite(Robot):
             right_degps *= scale
 
         return {
-            "base_left_wheel": self._degps_to_raw(left_degps),
-            "base_right_wheel": self._degps_to_raw(right_degps),
+            "base_left_wheel": self.config.wheel_dir_signs["base_left_wheel"] * self._degps_to_raw(left_degps),
+            "base_right_wheel": self.config.wheel_dir_signs["base_right_wheel"] * self._degps_to_raw(right_degps),
         }
 
     def _wheel_raw_to_body(self, left_raw: int, right_raw: int) -> dict[str, float]:
         """Wheel raw feedback → body-frame velocity."""
         r = self.config.wheel_radius
         L = self.config.wheelbase
+
+        # Undo the direction signs applied in _body_to_wheel_raw so the
+        # body-frame estimate stays consistent with commanded motion.
+        left_raw = self.config.wheel_dir_signs["base_left_wheel"] * left_raw
+        right_raw = self.config.wheel_dir_signs["base_right_wheel"] * right_raw
 
         left_radps = np.deg2rad(self._raw_to_degps(left_raw))
         right_radps = np.deg2rad(self._raw_to_degps(right_raw))
@@ -495,14 +630,15 @@ class HumanaLite(Robot):
             obs[f"{k}.pos"] = v
 
         # Read wheel velocities
-        wheel_bus = self.bus3 if self.bus3 is not None else self.bus2
-        wheel_vel = wheel_bus.sync_read("Present_Velocity", self.wheel_motors)
-        body = self._wheel_raw_to_body(
-            wheel_vel.get("base_left_wheel", 0),
-            wheel_vel.get("base_right_wheel", 0),
-        )
-        obs["x.vel"] = body["x.vel"]
-        obs["theta.vel"] = body["theta.vel"]
+        if self.wheel_motors:
+            wheel_bus = self.bus3 if self.bus3 is not None else self.bus2
+            wheel_vel = wheel_bus.sync_read("Present_Velocity", self.wheel_motors)
+            body = self._wheel_raw_to_body(
+                wheel_vel.get("base_left_wheel", 0),
+                wheel_vel.get("base_right_wheel", 0),
+            )
+            obs["x.vel"] = body["x.vel"]
+            obs["theta.vel"] = body["theta.vel"]
 
         # Lift
         self.lift_axis.contribute_observation(obs)
@@ -551,7 +687,7 @@ class HumanaLite(Robot):
             self.bus1.sync_write("Goal_Position", {k.replace(".pos", ""): v for k, v in head_pos.items()})
 
         # ── Wheel velocity commands ─────────────────────────────────────
-        if base_cmd:
+        if base_cmd and self.wheel_motors:
             wheel_raw = self._body_to_wheel_raw(base_cmd.get("x.vel", 0.0), base_cmd.get("theta.vel", 0.0))
             wheel_bus = self.bus3 if self.bus3 is not None else self.bus2
             wheel_bus.sync_write("Goal_Velocity", wheel_raw)
@@ -564,21 +700,24 @@ class HumanaLite(Robot):
     # ── Shutdown ───────────────────────────────────────────────────────────
 
     def stop_base(self) -> None:
-        wheel_bus = self.bus3 if self.bus3 is not None else self.bus2
-        wheel_bus.sync_write("Goal_Velocity", dict.fromkeys(self.wheel_motors, 0), num_retry=5)
-        # Stop lift too
-        self.lift_axis.apply_action({"lift_axis.vel": 0})
+        if self.wheel_motors:
+            wheel_bus = self.bus3 if self.bus3 is not None else self.bus2
+            wheel_bus.sync_write("Goal_Velocity", dict.fromkeys(self.wheel_motors, 0), num_retry=5)
+        # Stop lift too (only if its motor was actually attached to a bus)
+        lift_bus = getattr(self.lift_axis, "_bus", None)
+        if lift_bus is not None and self.lift_axis.cfg.name in lift_bus.motors:
+            self.lift_axis.apply_action({"lift_axis.vel": 0})
         logger.info("Base & lift motors stopped")
 
     def disconnect(self) -> None:
-        if not self.is_connected:
-            raise DeviceNotConnectedError(f"{self} is not connected.")
-
-        self.stop_base()
-        self.bus1.disconnect(self.config.disable_torque_on_disconnect)
-        self.bus2.disconnect(self.config.disable_torque_on_disconnect)
-        if self.bus3 is not None:
-            self.bus3.disconnect(self.config.disable_torque_on_disconnect)
+        # Tolerate partial connection state (e.g. connect() failed midway).
+        # Each bus/camera knows whether it is connected and disconnects accordingly.
+        if self.is_connected:
+            self.stop_base()
+        for bus in (self.bus1, self.bus2, self.bus3):
+            if bus is not None and bus.is_connected:
+                bus.disconnect(self.config.disable_torque_on_disconnect)
         for cam in self.cameras.values():
-            cam.disconnect()
+            if cam.is_connected:
+                cam.disconnect()
         logger.info("%s disconnected.", self)

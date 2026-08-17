@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -13,7 +14,7 @@ from .lift_axis import LiftAxisConfig
 
 
 def default_cameras() -> dict[str, CameraConfig]:
-    """Default camera setup — 3 × USB webcams.
+    """Default camera setup — 3 × USB webcams (MJPG, 30fps except right_wrist).
 
     Adjust indices/paths to match your actual hardware.
     """
@@ -23,20 +24,34 @@ def default_cameras() -> dict[str, CameraConfig]:
             fps=30,
             width=640,
             height=480,
+            fourcc="MJPG",
         ),
         "left_wrist": OpenCVCameraConfig(
             index_or_path="/dev/video2",
             fps=30,
             width=640,
             height=480,
+            fourcc="MJPG",
         ),
         "right_wrist": OpenCVCameraConfig(
             index_or_path="/dev/video4",
-            fps=30,
+            fps=25,  # v4l2-ctl 实测: 640x480 下 MJPG 最大 25fps (硬件限制)
             width=640,
             height=480,
+            fourcc="MJPG",
         ),
     }
+
+
+def chest_camera() -> OpenCVCameraConfig:
+    """Optional 4th camera — chest view (MJPG, 30fps on current hardware)."""
+    return OpenCVCameraConfig(
+        index_or_path="/dev/video6",
+        fps=30,
+        width=640,
+        height=480,
+        fourcc="MJPG",
+    )
 
 
 @RobotConfig.register_subclass("humanalite")
@@ -77,6 +92,22 @@ class HumanaLiteConfig(RobotConfig):
     port3: str | None = "/dev/ttyACM2"
     disable_torque_on_disconnect: bool = True
 
+    # ---- Lift homing on connect ---------------------------------------------
+    # connect() 时升降的处理: 优先从持久化文件恢复绝对位置 (免归零, 丝杠自锁
+    # 位置不变即可复现); 恢复失败才降到底部 stall-detection 归零.
+    # Set to ``False`` to skip both entirely (only when lift position is known good).
+    home_lift_on_connect: bool = True
+
+    # 归零完成后等待手动调整: 若触发自动归零 (升降停在底部 0mm), 归零完成后
+    # 弹提示等待操作者手动把升降升到期望高度, 按 ENTER 才继续.
+    # 用于数据采集等需要从特定高度开始的场景; 纯遥操设 False (启动后随时可调).
+    confirm_lift_after_home: bool = False
+
+    # ---- Enable the differential-drive base (wheels) ------------------------
+    # Set to ``False`` when the base is not wired up yet (e.g. arms-only testing).
+    # In 2-bus mode (port3=None) this also removes the wheel motors from bus 2.
+    enable_base: bool = True
+
     # ---- Safety limiter ----------------------------------------------------
     # Clamp per-step position changes to this value (degrees or %).
     max_relative_target: int | None = None
@@ -88,12 +119,28 @@ class HumanaLiteConfig(RobotConfig):
     use_degrees: bool = False
 
     # ---- Differential-drive parameters -------------------------------------
-    wheel_radius: float = 0.06   # metres
+    wheel_radius: float = 0.0635  # metres (127mm wheel diameter)
     wheelbase: float = 0.30      # metres (distance between left & right wheels)
     max_wheel_raw: int = 3000    # maximum raw velocity command
 
+    # ---- Wheel direction signs ----------------------------------------------
+    # ``+1`` = positive raw velocity drives the wheel forward.
+    # ``-1`` = inverted wheel (motor mounted mirrored). If forward turns the
+    # robot into a spin, flip the sign of the wheel that is mounted backwards.
+    wheel_dir_signs: dict[str, int] = field(
+        default_factory=lambda: {
+            "base_left_wheel": 1,
+            "base_right_wheel": 1,
+        }
+    )
+
     # ---- Lift Axis ---------------------------------------------------------
-    lift: LiftAxisConfig = field(default_factory=LiftAxisConfig)
+    # 默认启用零位持久化: home 后保存绝对位置, 后续连接免归零恢复.
+    lift: LiftAxisConfig = field(
+        default_factory=lambda: LiftAxisConfig(
+            zero_file=os.path.expanduser("~/.cache/humanalite/lift_zero.json")
+        )
+    )
 
     # ---- Keyboard teleop keymap (used by examples / base driver) -----------
     teleop_keys: dict[str, str] = field(
@@ -105,7 +152,7 @@ class HumanaLiteConfig(RobotConfig):
             "speed_up": "n",
             "speed_down": "m",
             "lift_up": "u",
-            "lift_down": "d",
+            "lift_down": "h",
             "quit": "b",
         }
     )
@@ -148,7 +195,7 @@ class HumanaLiteClientConfig(RobotConfig):
             "speed_up": "n",
             "speed_down": "m",
             "lift_up": "u",
-            "lift_down": "d",
+            "lift_down": "h",
             "quit": "b",
         }
     )

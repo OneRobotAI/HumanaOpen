@@ -1,0 +1,299 @@
+"""Rollout an ACT policy on a real HumanaLite robot.
+
+Records observations, runs the policy, and sends actions at 30Hz.
+The robot's cameras and state are fed to the ACT model which predicts
+action chunks. The first action of each chunk is executed, then the
+next chunk is predicted on the new observation.
+
+Usage:
+    python3 examples/eval_data.py \
+        --policy.repo_id=zonglin11/humanalite_act_demo_policy \
+        --robot.type=humanalite
+
+    # With human teleop as safety override (hold keys to override policy):
+    python3 examples/eval_data.py \
+        --policy.repo_id=zonglin11/humanalite_act_demo_policy \
+        --robot.type=humanalite \
+        --teleop.type=humanalite_teleop \
+        --teleop.left_arm_port=/dev/ttyACM2 --teleop.right_arm_port=/dev/ttyACM3 \
+        --teleop.flip_joints='{"left": [], "right": []}' --teleop.joint_remap='{}' \
+        --num-episodes=5 --duration=30
+
+Press 'e' to enable/disable human override, 'q' to quit.
+"""
+
+import argparse
+import json
+import os
+import sys
+import time
+
+import numpy as np
+import torch
+import rerun as rr
+
+sys.path.insert(0, "/home/zach/HumanaLite")
+
+from lerobot.utils.import_utils import register_third_party_devices
+register_third_party_devices()
+
+from lerobot.cameras.opencv.configuration_opencv import OpenCVCameraConfig
+from lerobot.policies.act.modeling_act import ACTPolicy
+
+from lerobot_robot_humanalite.config_humanalite import HumanaLiteConfig
+from lerobot_robot_humanalite.humanalite import HumanaLite
+from lerobot_robot_humanalite.leader import HumanaLiteTeleop, HumanaLiteTeleopConfig
+
+# ── Default camera devices ──────────────────────────────────────────────
+DEFAULT_CAMERAS_JSON = json.dumps(
+    {
+        "head": {"type": "opencv", "index_or_path": "/dev/video0", "width": 640, "height": 480, "fps": 30, "fourcc": "MJPG"},
+        "left_wrist": {"type": "opencv", "index_or_path": "/dev/video2", "width": 640, "height": 480, "fps": 30, "fourcc": "MJPG"},
+        "right_wrist": {"type": "opencv", "index_or_path": "/dev/video4", "width": 640, "height": 480, "fps": 25, "fourcc": "MJPG"},
+    }
+)
+
+
+def build_cameras(json_str: str) -> dict:
+    data = json.loads(json_str)
+    cams = {}
+    for name, spec in data.items():
+        cams[name] = OpenCVCameraConfig(
+            index_or_path=spec["index_or_path"],
+            fps=int(spec["fps"]),
+            width=int(spec["width"]),
+            height=int(spec["height"]),
+            fourcc=spec.get("fourcc", "MJPG"),
+        )
+    return cams
+
+
+def build_parser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(description="Rollout ACT policy on HumanaLite")
+    # --robot.*
+    p.add_argument("--robot.type", default="humanalite")
+    p.add_argument("--robot.id", default="follower")
+    p.add_argument("--robot.port1", default="/dev/ttyACM0")
+    p.add_argument("--robot.port2", default="/dev/ttyACM1")
+    p.add_argument("--robot.port3", default=None)
+    p.add_argument("--robot.cameras", default=DEFAULT_CAMERAS_JSON)
+    # --teleop.* (optional safety override)
+    p.add_argument("--teleop.type", default=None)
+    p.add_argument("--teleop.left_arm_port", default="/dev/ttyACM2")
+    p.add_argument("--teleop.right_arm_port", default="/dev/ttyACM3")
+    p.add_argument("--teleop.flip_joints", default='{"left": [], "right": []}')
+    p.add_argument("--teleop.joint_remap", default="{}")
+    # --policy.*
+    p.add_argument("--policy.repo_id", default="zonglin11/humanalite_act_demo_policy")
+    p.add_argument("--policy.device", default="cuda")
+    # rollout
+    p.add_argument("--num-episodes", type=int, default=5)
+    p.add_argument("--duration", type=float, default=30.0, help="seconds per episode")
+    p.add_argument("--fps", type=int, default=30)
+    # display
+    p.add_argument("--no-display", action="store_true", help="skip rerun visualization")
+    p.add_argument("--save-video", default=None, help="save rollout video to this path")
+    return p
+
+
+def main():
+    parser = build_parser()
+    args = parser.parse_args()
+    d = vars(args)
+
+    port3 = d["robot.port3"]
+    if port3 and port3.strip().lower() == "none":
+        port3 = None
+
+    cameras = build_cameras(d["robot.cameras"])
+    has_teleop = d["teleop.type"] is not None
+
+    print("=" * 60)
+    print("HumanaLite ACT Policy Rollout")
+    print(f"  Model:     {d['policy.repo_id']}")
+    print(f"  Device:    {d['policy.device']}")
+    print(f"  Cameras:   {list(cameras.keys())}")
+    print(f"  Episodes:  {d['num_episodes']} x {d['duration']}s @ {d['fps']}Hz")
+    print(f"  Teleop:    {'human override enabled' if has_teleop else 'policy only'}")
+    print("=" * 60)
+    print()
+
+    # ── Load model ───────────────────────────────────────────────────
+    print("Loading ACT policy...")
+    policy = ACTPolicy.from_pretrained(d["policy.repo_id"])
+    # image_features is derived from input_features (saved in config.json),
+    # which already contains observation.images.{head,left_wrist,right_wrist}
+    policy = policy.to(d["policy.device"])
+    policy.eval()
+    print(f"  Model loaded ({sum(p.numel() for p in policy.parameters())/1e6:.1f}M params)")
+
+    # ── Connect robot ────────────────────────────────────────────────
+    print("Connecting robot...")
+    robot = HumanaLite(HumanaLiteConfig(
+        id=d["robot.id"],
+        port1=d["robot.port1"],
+        port2=d["robot.port2"],
+        port3=port3,
+        cameras=cameras,
+    ))
+    robot.connect(calibrate=False)
+    print("  Robot connected")
+
+    # ── Optional teleop (safety override) ────────────────────────────
+    leader = None
+    if has_teleop:
+        print("Connecting teleop...")
+        leader = HumanaLiteTeleop(HumanaLiteTeleopConfig(
+            id="leader",
+            left_arm_port=d["teleop.left_arm_port"],
+            right_arm_port=d["teleop.right_arm_port"],
+            flip_joints=json.loads(d["teleop.flip_joints"]),
+            joint_remap=json.loads(d["teleop.joint_remap"]),
+        ), robot=robot)
+        leader.connect(calibrate=False)
+        print("  Teleop connected (press 'e' to enable/disable override)")
+
+    # ── Rerun display ────────────────────────────────────────────────
+    if not args.no_display:
+        try:
+            rr.init("humanalite_rollout", spawn=True)
+            print("  Rerun viewer started")
+        except Exception as e:
+            print(f"  ⚠️ Rerun unavailable: {e}")
+
+    # ── Keyboard listener ────────────────────────────────────────────
+    from lerobot_robot_humanalite.leader import register_keyboard_callback
+
+    override_enabled = [False]
+    quit_flag = [False]
+    _pressed = set()
+
+    # 注册全局共享键盘回调 — 不创建独立 listener (Linux/X11 多个 pynput Listener 会抢占)
+    def eval_kb_cb(ch: str, is_pressed: bool) -> None:
+        if is_pressed:
+            _pressed.add(ch)
+            if ch == "q":
+                quit_flag[0] = True
+        else:
+            _pressed.discard(ch)
+
+    register_keyboard_callback(eval_kb_cb)
+
+    # ── Rollout loop ─────────────────────────────────────────────────
+    try:
+        for ep in range(d["num_episodes"]):
+            if quit_flag[0]:
+                break
+            print(f"\n  Episode {ep + 1}/{d['num_episodes']}")
+
+            # Keyboard state
+            keys = _pressed.copy()
+            override_enabled[0] = False
+            print("  Policy control active (press 'e' to override)")
+
+            for step in range(int(d["duration"] * d["fps"])):
+                if quit_flag[0]:
+                    break
+
+                # Override toggle (rising edge detection)
+                prev_keys = keys.copy()
+                keys = _pressed.copy()
+                if "e" in keys and "e" not in prev_keys:
+                    override_enabled[0] = not override_enabled[0]
+                    if override_enabled[0]:
+                        print("  🟢 Override ON — arms from leader, head/lift/base from keyboard")
+                    else:
+                        print("  🔴 Override OFF — policy controls all")
+                obs = robot.get_observation()
+
+                # ── Policy inference ──────────────────────────────────
+                policy_obs = _build_policy_obs(obs, policy, cameras, d["policy.device"], robot)
+                with torch.no_grad():
+                    action_tensor = policy.select_action(policy_obs)
+                action_np = action_tensor.cpu().numpy().flatten()
+
+                # ── Apply action ──────────────────────────────────────
+                if override_enabled[0] and leader is not None:
+                    override = leader.get_action()
+                    robot.send_action(override)
+                    action_dict = override
+                else:
+                    action_dict = _action_to_dict(action_np, policy, robot)
+                    robot.send_action(action_dict)
+
+                # ── Log to rerun ──────────────────────────────────────
+                if not args.no_display and step % 5 == 0:
+                    _log_rerun(obs, action_dict, step, ep)
+
+                time.sleep(1.0 / d["fps"])
+
+            print(f"  Episode {ep + 1} complete")
+            # stop motors between episodes
+            robot.send_action({k: 0.0 for k in robot.action_features if k.endswith(".vel")})
+            time.sleep(1.0)
+
+    except KeyboardInterrupt:
+        print("\n  Stopped")
+    finally:
+        # stop all motors
+        try:
+            robot.send_action({k: 0.0 for k in robot.action_features if k.endswith(".vel")})
+            robot.send_action({"lift_axis.height_mm": robot.lift_axis.get_height_mm()})
+        except Exception:
+            pass
+        if leader:
+            try:
+                leader.disconnect()
+            except Exception:
+                pass
+        robot.disconnect()
+        print("Done")
+
+
+def _build_policy_obs(obs, policy, cameras, device, robot):
+    """Convert robot observation dict to ACT policy batch format."""
+    batch = {}
+    # Images
+    for cam_name in cameras:
+        img = obs.get(cam_name)
+        if img is not None:
+            t = torch.from_numpy(np.ascontiguousarray(img.transpose(2, 0, 1))).float().unsqueeze(0) / 255.0
+            batch[f"observation.images.{cam_name}"] = t.to(device)
+
+    # State: all non-camera observation features (same as training dataset)
+    state_keys = sorted([
+        k for k in robot.observation_features
+        if not k.startswith("observation.") and k not in cameras
+    ])
+    state_vals = [obs[k] for k in state_keys]
+    batch["observation.state"] = torch.tensor([state_vals], dtype=torch.float32).to(device)
+
+    return batch
+
+
+def _action_to_dict(action_np, policy, robot):
+    """Convert 21-dim action array to robot send_action dict."""
+    action_keys = list(robot.action_features.keys())
+    action_dict = {}
+    for i, key in enumerate(action_keys):
+        action_dict[key] = float(action_np[i]) if i < len(action_np) else 0.0
+    return action_dict
+
+
+def _log_rerun(obs, action_dict, step, episode):
+    """Log current state to Rerun."""
+    try:
+        for cam_key in ("head", "left_wrist", "right_wrist"):
+            img = obs.get(cam_key)
+            if img is not None:
+                rr.log(f"observation.images.{cam_key}", rr.Image(img))
+        for key, val in sorted(action_dict.items()):
+            if val != 0.0:
+                rr.log(f"action.{key}", rr.Scalars(float(val)))
+        rr.log("step", rr.Scalars(step))
+    except Exception:
+        pass
+
+
+if __name__ == "__main__":
+    main()

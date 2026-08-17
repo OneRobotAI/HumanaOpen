@@ -1,6 +1,6 @@
 [build-system]
 requires = ["setuptools>=64"]
-build-backend = "setuptools.backends._legacy:_Backend"
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "lerobot-robot-humanalite"
@@ -8,7 +8,6 @@ version = "0.1.0"
 description = "HumanaLite — open-source semi-humanoid robot for LeRobot"
 requires-python = ">=3.10"
 dependencies = [
-    "lerobot[feetech]>=1.0",
     "numpy",
     "pyzmq",
 ]
