@@ -69,6 +69,12 @@ conda activate lerobot
 cd /path/to/HumanaLite
 pip install -e . --no-deps
 
+# Optional: install SmolVLA dependencies (transformers, num2words)
+pip install -e ".[smolvla]" 2>/dev/null || pip install transformers>=4.48 num2words
+
+# Optional: GPU with CUDA 12.8+ (Blackwell / RTX 5060+)
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128
+
 # 2. Single-machine operation
 python -c "
 from lerobot_robot_humanalite import HumanaLite, HumanaLiteConfig
@@ -240,12 +246,10 @@ rm -rf ~/.cache/huggingface/lerobot/your-name/humanalite_demo    # fresh start
 
 ## Training
 
-Train an ACT policy on a recorded dataset. The only required arguments are the
-policy type, dataset, and output directory — all other parameters use ACT defaults.
-
-### Quick start (test pipeline)
+### ACT (action chunking transformer)
 
 ```bash
+# Quick test (2 episodes)
 lerobot-train \
     --policy.type=act \
     --policy.device=cuda \
@@ -255,11 +259,8 @@ lerobot-train \
     --output_dir=outputs/humanalite_act_demo \
     --batch_size=3 \
     --steps=5
-```
 
-### Production training (>50 episodes)
-
-```bash
+# Production (>50 episodes)
 lerobot-train \
     --policy.type=act \
     --policy.device=cuda \
@@ -271,35 +272,40 @@ lerobot-train \
     --steps=50000
 ```
 
+### SmolVLA (vision-language-action model)
+
+SmolVLA requires the language instruction from `--dataset.single_task` (used during recording).
+The VLM weights (~500M) are downloaded automatically from HuggingFace on first run.
+
+```bash
+# Quick test (2 episodes)
+lerobot-train \
+    --policy.type=smolvla \
+    --policy.device=cuda \
+    --policy.push_to_hub=true \
+    --policy.repo_id=your-name/humanalite_smolvla_policy \
+    --dataset.repo_id=your-name/humanalite_act_demo \
+    --output_dir=outputs/humanalite_smolvla_demo \
+    --batch_size=4 \
+    --steps=20
+```
+
+> **Note**: SmolVLA (~450M params) is ~20x heavier than ACT (~52M), uses more VRAM,
+> and trains slower. Batch size 4 fits in 8GB VRAM (RTX 5060 Ti). For >50 episodes,
+> increase steps to 20000+.
+
 ### Key parameters
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| `--policy.type` | — | **Required.** Algorithm: `act`, `diffusion`, `smolvla`, `pi0`, etc. |
-| `--policy.device` | `cuda` | Training device (`cuda` / `cpu`). |
-| `--policy.push_to_hub` | `true` | Push model weights to HuggingFace Hub after training. |
-| `--policy.repo_id` | — | Hub repo for the trained model (separate from dataset). Required when pushing. |
+| `--policy.type` | — | **Required.** `act`, `smolvla`, `diffusion`, etc. |
+| `--policy.device` | `cuda` | `cuda` / `cpu`. |
+| `--policy.push_to_hub` | `true` | Push model to HuggingFace Hub. |
+| `--policy.repo_id` | — | Hub repo for the trained model. Required when pushing. |
 | `--dataset.repo_id` | — | **Required.** Hub repo of the training dataset. |
-| `--output_dir` | — | Local directory for checkpoints and logs. |
-| `--batch_size` | 8 | Samples per training step. Higher is more stable but uses more VRAM. |
-| `--steps` | 100000 | Total training steps. For 900 frames (2 episodes), 50K steps is ~550 epochs. |
-
-### ACT defaults (no need to set)
-
-These are already the ACT defaults — setting them is optional:
-
-| Parameter | Default | Notes |
-|-----------|---------|-------|
-| `--policy.dim_model` | 512 | Transformer hidden dimension |
-| `--policy.n_heads` | 8 | Attention heads |
-| `--policy.n_encoder_layers` | 4 | Encoder layers |
-| `--policy.n_decoder_layers` | 1 | Decoder layers |
-| `--policy.n_action_steps` | 150 | Prediction horizon (frames) |
-| `--policy.chunk_size` | 100 | Action chunking size |
-| `--policy.vision_backbone` | resnet18 | Image encoder |
-| `--policy.optimizer_lr` | 1e-05 | Learning rate |
-| `--policy.optimizer_weight_decay` | 0.0001 | Weight decay |
-| `--policy.optimizer_grad_clip_norm` | 10.0 | Gradient clipping |
+| `--output_dir` | — | Local checkpoint directory. |
+| `--batch_size` | 8 | Samples per step. ACT: 32, SmolVLA: 4 (8GB VRAM limit). |
+| `--steps` | 100000 | Total training steps. ACT: 50K, SmolVLA: 20K. |
 
 ### Outputs
 
@@ -315,10 +321,14 @@ The pushed model will be at `https://huggingface.co/your-name/humanalite_act_pol
 
 ## Inference (Deployment)
 
-Run a trained ACT policy on the real robot. Supports human override for safety.
+> **Dependencies**: SmolVLA requires `transformers>=4.48` and `num2words`.
+> Install with `pip install transformers>=4.48 num2words` before running SmolVLA inference.
+
+### ACT inference (with human override)
 
 ```bash
 python3 examples/eval_data.py \
+    --policy.type=act \
     --policy.repo_id=your-name/humanalite_act_policy \
     --policy.device=cuda \
     --robot.type=humanalite \
@@ -337,35 +347,39 @@ python3 examples/eval_data.py \
     --fps=30
 ```
 
+### SmolVLA inference (language-conditioned, no override)
+
+```bash
+python3 examples/eval_data.py \
+    --policy.type=smolvla \
+    --policy.repo_id=your-name/humanalite_smolvla_policy \
+    --policy.device=cuda \
+    --task="wave hello with both arms" \
+    --robot.type=humanalite \
+    --robot.id=follower \
+    --robot.port1=/dev/ttyACM0 \
+    --robot.port2=/dev/ttyACM1 \
+    --robot.port3=None \
+    --robot.cameras='{"head": {"type": "opencv", "index_or_path": "/dev/video0", "width": 640, "height": 480, "fps": 30, "fourcc": "MJPG"}, "left_wrist": {"type": "opencv", "index_or_path": "/dev/video2", "width": 640, "height": 480, "fps": 30, "fourcc": "MJPG"}, "right_wrist": {"type": "opencv", "index_or_path": "/dev/video4", "width": 640, "height": 480, "fps": 25, "fourcc": "MJPG"}}' \
+    --num-episodes=2 \
+    --duration=10 \
+    --fps=10
+```
+
+> **SmolVLA performance note**: VLM inference is ~1s/frame (450M params). A 10s
+> episode at 10fps = 100 frames ≈ 100s wall clock time. For real-time deployment,
+> use ACT (~50ms/frame). SmolVLA is best for language-conditioned tasks.
+
 ### Controls during inference
 
-| Control | Keys |
-|---------|------|
-| Policy toggle | `e` — switch between policy control and human override |
-| Quit | `q` |
+| Control | Keys | Notes |
+|---------|------|-------|
+| Override (ACT only) | `e` (hold) | Switch arms to leader control |
+| Quit | `q` | Stop all episodes |
 
-### Human override
-
-- **Default** (policy mode): ACT model controls all 21 DOF automatically.
-- **Press `e`** (override ON): arms follow leader, head/lift/base controlled by keyboard
-- **Press `e` again** (override OFF): back to policy control
-
-When overriding, keyboard controls remain active:
-- Head: `w`/`s` (nod), `a`/`d` (shake)
-- Base: `i`/`k` (forward/back), `j`/`l` (turn)
-- Lift: `u`/`h` (up/down, clamped 3–200mm)
-
-### Key parameters
-
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| `--policy.repo_id` | — | **Required.** Hub repo of the trained model. |
-| `--policy.device` | `cuda` | Inference device (`cuda` / `cpu`). |
-| `--robot.*` | — | Robot config (same as record). |
-| `--teleop.*` | — | Leader arm config (same as record). |
-| `--num-episodes` | 5 | Number of inference episodes. |
-| `--duration` | 30 | Seconds per episode. |
-| `--fps` | 30 | Inference frequency (Hz). |
+**Human override** (ACT only):
+- Hold `e`: arms follow leader, head/lift/base by keyboard, strategy paused
+- Release `e`: back to strategy control
 
 ## License
 

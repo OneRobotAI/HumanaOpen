@@ -84,6 +84,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--teleop.flip_joints", default='{"left": [], "right": []}')
     p.add_argument("--teleop.joint_remap", default="{}")
     # --policy.*
+    p.add_argument("--policy.type", default="act", choices=["act", "smolvla"], help="Policy type: act or smolvla")
     p.add_argument("--policy.repo_id", default="zonglin11/humanalite_act_demo_policy")
     p.add_argument("--policy.device", default="cuda")
     # rollout
@@ -92,6 +93,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--fps", type=int, default=30)
     # display
     p.add_argument("--no-display", action="store_true", help="skip rerun visualization")
+    p.add_argument("--task", default="wave hello with both arms", help="Language instruction for SmolVLA (required for VLA policies)")
     p.add_argument("--save-video", default=None, help="save rollout video to this path")
     return p
 
@@ -106,23 +108,28 @@ def main():
         port3 = None
 
     cameras = build_cameras(d["robot.cameras"])
-    has_teleop = d["teleop.type"] is not None
+    has_teleop = d["teleop.type"] is not None and policy_type != "smolvla"
 
     print("=" * 60)
     print("HumanaLite ACT Policy Rollout")
-    print(f"  Model:     {d['policy.repo_id']}")
+    print(f"  Model:     {d['policy.repo_id']} ({d['policy.type'].upper()})")
     print(f"  Device:    {d['policy.device']}")
     print(f"  Cameras:   {list(cameras.keys())}")
     print(f"  Episodes:  {d['num_episodes']} x {d['duration']}s @ {d['fps']}Hz")
     print(f"  Teleop:    {'human override enabled' if has_teleop else 'policy only'}")
+    print(f"  Task:      \"{d.get('task', 'wave hello with both arms')}\"")
     print("=" * 60)
     print()
 
     # ── Load model ───────────────────────────────────────────────────
-    print("Loading ACT policy...")
-    policy = ACTPolicy.from_pretrained(d["policy.repo_id"])
-    # image_features is derived from input_features (saved in config.json),
-    # which already contains observation.images.{head,left_wrist,right_wrist}
+    policy_type = d.get("policy.type", "act")
+    print(f"Loading {policy_type.upper()} policy...")
+    if policy_type == "smolvla":
+        from lerobot.policies.smolvla.modeling_smolvla import SmolVLAPolicy
+        policy = SmolVLAPolicy.from_pretrained(d["policy.repo_id"])
+    else:
+        from lerobot.policies.act.modeling_act import ACTPolicy
+        policy = ACTPolicy.from_pretrained(d["policy.repo_id"])
     policy = policy.to(d["policy.device"])
     policy.eval()
     print(f"  Model loaded ({sum(p.numel() for p in policy.parameters())/1e6:.1f}M params)")
@@ -189,35 +196,35 @@ def main():
             # Keyboard state
             keys = _pressed.copy()
             override_enabled[0] = False
-            print("  Policy control active (press 'e' to override)")
+            print("  Policy control active (press 'e' to override)" if has_teleop else "  Running inference...")
+            episode_start = time.time()
 
             for step in range(int(d["duration"] * d["fps"])):
                 if quit_flag[0]:
                     break
+                t_start = time.perf_counter()
 
-                # Override toggle (rising edge detection)
-                prev_keys = keys.copy()
-                keys = _pressed.copy()
-                if "e" in keys and "e" not in prev_keys:
-                    override_enabled[0] = not override_enabled[0]
+                # Override: hold 'e' = override, release = policy
+                new_override = "e" in _pressed
+                if new_override != override_enabled[0]:
+                    override_enabled[0] = new_override
                     if override_enabled[0]:
                         print("  🟢 Override ON — arms from leader, head/lift/base from keyboard")
                     else:
-                        print("  🔴 Override OFF — policy controls all")
+                        print("  🔴 Override OFF — policy control")
                 obs = robot.get_observation()
-
-                # ── Policy inference ──────────────────────────────────
-                policy_obs = _build_policy_obs(obs, policy, cameras, d["policy.device"], robot)
-                with torch.no_grad():
-                    action_tensor = policy.select_action(policy_obs)
-                action_np = action_tensor.cpu().numpy().flatten()
 
                 # ── Apply action ──────────────────────────────────────
                 if override_enabled[0] and leader is not None:
-                    override = leader.get_action()
-                    robot.send_action(override)
-                    action_dict = override
+                    # Override: skip policy inference, use leader directly
+                    action_dict = leader.get_action()
+                    robot.send_action(action_dict)
                 else:
+                    # Policy inference (expensive for VLA models)
+                    policy_obs = _build_policy_obs(obs, policy, cameras, d["policy.device"], robot, task=d.get("task", ""))
+                    with torch.no_grad():
+                        action_tensor = policy.select_action(policy_obs)
+                    action_np = action_tensor.cpu().numpy().flatten()
                     action_dict = _action_to_dict(action_np, policy, robot)
                     robot.send_action(action_dict)
 
@@ -226,6 +233,13 @@ def main():
                     _log_rerun(obs, action_dict, step, ep)
 
                 time.sleep(1.0 / d["fps"])
+
+                # Progress display (every 30 steps)
+                if step % 30 == 0 and step > 0:
+                    elapsed = time.time() - episode_start
+                    fps_actual = (step + 1) / elapsed if elapsed > 0 else 0
+                    total_time = d["duration"] * d["fps"] / fps_actual if fps_actual > 0 else float("inf")
+                    print(f"  Step {step}/{int(d['duration'] * d['fps'])} | {fps_actual:.1f} fps | ETA: {total_time/60:.1f}min per episode")
 
             print(f"  Episode {ep + 1} complete")
             # stop motors between episodes
@@ -250,8 +264,8 @@ def main():
         print("Done")
 
 
-def _build_policy_obs(obs, policy, cameras, device, robot):
-    """Convert robot observation dict to ACT policy batch format."""
+def _build_policy_obs(obs, policy, cameras, device, robot, task: str = ""):
+    """Convert robot observation dict to policy batch format."""
     batch = {}
     # Images
     for cam_name in cameras:
@@ -260,13 +274,27 @@ def _build_policy_obs(obs, policy, cameras, device, robot):
             t = torch.from_numpy(np.ascontiguousarray(img.transpose(2, 0, 1))).float().unsqueeze(0) / 255.0
             batch[f"observation.images.{cam_name}"] = t.to(device)
 
-    # State: all non-camera observation features (same as training dataset)
+    # State
     state_keys = sorted([
         k for k in robot.observation_features
         if not k.startswith("observation.") and k not in cameras
     ])
     state_vals = [obs[k] for k in state_keys]
     batch["observation.state"] = torch.tensor([state_vals], dtype=torch.float32).to(device)
+
+    # SmolVLA: tokenize language instruction
+    if hasattr(policy.config, 'vlm_model_name') and policy.config.vlm_model_name:
+        from transformers import AutoProcessor
+        processor = AutoProcessor.from_pretrained(policy.config.vlm_model_name)
+        tokenized = processor.tokenizer(
+            task + "\n",
+            return_tensors="pt",
+            padding="max_length",
+            max_length=policy.config.tokenizer_max_length,
+            truncation=True,
+        )
+        batch["observation.language.tokens"] = tokenized["input_ids"].to(device)
+        batch["observation.language.attention_mask"] = tokenized["attention_mask"].bool().to(device)
 
     return batch
 
