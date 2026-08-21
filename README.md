@@ -63,9 +63,14 @@ examples/
 ## Quick Start
 
 ```bash
-# 1. Create a conda env and install HumanaOpen (editable)
-conda create -n lerobot python=3.12
-conda activate lerobot
+# 1. Create a conda env
+conda create -n humanaopen python=3.12
+conda activate humanaopen
+
+# 2. Install LeRobot (required dependency)
+pip install lerobot
+
+# 3. Install HumanaOpen (editable)
 cd /path/to/HumanaOpen
 pip install -e . --no-deps
 
@@ -75,7 +80,10 @@ pip install -e ".[smolvla]" 2>/dev/null || pip install transformers>=4.48 num2wo
 # Optional: GPU with CUDA 12.8+ (Blackwell / RTX 5060+)
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128
 
-# 2. Single-machine operation
+# 4. Verify installation
+python -c "from lerobot_robot_humanaopen import HumanaOpen, HumanaOpenConfig; print('✅ OK')"
+
+# 5. Single-machine operation
 python -c "
 from lerobot_robot_humanaopen import HumanaOpen, HumanaOpenConfig
 config = HumanaOpenConfig(port1='/dev/ttyACM0', port2='/dev/ttyACM1', port3=None, cameras={})
@@ -84,7 +92,7 @@ robot.connect()
 print(robot.get_observation().keys())
 "
 
-# 3. Dual-machine ZMQ mode (run on robot)
+# 6. Dual-machine ZMQ mode (run on robot)
 from lerobot_robot_humanaopen.humanaopen_host import HumanaOpenHost
 HumanaOpenHost(HumanaOpenConfig()).run()
 ```
