@@ -1,5 +1,7 @@
 # HumanaOpen
 
+[English](README.md) | [中文](README_zh.md) | [Français](README_fr.md) | [한국어](README_ko.md)
+
 **Open-source semi-humanoid robot — 7-DOF dual arms, differential drive, and leadscrew lift.**
 
 Built on [LeRobot](https://github.com/huggingface/lerobot) and
