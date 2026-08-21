@@ -1,4 +1,4 @@
-"""Keyboard teleoperation for a locally-connected HumanaLite.
+"""Keyboard teleoperation for a locally-connected HumanaOpen.
 
 Keys
 ----
@@ -12,13 +12,13 @@ import time
 
 import keyboard
 
-from lerobot_robot_humanalite import HumanaLite, HumanaLiteConfig
+from lerobot_robot_humanaopen import HumanaOpen, HumanaOpenConfig
 
 FPS = 50
 
 def main():
-    config = HumanaLiteConfig(port1="/dev/ttyACM0", port2="/dev/ttyACM1")
-    robot = HumanaLite(config)
+    config = HumanaOpenConfig(port1="/dev/ttyACM0", port2="/dev/ttyACM1")
+    robot = HumanaOpen(config)
     robot.connect(calibrate=True)
 
     speed_levels = [

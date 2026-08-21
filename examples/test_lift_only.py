@@ -11,7 +11,7 @@ import time
 from lerobot.motors.feetech import FeetechMotorsBus
 from lerobot.motors import Motor, MotorNormMode
 
-from lerobot_robot_humanalite.lift_axis import LiftAxisConfig, HumanaLiteLiftAxis
+from lerobot_robot_humanaopen.lift_axis import LiftAxisConfig, HumanaOpenLiftAxis
 
 # 只注册升降电机 — 右臂/轮子完全不碰
 bus = FeetechMotorsBus(
@@ -21,7 +21,7 @@ bus = FeetechMotorsBus(
 bus.connect()
 
 try:
-    lift = HumanaLiteLiftAxis(LiftAxisConfig(), bus)
+    lift = HumanaOpenLiftAxis(LiftAxisConfig(), bus)
     lift.attach()
     lift.configure()
 

@@ -1,4 +1,4 @@
-"""HumanaLite — Bimanual 7-DOF mobile robot with lift and differential drive."""
+"""HumanaOpen — Bimanual 7-DOF mobile robot with lift and differential drive."""
 
 from __future__ import annotations
 
@@ -17,8 +17,8 @@ from lerobot.robots.robot import Robot
 from lerobot.robots.utils import ensure_safe_goal_position
 from lerobot.utils.errors import DeviceAlreadyConnectedError, DeviceNotConnectedError
 
-from .config_humanalite import HumanaLiteConfig
-from .lift_axis import HumanaLiteLiftAxis
+from .config_humanaopen import HumanaOpenConfig
+from .lift_axis import HumanaOpenLiftAxis
 
 logger = logging.getLogger(__name__)
 
@@ -82,7 +82,7 @@ def _motor_specs(use_degrees: bool) -> dict[str, tuple[int, str, MotorNormMode]]
 # Robot class
 # ---------------------------------------------------------------------------
 
-class HumanaLite(Robot):
+class HumanaOpen(Robot):
     """7-DOF dual-arm semi-humanoid robot with differential drive and lift.
 
     Motor bus topology
@@ -101,10 +101,10 @@ class HumanaLite(Robot):
     All arms are 7-DOF (3 shoulder + 1 elbow + 1 forearm + 2 wrist) + 1 gripper.
     """
 
-    config_class = HumanaLiteConfig
-    name = "humanalite"
+    config_class = HumanaOpenConfig
+    name = "humanaopen"
 
-    def __init__(self, config: HumanaLiteConfig):
+    def __init__(self, config: HumanaOpenConfig):
         super().__init__(config)
         self.config = config
         self._motor_specs = _motor_specs(config.use_degrees)
@@ -173,7 +173,7 @@ class HumanaLite(Robot):
             # already set lift_bus = self.bus2 above
 
         # ── Lift Axis (always separate from the main feature dict) ──────
-        self.lift_axis = HumanaLiteLiftAxis(self.config.lift, lift_bus)
+        self.lift_axis = HumanaOpenLiftAxis(self.config.lift, lift_bus)
 
         # ── Motor-group listings (for sync_read/write) ──────────────────
         self.left_arm_motors = LEFT_ARM_JOINTS[:]
@@ -264,7 +264,7 @@ class HumanaLite(Robot):
 
         self.configure()
         logger.info(f"{self} connected.")
-        # 注册到全局表, 供 HumanaLiteTeleop 读取头部/升降初始位置 (record 场景)
+        # 注册到全局表, 供 HumanaOpenTeleop 读取头部/升降初始位置 (record 场景)
         try:
             from .leader import register_robot
             register_robot(self)

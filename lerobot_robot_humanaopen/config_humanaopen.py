@@ -1,4 +1,4 @@
-"""HumanaLite robot configuration."""
+"""HumanaOpen robot configuration."""
 
 from __future__ import annotations
 
@@ -54,10 +54,10 @@ def chest_camera() -> OpenCVCameraConfig:
     )
 
 
-@RobotConfig.register_subclass("humanalite")
+@RobotConfig.register_subclass("humanaopen")
 @dataclass
-class HumanaLiteConfig(RobotConfig):
-    """Configuration for the HumanaLite semi-humanoid robot.
+class HumanaOpenConfig(RobotConfig):
+    """Configuration for the HumanaOpen semi-humanoid robot.
 
     Follower motors (12V — all ST3215 C018 except lift uses ST3250):
 
@@ -138,7 +138,7 @@ class HumanaLiteConfig(RobotConfig):
     # 默认启用零位持久化: home 后保存绝对位置, 后续连接免归零恢复.
     lift: LiftAxisConfig = field(
         default_factory=lambda: LiftAxisConfig(
-            zero_file=os.path.expanduser("~/.cache/humanalite/lift_zero.json")
+            zero_file=os.path.expanduser("~/.cache/humanaopen/lift_zero.json")
         )
     )
 
@@ -163,7 +163,7 @@ class HumanaLiteConfig(RobotConfig):
 # ---------------------------------------------------------------------------
 
 @dataclass
-class HumanaLiteHostConfig:
+class HumanaOpenHostConfig:
     """Configuration for the robot-side ZMQ host process."""
 
     port_zmq_cmd: int = 5555
@@ -173,9 +173,9 @@ class HumanaLiteHostConfig:
     max_loop_freq_hz: int = 30
 
 
-@RobotConfig.register_subclass("humanalite_client")
+@RobotConfig.register_subclass("humanaopen_client")
 @dataclass
-class HumanaLiteClientConfig(RobotConfig):
+class HumanaOpenClientConfig(RobotConfig):
     """Configuration for the teleoperation-side ZMQ client."""
 
     remote_ip: str = "127.0.0.1"

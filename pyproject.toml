@@ -3,12 +3,12 @@ requires = ["setuptools>=64"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-include = ["lerobot_robot_humanalite"]
+include = ["lerobot_robot_humanaopen"]
 
 [project]
-name = "lerobot-robot-humanalite"
+name = "lerobot-robot-humanaopen"
 version = "0.1.0"
-description = "HumanaLite — open-source semi-humanoid robot for LeRobot"
+description = "HumanaOpen — open-source semi-humanoid robot for LeRobot"
 requires-python = ">=3.10"
 dependencies = [
     "numpy",
@@ -16,5 +16,5 @@ dependencies = [
 ]
 
 [project.entry-points."lerobot.robots"]
-humanalite = "lerobot_robot_humanalite:HumanaLite"
-humanalite_client = "lerobot_robot_humanalite:HumanaLiteClientConfig"
+humanaopen = "lerobot_robot_humanaopen:HumanaOpen"
+humanaopen_client = "lerobot_robot_humanaopen:HumanaOpenClientConfig"

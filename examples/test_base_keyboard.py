@@ -26,7 +26,7 @@ import threading
 
 from pynput import keyboard
 
-from lerobot_robot_humanalite import HumanaLite, HumanaLiteConfig
+from lerobot_robot_humanaopen import HumanaOpen, HumanaOpenConfig
 
 FPS = 30
 
@@ -68,7 +68,7 @@ class KeyState:
 
 
 def main():
-    config = HumanaLiteConfig(
+    config = HumanaOpenConfig(
         port1="/dev/ttyACM0",
         port2="/dev/ttyACM1",
         port3=None,
@@ -77,7 +77,7 @@ def main():
         # 左轮装反 → 取反使两轮同向 (万向轮卡住曾干扰判断)
         wheel_dir_signs={"base_left_wheel": -1, "base_right_wheel": 1},
     )
-    robot = HumanaLite(config)
+    robot = HumanaOpen(config)
     robot.connect(calibrate=False)
 
     keys = KeyState()

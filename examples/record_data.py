@@ -1,7 +1,7 @@
-"""Record episodes for HumanaLite — Python API with lerobot-record-style CLI args.
+"""Record episodes for HumanaOpen — Python API with lerobot-record-style CLI args.
 
 lerobot-record's CLI hardcodes the official robot types, so self-registered robots
-like `humanalite` are rejected ('invalid choice: humanalite'). This script calls
+like `humanaopen` are rejected ('invalid choice: humanaopen'). This script calls
 `record()` directly via the Python API after registering third-party plugins,
 while exposing the SAME argument names as lerobot-record (--robot.*, --teleop.*,
 --dataset.*) so nothing is hidden.
@@ -20,7 +20,7 @@ import argparse
 import json
 import sys
 
-sys.path.insert(0, "/home/zach/HumanaLite")
+sys.path.insert(0, "/home/zach/HumanaOpen")
 
 from lerobot.utils.import_utils import register_third_party_devices
 register_third_party_devices()  # must run before constructing configs
@@ -28,8 +28,8 @@ register_third_party_devices()  # must run before constructing configs
 from lerobot.cameras.opencv.configuration_opencv import OpenCVCameraConfig
 from lerobot.scripts.lerobot_record import DatasetRecordConfig, RecordConfig, record
 
-from lerobot_robot_humanalite.config_humanalite import HumanaLiteConfig
-from lerobot_robot_humanalite.leader import HumanaLiteTeleopConfig
+from lerobot_robot_humanaopen.config_humanaopen import HumanaOpenConfig
+from lerobot_robot_humanaopen.leader import HumanaOpenTeleopConfig
 
 # ── Default camera devices (tested) ─────────────────────────────────────
 # head/left_wrist/chest: MJPG 30fps; right_wrist: MJPG 25fps (hardware limit)
@@ -44,10 +44,10 @@ DEFAULT_CAMERAS_JSON = json.dumps(
 
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
-        description="Record HumanaLite episodes (Python API, lerobot-record-style args)"
+        description="Record HumanaOpen episodes (Python API, lerobot-record-style args)"
     )
     # --robot.*
-    p.add_argument("--robot.type", default="humanalite")
+    p.add_argument("--robot.type", default="humanaopen")
     p.add_argument("--robot.id", default="follower")
     p.add_argument("--robot.port1", default="/dev/ttyACM0")
     p.add_argument("--robot.port2", default="/dev/ttyACM1")
@@ -55,13 +55,13 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--robot.cameras", default=DEFAULT_CAMERAS_JSON, help='JSON dict of cameras, e.g. \'{"head": {...}}\'')
     p.add_argument("--robot.confirm_lift_after_home", default="true", choices=["true", "false"])
     # --teleop.*
-    p.add_argument("--teleop.type", default="humanalite_teleop")
+    p.add_argument("--teleop.type", default="humanaopen_teleop")
     p.add_argument("--teleop.left_arm_port", default="/dev/ttyACM2")
     p.add_argument("--teleop.right_arm_port", default="/dev/ttyACM3")
     p.add_argument("--teleop.flip_joints", default='{"left": [], "right": []}')
     p.add_argument("--teleop.joint_remap", default="{}")
     # --dataset.*
-    p.add_argument("--dataset.repo_id", default="zonglin11/humanalite_act_demo")
+    p.add_argument("--dataset.repo_id", default="zonglin11/humanaopen_act_demo")
     p.add_argument("--dataset.single_task", default="wave hello with both arms")
     p.add_argument("--dataset.num_episodes", type=int, default=2)
     p.add_argument("--dataset.episode_time_s", type=float, default=15.0)
@@ -142,7 +142,7 @@ def show_command(args) -> None:
         f"    --dataset.push_to_hub={args.__dict__.get('dataset.push_to_hub')}",
         "",
         "Note: the lerobot-record CLI hardcodes official robot types and rejects",
-        "'humanalite'; this script runs record() via the Python API with the same",
+        "'humanaopen'; this script runs record() via the Python API with the same",
         "parameters shown above.",
         "=" * 70,
     ]
@@ -187,7 +187,7 @@ def main():
     print()
 
     cfg = RecordConfig(
-        robot=HumanaLiteConfig(
+        robot=HumanaOpenConfig(
             id=d["robot.id"],
             port1=d["robot.port1"],
             port2=d["robot.port2"],
@@ -210,7 +210,7 @@ def main():
             private=_parse_bool(d["dataset.private"]),
             tags=d["dataset.tags"].split(",") if d["dataset.tags"] else None,
         ),
-        teleop=HumanaLiteTeleopConfig(
+        teleop=HumanaOpenTeleopConfig(
             id="leader",
             left_arm_port=d["teleop.left_arm_port"],
             right_arm_port=d["teleop.right_arm_port"],
@@ -224,7 +224,7 @@ def main():
     finally:
         # 保存升降最新位置, 下次连接免归零 (record 结束时升降可能已移动)
         try:
-            from lerobot_robot_humanalite.leader import get_connected_robot
+            from lerobot_robot_humanaopen.leader import get_connected_robot
             r = get_connected_robot()
             if r is not None:
                 r.lift_axis.save_zero()

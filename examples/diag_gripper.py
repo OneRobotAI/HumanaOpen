@@ -14,16 +14,16 @@
 import sys
 import time
 
-from lerobot_robot_humanalite.leader import BiHumanaLiteLeader, BiHumanaLiteLeaderConfig
+from lerobot_robot_humanaopen.leader import BiHumanaOpenLeader, BiHumanaOpenLeaderConfig
 
 side = sys.argv[1] if len(sys.argv) > 1 else "left"
 
-config = BiHumanaLiteLeaderConfig(
+config = BiHumanaOpenLeaderConfig(
     id="leader",
     left_arm_port="/dev/ttyACM2",
     right_arm_port="/dev/ttyACM3",
 )
-leader = BiHumanaLiteLeader(config)
+leader = BiHumanaOpenLeader(config)
 
 try:
     leader.connect(calibrate=False)

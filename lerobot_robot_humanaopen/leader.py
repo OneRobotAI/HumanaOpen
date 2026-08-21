@@ -1,4 +1,4 @@
-"""HumanaLite 主臂 (leader) teleoperator.
+"""HumanaOpen 主臂 (leader) teleoperator.
 
 主臂: open-arms-mini 结构, 7-DOF + 夹爪, STS3215 C046 (7.4V), 每臂 8 个舵机 (ID 1-8).
 
@@ -9,18 +9,18 @@
 - 方向翻转/腕部重映射参考官方 lerobot openarm_mini (同源硬件已验证).
 
 用法 (双臂):
-    from lerobot_robot_humanalite.leader import BiHumanaLiteLeader, BiHumanaLiteLeaderConfig
-    cfg = BiHumanaLiteLeaderConfig(
+    from lerobot_robot_humanaopen.leader import BiHumanaOpenLeader, BiHumanaOpenLeaderConfig
+    cfg = BiHumanaOpenLeaderConfig(
         id="leader",
         left_arm_port="/dev/ttyACM2",
         right_arm_port="/dev/ttyACM3",
     )
-    leader = BiHumanaLiteLeader(cfg)
+    leader = BiHumanaOpenLeader(cfg)
     leader.connect(calibrate=True)
 
 校准文件:
-    ~/.cache/huggingface/lerobot/calibration/teleoperators/humanalite_leader/{id}_left.json
-    ~/.cache/huggingface/lerobot/calibration/teleoperators/humanalite_leader/{id}_right.json
+    ~/.cache/huggingface/lerobot/calibration/teleoperators/humanaopen_leader/{id}_left.json
+    ~/.cache/huggingface/lerobot/calibration/teleoperators/humanaopen_leader/{id}_right.json
 """
 
 from __future__ import annotations
@@ -37,7 +37,7 @@ from lerobot.teleoperators.teleoperator import Teleoperator
 
 logger = logging.getLogger(__name__)
 
-# 全局已连接机器人注册表: HumanaLite.connect() 时注册, 供 HumanaLiteTeleop 读取
+# 全局已连接机器人注册表: HumanaOpen.connect() 时注册, 供 HumanaOpenTeleop 读取
 # 头部/升降初始位置 (record 场景下 teleop 无法直接拿到 robot 引用).
 _CONNECTED_ROBOTS: list[Any] = []
 
@@ -85,15 +85,15 @@ def register_keyboard_callback(callback) -> None:
 
 
 def get_connected_robot() -> Any | None:
-    """Return the most recently connected HumanaLite robot, or None."""
+    """Return the most recently connected HumanaOpen robot, or None."""
     return _CONNECTED_ROBOTS[-1] if _CONNECTED_ROBOTS else None
 
 
 def register_robot(robot: Any) -> None:
-    """Register a connected robot (called from HumanaLite.connect)."""
+    """Register a connected robot (called from HumanaOpen.connect)."""
     _CONNECTED_ROBOTS.append(robot)
 
-# 关节命名与从臂一致 (见 humanalite.py _make_arm_joint_names)
+# 关节命名与从臂一致 (见 humanaopen.py _make_arm_joint_names)
 JOINT_NAMES = [
     "shoulder_pan",
     "shoulder_lift",
@@ -119,9 +119,9 @@ DEFAULT_SIDE_MOTORS_TO_FLIP: dict[str, list[str]] = {
 DEFAULT_JOINT_REMAP = {"wrist_flex": "wrist_yaw", "wrist_yaw": "wrist_flex"}
 
 
-@TeleoperatorConfig.register_subclass("humanalite_leader")
+@TeleoperatorConfig.register_subclass("humanaopen_leader")
 @dataclass
-class HumanaLiteLeaderConfig(TeleoperatorConfig):
+class HumanaOpenLeaderConfig(TeleoperatorConfig):
     """单臂主臂配置.
 
     calibration_mode:
@@ -144,12 +144,12 @@ class HumanaLiteLeaderConfig(TeleoperatorConfig):
     joint_remap: dict[str, str] | None = None  # None → 用官方默认重映射
 
 
-@TeleoperatorConfig.register_subclass("bi_humanalite_leader")
+@TeleoperatorConfig.register_subclass("bi_humanaopen_leader")
 @dataclass
-class BiHumanaLiteLeaderConfig(TeleoperatorConfig):
+class BiHumanaOpenLeaderConfig(TeleoperatorConfig):
     """双臂主臂配置.
 
-    flip_joints / joint_remap: 透传给左右单臂, 见 HumanaLiteLeaderConfig.
+    flip_joints / joint_remap: 透传给左右单臂, 见 HumanaOpenLeaderConfig.
     """
 
     left_arm_port: str
@@ -158,9 +158,9 @@ class BiHumanaLiteLeaderConfig(TeleoperatorConfig):
     joint_remap: dict[str, str] | None = None  # None → 用官方默认重映射
 
 
-@TeleoperatorConfig.register_subclass("humanalite_teleop")
+@TeleoperatorConfig.register_subclass("humanaopen_teleop")
 @dataclass
-class HumanaLiteTeleopConfig(BiHumanaLiteLeaderConfig):
+class HumanaOpenTeleopConfig(BiHumanaOpenLeaderConfig):
     """全身遥操器配置 (双臂 + 键盘头部/升降/底盘, 21 DOF).
 
     robot: 可选从臂引用, 用于初始化头部/升降当前位置.
@@ -169,13 +169,13 @@ class HumanaLiteTeleopConfig(BiHumanaLiteLeaderConfig):
     robot: Any = None  # set at runtime by the record script
 
 
-class HumanaLiteLeader(Teleoperator):
-    """HumanaLite 单臂主臂 teleoperator (open-arms-mini, 7-DOF + gripper)."""
+class HumanaOpenLeader(Teleoperator):
+    """HumanaOpen 单臂主臂 teleoperator (open-arms-mini, 7-DOF + gripper)."""
 
-    config_class = HumanaLiteLeaderConfig
-    name = "humanalite_leader"
+    config_class = HumanaOpenLeaderConfig
+    name = "humanaopen_leader"
 
-    def __init__(self, config: HumanaLiteLeaderConfig):
+    def __init__(self, config: HumanaOpenLeaderConfig):
         super().__init__(config)
         self.config = config
 
@@ -358,21 +358,21 @@ class HumanaLiteLeader(Teleoperator):
         logger.info("%s disconnected.", self)
 
 
-class BiHumanaLiteLeader(Teleoperator):
-    """HumanaLite 双臂主臂 teleoperator — 组合左右两个单臂.
+class BiHumanaOpenLeader(Teleoperator):
+    """HumanaOpen 双臂主臂 teleoperator — 组合左右两个单臂.
 
-    输出动作带 left_arm_*/right_arm_* 前缀, 与从臂 HumanaLite 的 action/observation 命名一致,
+    输出动作带 left_arm_*/right_arm_* 前缀, 与从臂 HumanaOpen 的 action/observation 命名一致,
     可直接喂给 follower.send_action().
     """
 
-    config_class = BiHumanaLiteLeaderConfig
-    name = "bi_humanalite_leader"
+    config_class = BiHumanaOpenLeaderConfig
+    name = "bi_humanaopen_leader"
 
-    def __init__(self, config: BiHumanaLiteLeaderConfig):
+    def __init__(self, config: BiHumanaOpenLeaderConfig):
         super().__init__(config)
         self.config = config
 
-        left_config = HumanaLiteLeaderConfig(
+        left_config = HumanaOpenLeaderConfig(
             id=f"{config.id}_left" if config.id else None,
             calibration_dir=config.calibration_dir,
             port=config.left_arm_port,
@@ -380,7 +380,7 @@ class BiHumanaLiteLeader(Teleoperator):
             flip_joints=config.flip_joints,
             joint_remap=config.joint_remap,
         )
-        right_config = HumanaLiteLeaderConfig(
+        right_config = HumanaOpenLeaderConfig(
             id=f"{config.id}_right" if config.id else None,
             calibration_dir=config.calibration_dir,
             port=config.right_arm_port,
@@ -389,8 +389,8 @@ class BiHumanaLiteLeader(Teleoperator):
             joint_remap=config.joint_remap,
         )
 
-        self.left_arm = HumanaLiteLeader(left_config)
-        self.right_arm = HumanaLiteLeader(right_config)
+        self.left_arm = HumanaOpenLeader(left_config)
+        self.right_arm = HumanaOpenLeader(right_config)
 
     @property
     def action_features(self) -> dict[str, type]:
@@ -454,12 +454,12 @@ class BiHumanaLiteLeader(Teleoperator):
         logger.info("%s disconnected.", self)
 
 
-class HumanaLiteTeleop(BiHumanaLiteLeader):
+class HumanaOpenTeleop(BiHumanaOpenLeader):
     """Full-body teleoperator: leader arms + keyboard for head/lift/base.
 
-    Extends BiHumanaLiteLeader so the action dict includes all 21 DOF
+    Extends BiHumanaOpenLeader so the action dict includes all 21 DOF
     (16 arm joints + head_pan/head_tilt + x.vel/theta.vel + lift height),
-    matching HumanaLite's full action_features — required for data
+    matching HumanaOpen's full action_features — required for data
     collection where every DOF is recorded for training.
 
     Head/lift/base are driven by keyboard (same keys as the teleop script)
@@ -477,7 +477,7 @@ class HumanaLiteTeleop(BiHumanaLiteLeader):
     LIFT_MAX_MM = 200.0
     FPS = 30
 
-    def __init__(self, config: BiHumanaLiteLeaderConfig, robot=None):
+    def __init__(self, config: BiHumanaOpenLeaderConfig, robot=None):
         super().__init__(config)
         self._robot = robot
         self._head_pan = 0.0

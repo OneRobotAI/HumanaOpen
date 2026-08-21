@@ -23,14 +23,14 @@
 
 import time
 
-from lerobot_robot_humanalite import HumanaLite, HumanaLiteConfig
-from lerobot_robot_humanalite.leader import (
-    BiHumanaLiteLeader,
-    BiHumanaLiteLeaderConfig,
+from lerobot_robot_humanaopen import HumanaOpen, HumanaOpenConfig
+from lerobot_robot_humanaopen.leader import (
+    BiHumanaOpenLeader,
+    BiHumanaOpenLeaderConfig,
     JOINT_NAMES,
 )
 
-follower_cfg = HumanaLiteConfig(
+follower_cfg = HumanaOpenConfig(
     id="follower",
     port1="/dev/ttyACM0",
     port2="/dev/ttyACM1",
@@ -40,16 +40,16 @@ follower_cfg = HumanaLiteConfig(
 )
 
 # 诊断模式: 无翻转、无重映射, 用原始 1:1 映射
-leader_cfg = BiHumanaLiteLeaderConfig(
+leader_cfg = BiHumanaOpenLeaderConfig(
     id="leader",
     left_arm_port="/dev/ttyACM2",
     right_arm_port="/dev/ttyACM3",
     # flip_joints / joint_remap 不传 → 默认官方表; 诊断时需原始映射, 见下方构造
 )
 
-follower = HumanaLite(follower_cfg)
+follower = HumanaOpen(follower_cfg)
 # 手动构造 leader: 用空翻转表和空重映射
-leader_left = BiHumanaLiteLeader(leader_cfg)
+leader_left = BiHumanaOpenLeader(leader_cfg)
 # 强制原始映射: 清空翻转和重映射
 for arm in (leader_left.left_arm, leader_left.right_arm):
     arm._motors_to_flip = []

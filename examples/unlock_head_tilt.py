@@ -18,7 +18,7 @@ import sys
 import time
 import builtins
 
-sys.path.insert(0, "/home/zach/HumanaLite")
+sys.path.insert(0, "/home/zach/HumanaOpen")
 from lerobot.motors.feetech import FeetechMotorsBus
 from lerobot.motors import Motor, MotorNormMode
 

@@ -12,17 +12,17 @@
 - 主臂: STS3215 C046 (7.4V), 左右各 8 舵机 (ID 1-8), 结构与从臂一致
 - 左臂接 /dev/ttyACM2, 右臂接 /dev/ttyACM3 (按实际调整)
 - 校准文件:
-    ~/.cache/huggingface/lerobot/calibration/teleoperators/humanalite_leader/leader_left.json
-    ~/.cache/huggingface/lerobot/calibration/teleoperators/humanalite_leader/leader_right.json
+    ~/.cache/huggingface/lerobot/calibration/teleoperators/humanaopen_leader/leader_left.json
+    ~/.cache/huggingface/lerobot/calibration/teleoperators/humanaopen_leader/leader_right.json
 - 关节命名与从臂一致 (left_arm_*/right_arm_*), 遥操时 get_action() 可直接喂给 follower.send_action()
 
 用法:
     python3 examples/calibrate_leader.py
 """
 
-from lerobot_robot_humanalite.leader import BiHumanaLiteLeader, BiHumanaLiteLeaderConfig
+from lerobot_robot_humanaopen.leader import BiHumanaOpenLeader, BiHumanaOpenLeaderConfig
 
-config = BiHumanaLiteLeaderConfig(
+config = BiHumanaOpenLeaderConfig(
     id="leader",                # 主臂校准文件名 (leader_left/leader_right.json)
     left_arm_port="/dev/ttyACM2",
     right_arm_port="/dev/ttyACM3",
@@ -30,7 +30,7 @@ config = BiHumanaLiteLeaderConfig(
 )
 
 print("=" * 55)
-print("HumanaLite leader calibration (dual-arm, records real ranges)")
+print("HumanaOpen leader calibration (dual-arm, records real ranges)")
 print("=" * 55)
 print("Per arm:")
 print("  1. Arm hanging straight down + gripper closed -> ENTER (zero pose)")
@@ -42,7 +42,7 @@ print("Note: leader runs at 7.4V, torque released during calibration, arms move 
 print("=" * 55)
 print()
 
-leader = BiHumanaLiteLeader(config)
+leader = BiHumanaOpenLeader(config)
 try:
     leader.connect(calibrate=True)
     print()

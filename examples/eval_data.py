@@ -1,4 +1,4 @@
-"""Rollout an ACT policy on a real HumanaLite robot.
+"""Rollout an ACT policy on a real HumanaOpen robot.
 
 Records observations, runs the policy, and sends actions at 30Hz.
 The robot's cameras and state are fed to the ACT model which predicts
@@ -7,14 +7,14 @@ next chunk is predicted on the new observation.
 
 Usage:
     python3 examples/eval_data.py \
-        --policy.repo_id=zonglin11/humanalite_act_demo_policy \
-        --robot.type=humanalite
+        --policy.repo_id=zonglin11/humanaopen_act_demo_policy \
+        --robot.type=humanaopen
 
     # With human teleop as safety override (hold keys to override policy):
     python3 examples/eval_data.py \
-        --policy.repo_id=zonglin11/humanalite_act_demo_policy \
-        --robot.type=humanalite \
-        --teleop.type=humanalite_teleop \
+        --policy.repo_id=zonglin11/humanaopen_act_demo_policy \
+        --robot.type=humanaopen \
+        --teleop.type=humanaopen_teleop \
         --teleop.left_arm_port=/dev/ttyACM2 --teleop.right_arm_port=/dev/ttyACM3 \
         --teleop.flip_joints='{"left": [], "right": []}' --teleop.joint_remap='{}' \
         --num-episodes=5 --duration=30
@@ -32,7 +32,7 @@ import numpy as np
 import torch
 import rerun as rr
 
-sys.path.insert(0, "/home/zach/HumanaLite")
+sys.path.insert(0, "/home/zach/HumanaOpen")
 
 from lerobot.utils.import_utils import register_third_party_devices
 register_third_party_devices()
@@ -40,9 +40,9 @@ register_third_party_devices()
 from lerobot.cameras.opencv.configuration_opencv import OpenCVCameraConfig
 from lerobot.policies.act.modeling_act import ACTPolicy
 
-from lerobot_robot_humanalite.config_humanalite import HumanaLiteConfig
-from lerobot_robot_humanalite.humanalite import HumanaLite
-from lerobot_robot_humanalite.leader import HumanaLiteTeleop, HumanaLiteTeleopConfig
+from lerobot_robot_humanaopen.config_humanaopen import HumanaOpenConfig
+from lerobot_robot_humanaopen.humanaopen import HumanaOpen
+from lerobot_robot_humanaopen.leader import HumanaOpenTeleop, HumanaOpenTeleopConfig
 
 # ── Default camera devices ──────────────────────────────────────────────
 DEFAULT_CAMERAS_JSON = json.dumps(
@@ -69,9 +69,9 @@ def build_cameras(json_str: str) -> dict:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(description="Rollout ACT policy on HumanaLite")
+    p = argparse.ArgumentParser(description="Rollout ACT policy on HumanaOpen")
     # --robot.*
-    p.add_argument("--robot.type", default="humanalite")
+    p.add_argument("--robot.type", default="humanaopen")
     p.add_argument("--robot.id", default="follower")
     p.add_argument("--robot.port1", default="/dev/ttyACM0")
     p.add_argument("--robot.port2", default="/dev/ttyACM1")
@@ -85,7 +85,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--teleop.joint_remap", default="{}")
     # --policy.*
     p.add_argument("--policy.type", default="act", choices=["act", "smolvla"], help="Policy type: act or smolvla")
-    p.add_argument("--policy.repo_id", default="zonglin11/humanalite_act_demo_policy")
+    p.add_argument("--policy.repo_id", default="zonglin11/humanaopen_act_demo_policy")
     p.add_argument("--policy.device", default="cuda")
     # rollout
     p.add_argument("--num-episodes", type=int, default=5)
@@ -111,7 +111,7 @@ def main():
     has_teleop = d["teleop.type"] is not None and policy_type != "smolvla"
 
     print("=" * 60)
-    print("HumanaLite ACT Policy Rollout")
+    print("HumanaOpen ACT Policy Rollout")
     print(f"  Model:     {d['policy.repo_id']} ({d['policy.type'].upper()})")
     print(f"  Device:    {d['policy.device']}")
     print(f"  Cameras:   {list(cameras.keys())}")
@@ -136,7 +136,7 @@ def main():
 
     # ── Connect robot ────────────────────────────────────────────────
     print("Connecting robot...")
-    robot = HumanaLite(HumanaLiteConfig(
+    robot = HumanaOpen(HumanaOpenConfig(
         id=d["robot.id"],
         port1=d["robot.port1"],
         port2=d["robot.port2"],
@@ -150,7 +150,7 @@ def main():
     leader = None
     if has_teleop:
         print("Connecting teleop...")
-        leader = HumanaLiteTeleop(HumanaLiteTeleopConfig(
+        leader = HumanaOpenTeleop(HumanaOpenTeleopConfig(
             id="leader",
             left_arm_port=d["teleop.left_arm_port"],
             right_arm_port=d["teleop.right_arm_port"],
@@ -163,13 +163,13 @@ def main():
     # ── Rerun display ────────────────────────────────────────────────
     if not args.no_display:
         try:
-            rr.init("humanalite_rollout", spawn=True)
+            rr.init("humanaopen_rollout", spawn=True)
             print("  Rerun viewer started")
         except Exception as e:
             print(f"  ⚠️ Rerun unavailable: {e}")
 
     # ── Keyboard listener ────────────────────────────────────────────
-    from lerobot_robot_humanalite.leader import register_keyboard_callback
+    from lerobot_robot_humanaopen.leader import register_keyboard_callback
 
     override_enabled = [False]
     quit_flag = [False]

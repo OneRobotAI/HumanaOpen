@@ -17,10 +17,10 @@ import sys
 import time
 import builtins
 
-sys.path.insert(0, "/home/zach/HumanaLite")
-from lerobot_robot_humanalite import HumanaLite, HumanaLiteConfig
+sys.path.insert(0, "/home/zach/HumanaOpen")
+from lerobot_robot_humanaopen import HumanaOpen, HumanaOpenConfig
 
-robot = HumanaLite(HumanaLiteConfig(
+robot = HumanaOpen(HumanaOpenConfig(
     id="follower", port1="/dev/ttyACM0", port2="/dev/ttyACM1",
     port3=None, cameras={}, home_lift_on_connect=False,
 ))

@@ -7,7 +7,7 @@
 4. 右转: 左轮正转 + 右轮反转
 
 说明:
-- 用 HumanaLite 类, 走真实 send_action 差速解算链路 (x.vel/theta.vel → 轮子 raw)
+- 用 HumanaOpen 类, 走真实 send_action 差速解算链路 (x.vel/theta.vel → 轮子 raw)
 - 轮速反馈直接读 bus2 的 Present_Velocity (不需要校准)
 - 不读 get_observation() (它会读手臂位置, 未校准时会报错)
 - Ctrl+C 紧急停止
@@ -19,10 +19,10 @@
 
 import time
 
-from lerobot_robot_humanalite import HumanaLite, HumanaLiteConfig
+from lerobot_robot_humanaopen import HumanaOpen, HumanaOpenConfig
 
 # 2 总线模式: 左臂+头 / 右臂+升降+轮子
-config = HumanaLiteConfig(
+config = HumanaOpenConfig(
     port1="/dev/ttyACM0",
     port2="/dev/ttyACM1",
     port3=None,
@@ -30,7 +30,7 @@ config = HumanaLiteConfig(
     home_lift_on_connect=False,  # 测底盘, 跳过升降归零
 )
 
-robot = HumanaLite(config)
+robot = HumanaOpen(config)
 
 
 def read_wheel_raw() -> dict[str, int]:

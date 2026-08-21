@@ -9,12 +9,12 @@
 import sys
 import time
 
-from lerobot_robot_humanalite import HumanaLite, HumanaLiteConfig
+from lerobot_robot_humanaopen import HumanaOpen, HumanaOpenConfig
 
 side = sys.argv[1] if len(sys.argv) > 1 else "left"
 gripper_name = f"{side}_arm_gripper"
 
-config = HumanaLiteConfig(
+config = HumanaOpenConfig(
     id="follower",
     port1="/dev/ttyACM0",
     port2="/dev/ttyACM1",
@@ -22,7 +22,7 @@ config = HumanaLiteConfig(
     cameras={},
     home_lift_on_connect=False,
 )
-robot = HumanaLite(config)
+robot = HumanaOpen(config)
 
 try:
     robot.connect(calibrate=False)

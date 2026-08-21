@@ -1,4 +1,4 @@
-# HumanaLite
+# HumanaOpen
 
 **Open-source semi-humanoid robot — 7-DOF dual arms, differential drive, and leadscrew lift.**
 
@@ -25,14 +25,14 @@ Built on [LeRobot](https://github.com/huggingface/lerobot) and
 ## Software
 
 ```
-lerobot_robot_humanalite/
+lerobot_robot_humanaopen/
 ├── __init__.py              # Package exports
-├── config_humanalite.py     # HumanaLiteConfig, host/client configs
-├── humanalite.py            # HumanaLite Robot class (follower)
+├── config_humanaopen.py     # HumanaOpenConfig, host/client configs
+├── humanaopen.py            # HumanaOpen Robot class (follower)
 ├── lift_axis.py             # Lift axis with stall-detection homing
 ├── leader.py                # Leader teleoperator (single/bimanual)
-├── humanalite_host.py       # ZMQ host (robot-side, for dual-machine mode)
-└── humanalite_client.py     # ZMQ client (teleop-side)
+├── humanaopen_host.py       # ZMQ host (robot-side, for dual-machine mode)
+└── humanaopen_client.py     # ZMQ client (teleop-side)
 examples/
 ├── record_data.py              # Data collection (Python API, all parameters)
 ├── eval_data.py                # Inference (ACT policy rollout)
@@ -63,10 +63,10 @@ examples/
 ## Quick Start
 
 ```bash
-# 1. Create a conda env and install HumanaLite (editable)
+# 1. Create a conda env and install HumanaOpen (editable)
 conda create -n lerobot python=3.12
 conda activate lerobot
-cd /path/to/HumanaLite
+cd /path/to/HumanaOpen
 pip install -e . --no-deps
 
 # Optional: install SmolVLA dependencies (transformers, num2words)
@@ -77,16 +77,16 @@ pip install torch torchvision torchaudio --index-url https://download.pytorch.or
 
 # 2. Single-machine operation
 python -c "
-from lerobot_robot_humanalite import HumanaLite, HumanaLiteConfig
-config = HumanaLiteConfig(port1='/dev/ttyACM0', port2='/dev/ttyACM1', port3=None, cameras={})
-robot = HumanaLite(config)
+from lerobot_robot_humanaopen import HumanaOpen, HumanaOpenConfig
+config = HumanaOpenConfig(port1='/dev/ttyACM0', port2='/dev/ttyACM1', port3=None, cameras={})
+robot = HumanaOpen(config)
 robot.connect()
 print(robot.get_observation().keys())
 "
 
 # 3. Dual-machine ZMQ mode (run on robot)
-from lerobot_robot_humanalite.humanalite_host import HumanaLiteHost
-HumanaLiteHost(HumanaLiteConfig()).run()
+from lerobot_robot_humanaopen.humanaopen_host import HumanaOpenHost
+HumanaOpenHost(HumanaOpenConfig()).run()
 ```
 
 ## Teleoperation
@@ -139,7 +139,7 @@ at 640x480 (v4l2-ctl verified) — keep its `fps=25` in config or connect fails.
 The lift is a 12-bit single-turn encoder (4096 ticks/rev) driving a leadscrew
 (25 revs = 200mm). Absolute position is tracked in software via multi-turn wrap
 tracking. Because the leadscrew is self-locking, the mechanical position survives
-power cycles — so the zero position is persisted to `~/.cache/humanalite/lift_zero.json`
+power cycles — so the zero position is persisted to `~/.cache/humanaopen/lift_zero.json`
 and restored on the next connect, **skipping re-homing**:
 
 - First connect: homes to the bottom (stall detection), saves the zero.
@@ -165,12 +165,12 @@ The head tilt servo had its EPROM position limits baked to [1430, 2096] (~58°),
 which the calibration file copied — limiting tilt to -54°/+4°. Writing
 `Min=0 / Max=4095` unlocks the mechanical range [1367, 2242] (-61.6°/+17.1°):
 `examples/unlock_head_tilt.py --probe`. After unlocking, the calibration file
-(`~/.cache/huggingface/lerobot/calibration/robots/humanalite/follower.json`) was
+(`~/.cache/huggingface/lerobot/calibration/robots/humanaopen/follower.json`) was
 updated to the real range.
 
 ## Data Collection
 
-The `lerobot-record` CLI hardcodes official robot types and rejects `humanalite`
+The `lerobot-record` CLI hardcodes official robot types and rejects `humanaopen`
 as an unrecognized choice. Use the Python API wrapper `examples/record_data.py`
 instead — it exposes the **same parameter names** as `lerobot-record` and prints
 the equivalent CLI command on startup for reference.
@@ -179,19 +179,19 @@ the equivalent CLI command on startup for reference.
 
 ```bash
 python3 examples/record_data.py \
-    --robot.type=humanalite \
+    --robot.type=humanaopen \
     --robot.id=follower \
     --robot.port1=/dev/ttyACM0 \
     --robot.port2=/dev/ttyACM1 \
     --robot.port3=None \
     --robot.cameras='{"head": {"type": "opencv", "index_or_path": "/dev/video0", "width": 640, "height": 480, "fps": 30, "fourcc": "MJPG"}, "left_wrist": {"type": "opencv", "index_or_path": "/dev/video2", "width": 640, "height": 480, "fps": 30, "fourcc": "MJPG"}, "right_wrist": {"type": "opencv", "index_or_path": "/dev/video4", "width": 640, "height": 480, "fps": 25, "fourcc": "MJPG"}}' \
     --robot.confirm_lift_after_home=true \
-    --teleop.type=humanalite_teleop \
+    --teleop.type=humanaopen_teleop \
     --teleop.left_arm_port=/dev/ttyACM2 \
     --teleop.right_arm_port=/dev/ttyACM3 \
     --teleop.flip_joints='{"left": [], "right": []}' \
     --teleop.joint_remap='{}' \
-    --dataset.repo_id=your-name/humanalite_demo \
+    --dataset.repo_id=your-name/humanaopen_demo \
     --dataset.single_task="describe your task" \
     --dataset.num_episodes=2 \
     --dataset.episode_time_s=15 \
@@ -222,14 +222,14 @@ Same as above, but replace the `--robot.cameras` JSON to include chest:
 | Record | `C` start, `Q` quit, `A` re-record episode |
 | Confirm | After homing, hold `u`/`h` to position, `ENTER` to confirm |
 
-The `--teleop.type=humanalite_teleop` teleoperator records **all 21 DOF** — the
+The `--teleop.type=humanaopen_teleop` teleoperator records **all 21 DOF** — the
 leader arms (16 joints) plus keyboard-controlled head/lift/base (5 DOF). Both are
 saved into the dataset for ACT training.
 
 ### Lift behavior during recording
 
 - On first connect: lift **homes to bottom** (stall detection), saves the zero
-  position to `~/.cache/humanalite/lift_zero.json`.
+  position to `~/.cache/humanaopen/lift_zero.json`.
 - On subsequent connects: lift **restores the saved position** (no homing needed),
   unless the position changed (manual push → restore fails → auto-home).
 - After homing: keyboard hold `u`/`h` adjusts height with safety limits
@@ -240,7 +240,7 @@ saved into the dataset for ACT training.
 If a dataset directory already exists from a previous run, delete it or resume:
 
 ```bash
-rm -rf ~/.cache/huggingface/lerobot/your-name/humanalite_demo    # fresh start
+rm -rf ~/.cache/huggingface/lerobot/your-name/humanaopen_demo    # fresh start
 # or add --dataset.resume=true to the record_data.py command     # continue from last episode
 ```
 
@@ -254,9 +254,9 @@ lerobot-train \
     --policy.type=act \
     --policy.device=cuda \
     --policy.push_to_hub=true \
-    --policy.repo_id=your-name/humanalite_act_policy \
-    --dataset.repo_id=your-name/humanalite_act_demo \
-    --output_dir=outputs/humanalite_act_demo \
+    --policy.repo_id=your-name/humanaopen_act_policy \
+    --dataset.repo_id=your-name/humanaopen_act_demo \
+    --output_dir=outputs/humanaopen_act_demo \
     --batch_size=3 \
     --steps=5
 
@@ -265,9 +265,9 @@ lerobot-train \
     --policy.type=act \
     --policy.device=cuda \
     --policy.push_to_hub=true \
-    --policy.repo_id=your-name/humanalite_act_policy \
-    --dataset.repo_id=your-name/humanalite_act_demo \
-    --output_dir=outputs/humanalite_act_demo \
+    --policy.repo_id=your-name/humanaopen_act_policy \
+    --dataset.repo_id=your-name/humanaopen_act_demo \
+    --output_dir=outputs/humanaopen_act_demo \
     --batch_size=32 \
     --steps=50000
 ```
@@ -283,9 +283,9 @@ lerobot-train \
     --policy.type=smolvla \
     --policy.device=cuda \
     --policy.push_to_hub=true \
-    --policy.repo_id=your-name/humanalite_smolvla_policy \
-    --dataset.repo_id=your-name/humanalite_act_demo \
-    --output_dir=outputs/humanalite_smolvla_demo \
+    --policy.repo_id=your-name/humanaopen_smolvla_policy \
+    --dataset.repo_id=your-name/humanaopen_act_demo \
+    --output_dir=outputs/humanaopen_smolvla_demo \
     --batch_size=4 \
     --steps=20
 ```
@@ -310,14 +310,14 @@ lerobot-train \
 ### Outputs
 
 ```
-outputs/humanalite_act_demo/
+outputs/humanaopen_act_demo/
 ├── pretrained_model/           # Full model (config + weights)
 ├── last/pretrained_model       # Latest checkpoint
 ├── train_logs/                 # Training metrics (TensorBoard-compatible)
 └── training_state.json         # Optimizer/scheduler state for resume
 ```
 
-The pushed model will be at `https://huggingface.co/your-name/humanalite_act_policy`.
+The pushed model will be at `https://huggingface.co/your-name/humanaopen_act_policy`.
 
 ## Inference (Deployment)
 
@@ -329,15 +329,15 @@ The pushed model will be at `https://huggingface.co/your-name/humanalite_act_pol
 ```bash
 python3 examples/eval_data.py \
     --policy.type=act \
-    --policy.repo_id=your-name/humanalite_act_policy \
+    --policy.repo_id=your-name/humanaopen_act_policy \
     --policy.device=cuda \
-    --robot.type=humanalite \
+    --robot.type=humanaopen \
     --robot.id=follower \
     --robot.port1=/dev/ttyACM0 \
     --robot.port2=/dev/ttyACM1 \
     --robot.port3=None \
     --robot.cameras='{"head": {"type": "opencv", "index_or_path": "/dev/video0", "width": 640, "height": 480, "fps": 30, "fourcc": "MJPG"}, "left_wrist": {"type": "opencv", "index_or_path": "/dev/video2", "width": 640, "height": 480, "fps": 30, "fourcc": "MJPG"}, "right_wrist": {"type": "opencv", "index_or_path": "/dev/video4", "width": 640, "height": 480, "fps": 25, "fourcc": "MJPG"}}' \
-    --teleop.type=humanalite_teleop \
+    --teleop.type=humanaopen_teleop \
     --teleop.left_arm_port=/dev/ttyACM2 \
     --teleop.right_arm_port=/dev/ttyACM3 \
     --teleop.flip_joints='{"left": [], "right": []}' \
@@ -352,10 +352,10 @@ python3 examples/eval_data.py \
 ```bash
 python3 examples/eval_data.py \
     --policy.type=smolvla \
-    --policy.repo_id=your-name/humanalite_smolvla_policy \
+    --policy.repo_id=your-name/humanaopen_smolvla_policy \
     --policy.device=cuda \
     --task="wave hello with both arms" \
-    --robot.type=humanalite \
+    --robot.type=humanaopen \
     --robot.id=follower \
     --robot.port1=/dev/ttyACM0 \
     --robot.port2=/dev/ttyACM1 \

@@ -1,4 +1,4 @@
-"""Lift axis module for HumanaLite — linear leadscrew with stall-detection homing."""
+"""Lift axis module for HumanaOpen — linear leadscrew with stall-detection homing."""
 
 from __future__ import annotations
 
@@ -101,7 +101,7 @@ class LiftAxisConfig:
             raise ValueError(f"soft_max_mm={self.soft_max_mm} seems excessive; check units (mm).")
 
 
-class HumanaLiteLiftAxis:
+class HumanaOpenLiftAxis:
     """Linear lift axis driven by a Feetech servo + leadscrew + timing belt.
 
     Key features

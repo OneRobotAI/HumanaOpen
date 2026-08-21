@@ -1,10 +1,10 @@
-# HumanaLite 完整入门教程
+# HumanaOpen 完整入门教程
 
-本手册面向第一次接触 HumanaLite 的开发者，从零开始安装环境、接线、测试电机、校准、采集数据、训练模型到部署，全部步骤都经过本项目的实际测试验证。文中所有参数以代码为准（`config_humanalite.py` 和 `lift_axis.py`），凡标注 ⚠️ 的地方都是实际踩过的坑，请务必留意。
+本手册面向第一次接触 HumanaOpen 的开发者，从零开始安装环境、接线、测试电机、校准、采集数据、训练模型到部署，全部步骤都经过本项目的实际测试验证。文中所有参数以代码为准（`config_humanaopen.py` 和 `lift_axis.py`），凡标注 ⚠️ 的地方都是实际踩过的坑，请务必留意。
 
 ## 概述
 
-HumanaLite 是一款基于 LeRobot 的开源半人形机器人，拥有：
+HumanaOpen 是一款基于 LeRobot 的开源半人形机器人，拥有：
 
 - **双臂**：2 × 7 自由度 + 夹爪（各 8 个 ST3215 C018 舵机）
 - **头部**：2 自由度（ST3215 C018 舵机 × 2）
@@ -80,7 +80,7 @@ conda activate lerobot
 
 ### 2.2 安装 lerobot（本地源码）
 
-HumanaLite 依赖的是**本地源码安装的 lerobot**（版本 0.4.x，本项目位于 `/home/zach/lerobot-so101-bimanual/lerobot`）。注意 PyPI 上的 lerobot 没有 1.0，最新只有 0.6.x，API 有差异。所以 HumanaLite 的 `pyproject.toml` 刻意**不依赖 PyPI 上的 lerobot**，只声明了 `numpy` 和 `pyzmq`。
+HumanaOpen 依赖的是**本地源码安装的 lerobot**（版本 0.4.x，本项目位于 `/home/zach/lerobot-so101-bimanual/lerobot`）。注意 PyPI 上的 lerobot 没有 1.0，最新只有 0.6.x，API 有差异。所以 HumanaOpen 的 `pyproject.toml` 刻意**不依赖 PyPI 上的 lerobot**，只声明了 `numpy` 和 `pyzmq`。
 
 ```bash
 cd /home/zach/lerobot-so101-bimanual/lerobot
@@ -89,10 +89,10 @@ pip install -e . --no-deps
 
 （如果在自己机器上，把路径换成你的 lerobot 源码路径。`-e` 是 editable 安装，之后改 lerobot 源码实时生效，不用重装。）
 
-### 2.3 安装 HumanaLite
+### 2.3 安装 HumanaOpen
 
 ```bash
-cd /home/zach/HumanaLite
+cd /home/zach/HumanaOpen
 pip install -e . --no-deps
 ```
 
@@ -104,7 +104,7 @@ pip install -e . --no-deps
 
 ```bash
 cd /tmp
-python -c "import lerobot_robot_humanalite; print('OK')"
+python -c "import lerobot_robot_humanaopen; print('OK')"
 ```
 
 看到 `OK` 才算装好。如果报 `ModuleNotFoundError`，多半是（a）没在 lerobot 环境里，或（b）pip 装到了别的环境。
@@ -132,10 +132,10 @@ python -c "import lerobot_robot_humanalite; print('OK')"
 ### 3.2 运行配置
 
 ```python
-from lerobot_robot_humanalite import HumanaLite, HumanaLiteConfig
+from lerobot_robot_humanaopen import HumanaOpen, HumanaOpenConfig
 
-config = HumanaLiteConfig(port1="/dev/ttyACM0", port2="/dev/ttyACM1")
-robot = HumanaLite(config)
+config = HumanaOpenConfig(port1="/dev/ttyACM0", port2="/dev/ttyACM1")
+robot = HumanaOpen(config)
 
 # 这会逐个提示你连接舵机并设置 ID
 robot.setup_motors()
@@ -179,8 +179,8 @@ python3 examples/calibrate_follower.py
 
 ```bash
 python3 -c "
-from lerobot_robot_humanalite import HumanaLite, HumanaLiteConfig
-robot = HumanaLite(HumanaLiteConfig(id='follower'))
+from lerobot_robot_humanaopen import HumanaOpen, HumanaOpenConfig
+robot = HumanaOpen(HumanaOpenConfig(id='follower'))
 robot.connect(calibrate=True)
 "
 ```
@@ -201,10 +201,10 @@ robot.connect(calibrate=True)
 
 ### 4.2 标定文件存储位置
 
-**从动侧（follower）**：`~/.cache/huggingface/lerobot/calibration/robots/humanalite/{id}.json`
+**从动侧（follower）**：`~/.cache/huggingface/lerobot/calibration/robots/humanaopen/{id}.json`
 
 ```
-.../humanalite/follower.json   ← 从动侧校准 (id="follower")
+.../humanaopen/follower.json   ← 从动侧校准 (id="follower")
 ```
 
 校准过的机器人下次 `connect()` 会自动加载，并提示按 Enter 恢复校准或输入 `c` 重新校准。
@@ -234,14 +234,14 @@ python3 examples/calibrate_leader.py
 校准文件（与从臂分开，互不覆盖）：
 
 ```
-~/.cache/huggingface/lerobot/calibration/teleoperators/humanalite_leader/leader_left.json
-~/.cache/huggingface/lerobot/calibration/teleoperators/humanalite_leader/leader_right.json
+~/.cache/huggingface/lerobot/calibration/teleoperators/humanaopen_leader/leader_left.json
+~/.cache/huggingface/lerobot/calibration/teleoperators/humanaopen_leader/leader_right.json
 ```
 
-主臂实现（`lerobot_robot_humanalite/leader.py`）：
+主臂实现（`lerobot_robot_humanaopen/leader.py`）：
 
-- `humanalite_leader`：单臂 teleoperator（`calibration_mode`: `full`/`quick`）
-- `bi_humanalite_leader`：双臂 teleoperator（输出 `left_arm_*`/`right_arm_*` 前缀）
+- `humanaopen_leader`：单臂 teleoperator（`calibration_mode`: `full`/`quick`）
+- `bi_humanaopen_leader`：双臂 teleoperator（输出 `left_arm_*`/`right_arm_*` 前缀）
 
 遥操时 `leader.get_action()` 的动作键与从臂 `follower.send_action()` 完全对齐，可零转换对接。
 
@@ -253,10 +253,10 @@ python3 examples/calibrate_leader.py
 python3 examples/diagnose_teleop.py
 ```
 
-根据诊断结果配置（`BiHumanaLiteLeaderConfig` / `HumanaLiteLeaderConfig`）：
+根据诊断结果配置（`BiHumanaOpenLeaderConfig` / `HumanaOpenLeaderConfig`）：
 
 ```python
-config = BiHumanaLiteLeaderConfig(
+config = BiHumanaOpenLeaderConfig(
     left_arm_port="/dev/ttyACM2",
     right_arm_port="/dev/ttyACM3",
     # 方向反的关节加入对应侧列表; 不需要腕部交换则置空 dict
@@ -283,7 +283,7 @@ config = BiHumanaLiteLeaderConfig(
 lerobot-find-cameras opencv
 ```
 
-它会列出检测到的摄像头及对应的设备号/索引，把结果填进 `HumanaLiteConfig` 的 `cameras` 字段（或 record 命令行的 `--robot.cameras`）。
+它会列出检测到的摄像头及对应的设备号/索引，把结果填进 `HumanaOpenConfig` 的 `cameras` 字段（或 record 命令行的 `--robot.cameras`）。
 
 ---
 
@@ -294,14 +294,14 @@ lerobot-find-cameras opencv
 所有 Waveshare 板和相机都插在同一台电脑（笔记本或 Jetson）：
 
 ```python
-from lerobot_robot_humanalite import HumanaLite, HumanaLiteConfig
+from lerobot_robot_humanaopen import HumanaOpen, HumanaOpenConfig
 
-config = HumanaLiteConfig(
+config = HumanaOpenConfig(
     port1="/dev/ttyACM0",   # 左臂+头
     port2="/dev/ttyACM1",   # 右臂
     port3="/dev/ttyACM2",   # 升降+车轮（3 总线模式）
 )
-robot = HumanaLite(config)
+robot = HumanaOpen(config)
 robot.connect()
 
 # 采集一帧观察
@@ -325,15 +325,15 @@ robot.disconnect()
 **推荐流程**：先用 `cameras={}` 把电机这半边测通，再逐步加相机：
 
 ```python
-from lerobot_robot_humanalite import HumanaLite, HumanaLiteConfig
+from lerobot_robot_humanaopen import HumanaOpen, HumanaOpenConfig
 
-config = HumanaLiteConfig(
+config = HumanaOpenConfig(
     port1="/dev/ttyACM0",
     port2="/dev/ttyACM1",
     port3=None,          # 2 总线模式（本项目实际使用）
     cameras={},          # 跳过摄像头
 )
-robot = HumanaLite(config)
+robot = HumanaOpen(config)
 robot.connect(calibrate=False)   # 不校准也能连接、能测升降
 print("connected:", robot.is_connected)
 robot.disconnect()
@@ -401,7 +401,7 @@ python3 examples/test_base_keyboard.py
 修复：在配置里把装反的那一侧设成 `-1`：
 
 ```python
-config = HumanaLiteConfig(
+config = HumanaOpenConfig(
     ...
     wheel_dir_signs={
         "base_left_wheel": -1,   # 左轮装反 → 取反
@@ -417,7 +417,7 @@ config = HumanaLiteConfig(
 `connect()` 默认会自动执行升降归零。测试底盘或其他子系统、且升降已在已知位置时，可跳过：
 
 ```python
-config = HumanaLiteConfig(
+config = HumanaOpenConfig(
     port1="/dev/ttyACM0",
     port2="/dev/ttyACM1",
     port3=None,
@@ -434,10 +434,10 @@ config = HumanaLiteConfig(
 
 ```bash
 python3 -c "
-from lerobot_robot_humanalite import HumanaLiteConfig
-from lerobot_robot_humanalite.humanalite_host import HumanaLiteHost
+from lerobot_robot_humanaopen import HumanaOpenConfig
+from lerobot_robot_humanaopen.humanaopen_host import HumanaOpenHost
 
-host = HumanaLiteHost(HumanaLiteConfig())
+host = HumanaOpenHost(HumanaOpenConfig())
 host.run()
 "
 ```
@@ -447,11 +447,11 @@ host.run()
 **遥操端（笔记本）：**
 
 ```python
-from lerobot_robot_humanalite.humanalite_client import HumanaLiteClient
-from lerobot_robot_humanalite import HumanaLiteClientConfig
+from lerobot_robot_humanaopen.humanaopen_client import HumanaOpenClient
+from lerobot_robot_humanaopen import HumanaOpenClientConfig
 
-client = HumanaLiteClient(
-    HumanaLiteClientConfig(remote_ip="192.168.1.100")  # Jetson/树莓派 IP
+client = HumanaOpenClient(
+    HumanaOpenClientConfig(remote_ip="192.168.1.100")  # Jetson/树莓派 IP
 )
 client.connect()
 
@@ -471,14 +471,14 @@ client.disconnect()
 
 ```bash
 lerobot-record \
-    --robot.type=humanalite \
+    --robot.type=humanaopen \
     --robot.port1=/dev/ttyACM0 \
     --robot.port2=/dev/ttyACM1 \
     --robot.port3=/dev/ttyACM2 \
     --robot.cameras='{"head": {"type": "opencv", "index_or_path": 0, "fps": 30, "width": 640, "height": 480}, "left_wrist": {"type": "opencv", "index_or_path": 2, "fps": 30, "width": 640, "height": 480}, "right_wrist": {"type": "opencv", "index_or_path": 4, "fps": 30, "width": 640, "height": 480}}' \
     --teleop.type=openarm_mini \
     --teleop.port=/dev/ttyACM_leader \
-    --dataset.repo_id=你的名字/my_humanalite_data \
+    --dataset.repo_id=你的名字/my_humanaopen_data \
     --dataset.num_episodes=10 \
     --dataset.single_task="描述你的任务"
 ```
@@ -496,9 +496,9 @@ lerobot-record \
 
 ```bash
 python3 -c "
-from lerobot_robot_humanalite import HumanaLiteConfig
-from lerobot_robot_humanalite.humanalite_host import HumanaLiteHost
-HumanaLiteHost(HumanaLiteConfig()).run()
+from lerobot_robot_humanaopen import HumanaOpenConfig
+from lerobot_robot_humanaopen.humanaopen_host import HumanaOpenHost
+HumanaOpenHost(HumanaOpenConfig()).run()
 "
 ```
 
@@ -518,7 +518,7 @@ HumanaLiteHost(HumanaLiteConfig()).run()
 ```bash
 lerobot-train \
     --policy=act \
-    --dataset.repo_id=你的名字/my_humanalite_data \
+    --dataset.repo_id=你的名字/my_humanaopen_data \
     --output_dir=./outputs
 ```
 
@@ -539,7 +539,7 @@ lerobot-train --policy=act --dataset.repo_id=... --training.batch_size=32 --trai
 ```bash
 lerobot-rollout \
     --policy.path=./outputs/checkpoints/last \
-    --robot.type=humanalite \
+    --robot.type=humanaopen \
     --robot.port1=/dev/ttyACM0 \
     --robot.port2=/dev/ttyACM1 \
     --robot.port3=/dev/ttyACM2
@@ -554,9 +554,9 @@ lerobot-rollout \
 ```bash
 # 机器端
 python3 -c "
-from lerobot_robot_humanalite import HumanaLiteConfig
-from lerobot_robot_humanalite.humanalite_host import HumanaLiteHost
-HumanaLiteHost(HumanaLiteConfig()).run()
+from lerobot_robot_humanaopen import HumanaOpenConfig
+from lerobot_robot_humanaopen.humanaopen_host import HumanaOpenHost
+HumanaOpenHost(HumanaOpenConfig()).run()
 "
 ```
 
@@ -599,7 +599,7 @@ ST3250 的速度单位由**相位寄存器（地址 18）的 BIT2** 决定：
 改 `v_max` 之前，先用 `check_phase.py` 确认自己舵机的 BIT2：
 
 ```bash
-cd /home/zach/HumanaLite
+cd /home/zach/HumanaOpen
 python3 examples/check_phase.py
 ```
 
@@ -637,7 +637,7 @@ action["lift_axis.vel"] = 500  # 原始速度值，正=上升，负=下降
 
 ```bash
 conda activate lerobot
-cd /home/zach/HumanaLite
+cd /home/zach/HumanaOpen
 python3 examples/test_lift_only.py
 ```
 
@@ -646,7 +646,7 @@ python3 examples/test_lift_only.py
 - **安全**：脚本含 Ctrl+C 紧急停止（写 `Goal_Velocity=0` + `Torque_Enable=0`）
 - **前置**：升降舵机（ID 9）需接在 bus2（`/dev/ttyACM1`）上，12V 供电
 - **无需**：手臂、轮子、摄像头、校准
-- 该脚本绕过了 `HumanaLite` 类，直接创建只含升降电机的总线，**不碰右臂/轮子/手臂**，排查时最干净
+- 该脚本绕过了 `HumanaOpen` 类，直接创建只含升降电机的总线，**不碰右臂/轮子/手臂**，排查时最干净
 
 ### 9.7 Ctrl+C 紧急停止（重要）
 
@@ -677,7 +677,7 @@ finally:
 
 ## 十、配置参数说明
 
-### 10.1 HumanaLiteConfig
+### 10.1 HumanaOpenConfig
 
 | 参数 | 默认值 | 说明 |
 |------|--------|------|
@@ -728,7 +728,7 @@ finally:
 | `u` / `h` | 升降升 / 升降降 |
 | `b` | 退出 |
 
-⚠️ **注意：升降下降键是 `h`，不是 `d`！** 这是本项目的自定义修改，很多初学者按 `d` 没反应。源码见 `config_humanalite.py` 的 `teleop_keys`。
+⚠️ **注意：升降下降键是 `h`，不是 `d`！** 这是本项目的自定义修改，很多初学者按 `d` 没反应。源码见 `config_humanaopen.py` 的 `teleop_keys`。
 
 ---
 
@@ -804,16 +804,16 @@ A: 本项目实际用的是 **2 总线**（`port3=None`）：升降和轮子并�
 ## 十二、项目结构
 
 ```
-/home/zach/HumanaLite/
+/home/zach/HumanaOpen/
 ├── pyproject.toml                              # 包配置 + lerobot 入口点（不依赖 PyPI lerobot）
-├── lerobot_robot_humanalite/                   # 主包
-│   ├── __init__.py                             # 导出 HumanaLite
- │   ├── config_humanalite.py                    # 配置类（HumanaLiteConfig / LiftAxisConfig / ZMQ 配置）
- │   ├── humanalite.py                           # 主 Robot 类（从动侧）
+├── lerobot_robot_humanaopen/                   # 主包
+│   ├── __init__.py                             # 导出 HumanaOpen
+ │   ├── config_humanaopen.py                    # 配置类（HumanaOpenConfig / LiftAxisConfig / ZMQ 配置）
+ │   ├── humanaopen.py                           # 主 Robot 类（从动侧）
  │   ├── lift_axis.py                            # 升降轴控制（堵转归零 + P 控制器）
  │   ├── leader.py                               # 主臂 teleoperator（单臂/双臂，见 4.4）
- │   ├── humanalite_host.py                      # ZMQ 双机模式 Host
- │   └── humanalite_client.py                    # ZMQ 双机模式 Client
+ │   ├── humanaopen_host.py                      # ZMQ 双机模式 Host
+ │   └── humanaopen_client.py                    # ZMQ 双机模式 Client
  ├── examples/
  │   ├── single_machine.py                       # 单机使用示例
  │   ├── teleop_keyboard.py                      # 键盘遥操示例

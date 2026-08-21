@@ -1,6 +1,6 @@
-# HumanaLite Complete Beginner Tutorial
+# HumanaOpen Complete Beginner Tutorial
 
-Welcome to HumanaLite, an open-source semi-humanoid robot built on
+Welcome to HumanaOpen, an open-source semi-humanoid robot built on
 [HuggingFace LeRobot](https://github.com/huggingface/lerobot). This tutorial is
 written for people who just received the hardware and want to go from "box on
 the table" to "robot following learned policies". Every parameter below was
@@ -17,7 +17,7 @@ problem we hit and fixed during field testing.
 - **Leader arms** (teleop): 2 × 8 STS3215 C046 servos, run on a separate machine
 
 > This project uses LeRobot **0.4.x**. PyPI has no `lerobot>=1.0` (the latest
-> published version is 0.6.x), so HumanaLite no longer installs lerobot from
+> published version is 0.6.x), so HumanaOpen no longer installs lerobot from
 > PyPI. You install lerobot from a local source checkout instead, see
 > [Section 2](#2-software-installation).
 
@@ -82,14 +82,14 @@ and motor power without needing cameras or calibration:
 ```bash
 conda activate lerobot
 python3 -c "
-from lerobot_robot_humanalite import HumanaLite, HumanaLiteConfig
-config = HumanaLiteConfig(
+from lerobot_robot_humanaopen import HumanaOpen, HumanaOpenConfig
+config = HumanaOpenConfig(
     port1='/dev/ttyACM0',   # left arm + head
     port2='/dev/ttyACM1',   # right arm + lift + wheels (2-bus)
     port3=None,
     cameras={},             # skip cameras, motor tests work without them
 )
-robot = HumanaLite(config)
+robot = HumanaOpen(config)
 robot.connect(calibrate=False)
 print('Connected OK')
 robot.disconnect()
@@ -140,28 +140,28 @@ pip install -e /home/zach/lerobot-so101-bimanual/lerobot
 
 Adjust the path if your checkout lives elsewhere.
 
-### 2.3 Install HumanaLite
+### 2.3 Install HumanaOpen
 
-HumanaLite's `pyproject.toml` deliberately has **no lerobot dependency** (the
+HumanaOpen's `pyproject.toml` deliberately has **no lerobot dependency** (the
 locally installed lerobot provides it). Install the package itself with
 `--no-deps` so pip does not try to resolve or upgrade lerobot:
 
 ```bash
-cd /home/zach/HumanaLite
+cd /home/zach/HumanaOpen
 pip install -e . --no-deps
 ```
 
-The editable install (`-e`) means any change you make to the HumanaLite
+The editable install (`-e`) means any change you make to the HumanaOpen
 package takes effect immediately, no reinstall needed.
 
 ### 2.4 Verify the Installation (Important!)
 
 ```bash
-cd /tmp && python -c "import lerobot_robot_humanalite; print('OK')"
+cd /tmp && python -c "import lerobot_robot_humanaopen; print('OK')"
 ```
 
 ⚠️ Run the check **outside** the project directory. If you run it from
-`/home/zach/HumanaLite`, Python automatically adds the current directory to
+`/home/zach/HumanaOpen`, Python automatically adds the current directory to
 the import path, so the import can succeed even when the package is not
 actually installed. Running from `/tmp` forces a real installed-package check.
 
@@ -183,10 +183,10 @@ correct IDs. **Connect one servo at a time to the Waveshare board.**
 ### 3.2 Run Setup
 
 ```python
-from lerobot_robot_humanalite import HumanaLite, HumanaLiteConfig
+from lerobot_robot_humanaopen import HumanaOpen, HumanaOpenConfig
 
-config = HumanaLiteConfig(port1="/dev/ttyACM0", port2="/dev/ttyACM1")
-robot = HumanaLite(config)
+config = HumanaOpenConfig(port1="/dev/ttyACM0", port2="/dev/ttyACM1")
+robot = HumanaOpen(config)
 
 # Prompts you to connect each servo one by one
 robot.setup_motors()
@@ -248,8 +248,8 @@ Or run manually:
 
 ```bash
 python3 -c "
-from lerobot_robot_humanalite import HumanaLite, HumanaLiteConfig
-robot = HumanaLite(HumanaLiteConfig(id='follower'))
+from lerobot_robot_humanaopen import HumanaOpen, HumanaOpenConfig
+robot = HumanaOpen(HumanaOpenConfig(id='follower'))
 robot.connect(calibrate=True)
 "
 ```
@@ -280,10 +280,10 @@ range is what the policy will treat as the full travel, so don't cheat it.
 
 ### 4.3 Calibration File Location
 
-**Follower side**: `~/.cache/huggingface/lerobot/calibration/robots/humanalite/{id}.json`
+**Follower side**: `~/.cache/huggingface/lerobot/calibration/robots/humanaopen/{id}.json`
 
 ```
-.../humanalite/follower.json   ← follower calibration (id="follower")
+.../humanaopen/follower.json   ← follower calibration (id="follower")
 ```
 
 The file is loaded automatically on the next `connect()`.
@@ -327,14 +327,14 @@ recording — no re-calibration needed**.
 Calibration files (separate from the follower, never overwrite):
 
 ```
-~/.cache/huggingface/lerobot/calibration/teleoperators/humanalite_leader/leader_left.json
-~/.cache/huggingface/lerobot/calibration/teleoperators/humanalite_leader/leader_right.json
+~/.cache/huggingface/lerobot/calibration/teleoperators/humanaopen_leader/leader_left.json
+~/.cache/huggingface/lerobot/calibration/teleoperators/humanaopen_leader/leader_right.json
 ```
 
-Leader implementation (`lerobot_robot_humanalite/leader.py`):
+Leader implementation (`lerobot_robot_humanaopen/leader.py`):
 
-- `humanalite_leader`: single-arm teleoperator (`calibration_mode`: `full`/`quick`)
-- `bi_humanalite_leader`: bimanual teleoperator (outputs `left_arm_*` /
+- `humanaopen_leader`: single-arm teleoperator (`calibration_mode`: `full`/`quick`)
+- `bi_humanaopen_leader`: bimanual teleoperator (outputs `left_arm_*` /
   `right_arm_*` prefixed actions)
 
 During teleoperation, `leader.get_action()` produces action keys that match
@@ -356,7 +356,7 @@ python3 examples/diagnose_teleop.py
 Then configure per the results:
 
 ```python
-config = BiHumanaLiteLeaderConfig(
+config = BiHumanaOpenLeaderConfig(
     left_arm_port="/dev/ttyACM2",
     right_arm_port="/dev/ttyACM3",
     flip_joints={"left": ["shoulder_pan", ...], "right": [...]},  # reversed joints
@@ -389,14 +389,14 @@ ranges to work with and the call fails (or returns unusable readings). This is
 All Waveshare boards and cameras connected to the same machine:
 
 ```python
-from lerobot_robot_humanalite import HumanaLite, HumanaLiteConfig
+from lerobot_robot_humanaopen import HumanaOpen, HumanaOpenConfig
 
-config = HumanaLiteConfig(
+config = HumanaOpenConfig(
     port1="/dev/ttyACM0",   # left arm + head
     port2="/dev/ttyACM1",   # right arm
     port3="/dev/ttyACM2",   # lift + wheels (3-bus) or None for 2-bus
 )
-robot = HumanaLite(config)
+robot = HumanaOpen(config)
 robot.connect()
 
 # Read observation
@@ -451,10 +451,10 @@ Muscle-memory from other robots will make you press `d` and nothing happens.
 
 ```bash
 python3 -c "
-from lerobot_robot_humanalite import HumanaLiteConfig
-from lerobot_robot_humanalite.humanalite_host import HumanaLiteHost
+from lerobot_robot_humanaopen import HumanaOpenConfig
+from lerobot_robot_humanaopen.humanaopen_host import HumanaOpenHost
 
-host = HumanaLiteHost(HumanaLiteConfig())
+host = HumanaOpenHost(HumanaOpenConfig())
 host.run()
 "
 ```
@@ -464,11 +464,11 @@ Default ZMQ ports: observations 5556 / commands 5555.
 **Teleop side (Laptop):**
 
 ```python
-from lerobot_robot_humanalite.humanalite_client import HumanaLiteClient
-from lerobot_robot_humanalite import HumanaLiteClientConfig
+from lerobot_robot_humanaopen.humanaopen_client import HumanaOpenClient
+from lerobot_robot_humanaopen import HumanaOpenClientConfig
 
-client = HumanaLiteClient(
-    HumanaLiteClientConfig(remote_ip="192.168.1.100")  # Robot IP
+client = HumanaOpenClient(
+    HumanaOpenClientConfig(remote_ip="192.168.1.100")  # Robot IP
 )
 client.connect()
 
@@ -485,7 +485,7 @@ client.disconnect()
 During bring-up, before the base is wired:
 
 ```python
-config = HumanaLiteConfig(
+config = HumanaOpenConfig(
     port1="/dev/ttyACM0",
     port2="/dev/ttyACM1",
     port3=None,
@@ -545,7 +545,7 @@ wheels counter-rotate, which reads as forward/rotate being swapped.
 Fix: set the mirrored wheel to `-1` in the config:
 
 ```python
-config = HumanaLiteConfig(
+config = HumanaOpenConfig(
     ...
     wheel_dir_signs={
         "base_left_wheel": -1,   # left wheel mirrored → invert
@@ -567,7 +567,7 @@ wheel.
 the lift is at a known position, skip it:
 
 ```python
-config = HumanaLiteConfig(
+config = HumanaOpenConfig(
     port1="/dev/ttyACM0",
     port2="/dev/ttyACM1",
     port3=None,
@@ -587,14 +587,14 @@ The lift is then only registered and configured (it never moves).
 ```bash
 conda activate lerobot
 lerobot-record \
-    --robot.type=humanalite \
+    --robot.type=humanaopen \
     --robot.port1=/dev/ttyACM0 \
     --robot.port2=/dev/ttyACM1 \
     --robot.port3=/dev/ttyACM2 \
     --robot.cameras='{"head": {"type": "opencv", "index_or_path": "/dev/video0", "fps": 30, "width": 640, "height": 480}, "left_wrist": {"type": "opencv", "index_or_path": "/dev/video2", "fps": 30, "width": 640, "height": 480}, "right_wrist": {"type": "opencv", "index_or_path": "/dev/video4", "fps": 30, "width": 640, "height": 480}}' \
     --teleop.type=openarm_mini \
     --teleop.port=/dev/ttyACM_leader \
-    --dataset.repo_id=your_name/my_humanalite_data \
+    --dataset.repo_id=your_name/my_humanaopen_data \
     --dataset.num_episodes=10 \
     --dataset.single_task="describe your task"
 ```
@@ -604,13 +604,13 @@ For a **2-bus** machine (what this project runs on the bench), just drop the
 
 ```bash
 lerobot-record \
-    --robot.type=humanalite \
+    --robot.type=humanaopen \
     --robot.port1=/dev/ttyACM0 \
     --robot.port2=/dev/ttyACM1 \
     --robot.cameras='{...same as above...}' \
     --teleop.type=openarm_mini \
     --teleop.port=/dev/ttyACM_leader \
-    --dataset.repo_id=your_name/my_humanalite_data \
+    --dataset.repo_id=your_name/my_humanaopen_data \
     --dataset.num_episodes=10 \
     --dataset.single_task="describe your task"
 ```
@@ -626,7 +626,7 @@ lerobot-find-cameras opencv
 ```
 
 Adjust `index_or_path` in the `--robot.cameras` argument (or in
-`default_cameras()` inside `config_humanalite.py`) to match. ⚠️ **Use the same
+`default_cameras()` inside `config_humanaopen.py`) to match. ⚠️ **Use the same
 camera names and resolutions for collection, training and deployment.** The
 pipeline keys observations by camera name, so `head` during recording must be
 `head` during rollout.
@@ -637,9 +637,9 @@ pipeline keys observations by camera name, so `head` during recording must be
 
 ```bash
 python3 -c "
-from lerobot_robot_humanalite import HumanaLiteConfig
-from lerobot_robot_humanalite.humanalite_host import HumanaLiteHost
-HumanaLiteHost(HumanaLiteConfig()).run()
+from lerobot_robot_humanaopen import HumanaOpenConfig
+from lerobot_robot_humanaopen.humanaopen_host import HumanaOpenHost
+HumanaOpenHost(HumanaOpenConfig()).run()
 "
 ```
 
@@ -658,7 +658,7 @@ robot attached):
 conda activate lerobot
 lerobot-train \
     --policy.type=act \
-    --dataset.repo_id=your_name/my_humanalite_data \
+    --dataset.repo_id=your_name/my_humanaopen_data \
     --output_dir=./outputs
 ```
 
@@ -683,7 +683,7 @@ changing `--policy.type` and retraining.
 conda activate lerobot
 lerobot-rollout \
     --policy.path=./outputs/checkpoints/last \
-    --robot.type=humanalite \
+    --robot.type=humanaopen \
     --robot.port1=/dev/ttyACM0 \
     --robot.port2=/dev/ttyACM1 \
     --robot.port3=/dev/ttyACM2
@@ -701,9 +701,9 @@ so keep a hand on the power switch and keep the emergency stop in mind
 ```bash
 # Robot side
 python3 -c "
-from lerobot_robot_humanalite import HumanaLiteConfig
-from lerobot_robot_humanalite.humanalite_host import HumanaLiteHost
-HumanaLiteHost(HumanaLiteConfig()).run()
+from lerobot_robot_humanaopen import HumanaOpenConfig
+from lerobot_robot_humanaopen.humanaopen_host import HumanaOpenHost
+HumanaOpenHost(HumanaOpenConfig()).run()
 "
 ```
 
@@ -781,7 +781,7 @@ Validate the lift hardware and software without arms, wheels or cameras:
 
 ```bash
 conda activate lerobot
-cd /home/zach/HumanaLite
+cd /home/zach/HumanaOpen
 python3 examples/test_lift_only.py
 ```
 
@@ -829,7 +829,7 @@ If your servo reports BIT2=0, set `v_max` accordingly (see
 All values below are copied from the code. If the manual and the code ever
 disagree, **the code wins**.
 
-### 10.1 HumanaLiteConfig
+### 10.1 HumanaOpenConfig
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
@@ -884,8 +884,8 @@ disagree, **the code wins**.
 
 | Config | Key fields | Defaults |
 |--------|-----------|----------|
-| `HumanaLiteHostConfig` | `port_zmq_cmd` / `port_zmq_observations` | 5555 / 5556 |
-| `HumanaLiteClientConfig` | `remote_ip` | `127.0.0.1` |
+| `HumanaOpenHostConfig` | `port_zmq_cmd` / `port_zmq_observations` | 5555 / 5556 |
+| `HumanaOpenClientConfig` | `remote_ip` | `127.0.0.1` |
 
 ---
 
@@ -1015,9 +1015,9 @@ Leader C046 servos run at 7.4V, follower C018 at 12V, with separate power
 supplies. In ZMQ dual-machine mode each machine powers its own servos. In
 single-machine mode use two power supplies for the two Waveshare boards.
 
-### Q: Does `pip install -e /home/zach/HumanaLite` without `--no-deps` work?
+### Q: Does `pip install -e /home/zach/HumanaOpen` without `--no-deps` work?
 
-No. HumanaLite deliberately declares no lerobot dependency, so `--no-deps` is
+No. HumanaOpen deliberately declares no lerobot dependency, so `--no-deps` is
 required to avoid pip resolving/upgrading anything. And remember to verify the
 import from `/tmp` (Section 2.4), not from inside the repo.
 
@@ -1026,16 +1026,16 @@ import from `/tmp` (Section 2.4), not from inside the repo.
 ## 12. Project Structure
 
 ```
-/home/zach/HumanaLite/
+/home/zach/HumanaOpen/
 ├── pyproject.toml                              # Package config + lerobot entry points (no lerobot dep)
-├── lerobot_robot_humanalite/                   # Main package
-│   ├── __init__.py                             # Exports HumanaLite
-│   ├── config_humanalite.py                    # Config classes (HumanaLiteConfig, LiftAxisConfig, ...)
-│   ├── humanalite.py                           # Main Robot class (follower side)
+├── lerobot_robot_humanaopen/                   # Main package
+│   ├── __init__.py                             # Exports HumanaOpen
+│   ├── config_humanaopen.py                    # Config classes (HumanaOpenConfig, LiftAxisConfig, ...)
+│   ├── humanaopen.py                           # Main Robot class (follower side)
 │   ├── lift_axis.py                            # Lift axis with stall-detection homing
 │   ├── leader.py                               # Leader teleoperator (single/bimanual, Section 4.4)
-│   ├── humanalite_host.py                      # ZMQ host (robot side)
-│   └── humanalite_client.py                    # ZMQ client (teleop side)
+│   ├── humanaopen_host.py                      # ZMQ host (robot side)
+│   └── humanaopen_client.py                    # ZMQ client (teleop side)
 ├── examples/
 │   ├── single_machine.py                       # Single machine example (Section 5.1)
 │   ├── teleop_keyboard.py                      # Keyboard teleop: i/k/j/l/n/m/u/h/b (Section 5.2)
@@ -1063,18 +1063,18 @@ conda activate lerobot
 # 2. LeRobot (local source, 0.4.x)
 pip install -e /home/zach/lerobot-so101-bimanual/lerobot
 
-# 3. HumanaLite
-cd /home/zach/HumanaLite
+# 3. HumanaOpen
+cd /home/zach/HumanaOpen
 pip install -e . --no-deps
 
 # 4. Verify (from OUTSIDE the project dir!)
-cd /tmp && python -c "import lerobot_robot_humanalite; print('OK')"
+cd /tmp && python -c "import lerobot_robot_humanaopen; print('OK')"
 
 # 5. First connection (2-bus, no cameras)
-cd /home/zach/HumanaLite
+cd /home/zach/HumanaOpen
 python3 -c "
-from lerobot_robot_humanalite import HumanaLite, HumanaLiteConfig
-robot = HumanaLite(HumanaLiteConfig(port1='/dev/ttyACM0', port2='/dev/ttyACM1', port3=None, cameras={}))
+from lerobot_robot_humanaopen import HumanaOpen, HumanaOpenConfig
+robot = HumanaOpen(HumanaOpenConfig(port1='/dev/ttyACM0', port2='/dev/ttyACM1', port3=None, cameras={}))
 robot.connect(calibrate=False)
 robot.disconnect()
 print('Bring-up OK')
@@ -1084,7 +1084,7 @@ print('Bring-up OK')
 python3 examples/test_lift_only.py
 
 # 7. Full pipeline
-lerobot-record    --robot.type=humanalite --dataset.repo_id=you/data ...
+lerobot-record    --robot.type=humanaopen --dataset.repo_id=you/data ...
 lerobot-train     --policy.type=act --dataset.repo_id=you/data ...
-lerobot-rollout   --policy.path=./outputs/checkpoints/last --robot.type=humanalite ...
+lerobot-rollout   --policy.path=./outputs/checkpoints/last --robot.type=humanaopen ...
 ```

@@ -38,8 +38,8 @@ from pynput import keyboard
 
 from lerobot.cameras.opencv.configuration_opencv import OpenCVCameraConfig
 
-from lerobot_robot_humanalite import HumanaLite, HumanaLiteConfig
-from lerobot_robot_humanalite.leader import BiHumanaLiteLeader, BiHumanaLiteLeaderConfig
+from lerobot_robot_humanaopen import HumanaOpen, HumanaOpenConfig
+from lerobot_robot_humanaopen.leader import BiHumanaOpenLeader, BiHumanaOpenLeaderConfig
 
 FPS = 30
 
@@ -141,7 +141,7 @@ class KeyState:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="HumanaLite 全身遥操 (主臂 + 键盘)")
+    parser = argparse.ArgumentParser(description="HumanaOpen 全身遥操 (主臂 + 键盘)")
     parser.add_argument("--no-cameras", action="store_true", help="跳过所有摄像头 (纯遥操)")
     parser.add_argument(
         "--cameras",
@@ -158,7 +158,7 @@ def main():
     args = parser.parse_args()
 
     cams = build_cameras(args)
-    follower_cfg = HumanaLiteConfig(
+    follower_cfg = HumanaOpenConfig(
         id="follower",
         port1="/dev/ttyACM0",
         port2="/dev/ttyACM1",
@@ -170,7 +170,7 @@ def main():
         # 左轮取反使两轮同向; 万向轮卡住曾干扰判断, 现已修复
         wheel_dir_signs={"base_left_wheel": -1, "base_right_wheel": 1},
     )
-    leader_cfg = BiHumanaLiteLeaderConfig(
+    leader_cfg = BiHumanaOpenLeaderConfig(
         id="leader",
         left_arm_port="/dev/ttyACM2",
         right_arm_port="/dev/ttyACM3",
@@ -179,8 +179,8 @@ def main():
         joint_remap={},
     )
 
-    follower = HumanaLite(follower_cfg)
-    leader = BiHumanaLiteLeader(leader_cfg)
+    follower = HumanaOpen(follower_cfg)
+    leader = BiHumanaOpenLeader(leader_cfg)
 
     keys = KeyState()
     listener = keyboard.Listener(on_press=keys.on_press, on_release=keys.on_release)
@@ -202,7 +202,7 @@ def main():
         if args.display:
             try:
                 from lerobot.utils.visualization_utils import init_rerun, log_rerun_data
-                init_rerun(session_name="humanalite_teleop")
+                init_rerun(session_name="humanaopen_teleop")
                 log_rerun_data(observation=obs)
                 print("  👁 Rerun visualization started (view in rerun viewer)")
             except Exception as e:
