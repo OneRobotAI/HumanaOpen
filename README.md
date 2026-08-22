@@ -85,12 +85,12 @@ pip install torch torchvision torchaudio --index-url https://download.pytorch.or
 # 4. Verify installation
 python -c "from lerobot_robot_humanaopen import HumanaOpen, HumanaOpenConfig; print('✅ OK')"
 
-# 5. Single-machine operation
+# 5. Verify installation (no calibration — just check import + connection)
 python -c "
 from lerobot_robot_humanaopen import HumanaOpen, HumanaOpenConfig
 config = HumanaOpenConfig(port1='/dev/ttyACM0', port2='/dev/ttyACM1', port3=None, cameras={})
 robot = HumanaOpen(config)
-robot.connect()
+robot.connect(calibrate=False)
 print(robot.get_observation().keys())
 "
 

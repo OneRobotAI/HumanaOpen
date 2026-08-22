@@ -91,7 +91,7 @@ python -c "
 from lerobot_robot_humanaopen import HumanaOpen, HumanaOpenConfig
 config = HumanaOpenConfig(port1='/dev/ttyACM0', port2='/dev/ttyACM1', port3=None, cameras={})
 robot = HumanaOpen(config)
-robot.connect()
+robot.connect(calibrate=False)
 print(robot.get_observation().keys())
 "
 
