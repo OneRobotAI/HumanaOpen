@@ -215,6 +215,57 @@ raw > 1000 会方向反转（三角波回绕）— 不安全。切换 Phase BIT2
 （`~/.cache/huggingface/lerobot/calibration/robots/humanaopen/follower.json`）
 已更新为真实范围。
 
+## 校准
+
+校准记录每个关节的 min/max 范围。**只需一次** — 结果保存后每次连接自动恢复。
+
+### 什么时候需要校准
+
+- **首次安装**（必需）
+- 拆装过手臂或舵机后
+- 更换舵机电机后
+- 解锁新的运动范围后（如头部俯仰 EPROM 解锁）
+
+### 主臂校准
+
+```bash
+python3 examples/calibrate_leader.py
+```
+
+步骤（每臂）：
+1. 手臂自然下垂 + 夹爪闭合 → `ENTER`（设零点）
+2. 每个关节走满行程 → `ENTER`（录真实限制）
+3. 夹爪：完全闭合 → `ENTER`，完全张开 → `ENTER`
+4. 自动保存校准
+
+> 主臂需接 **7.4V** 电源，`/dev/ttyACM2`（左）和 `/dev/ttyACM3`（右）。
+
+保存到：
+```
+~/.cache/huggingface/lerobot/calibration/teleoperators/humanaopen_leader/
+├── leader_left.json
+└── leader_right.json
+```
+
+### 从臂校准（双臂 + 头部 + 轮子 + 升降）
+
+```bash
+python3 examples/calibrate_follower.py
+```
+
+步骤：
+1. 左臂 + 头部：零位 → `ENTER`；每个关节走满行程 → `ENTER`
+2. 右臂：零位 → `ENTER`；每个关节走满行程 → `ENTER`
+3. 自动：轮子全范围 + 升降堵转归零到底部
+
+> 从臂需接 **12V** 电源。校准期间扭矩释放 — 手臂可自由移动。
+
+保存到：
+```
+~/.cache/huggingface/lerobot/calibration/robots/humanaopen/follower.json
+```
+
+
 ## 数据采集
 
 `lerobot-record` CLI 硬编码了官方机器人类型，会拒绝 `humanaopen`
