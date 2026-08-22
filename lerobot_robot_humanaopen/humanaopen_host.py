@@ -39,7 +39,7 @@ def _serialize_obs(obs: dict[str, Any]) -> bytes:
     images = {k: v for k, v in obs.items() if isinstance(v, np.ndarray) and v.ndim == 3}
 
     buf = bytearray()
-    buf.extend(struct.pack("<II", 0x4F4253, len(floats), len(images)))
+    buf.extend(struct.pack("<III", 0x4F4253, len(floats), len(images)))
 
     for k, v in floats.items():
         k_bytes = k.encode()
@@ -62,8 +62,8 @@ def _deserialize_cmd(data: bytes) -> dict[str, Any]:
     """Unpack an action dict from bytes (mirror of above)."""
     action: dict[str, Any] = {}
     pos = 0
-    magic, n_floats = struct.unpack_from("<II", data, pos)
-    pos += 8
+    magic, n_floats, n_images = struct.unpack_from("<III", data, pos)
+    pos += 12
     if magic != 0x4F4253:
         raise ValueError(f"Bad magic: {magic:#x}")
 
