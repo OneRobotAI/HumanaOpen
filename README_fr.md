@@ -76,6 +76,9 @@ pip install lerobot
 cd /chemin/vers/HumanaOpen
 pip install -e . --no-deps
 
+# Required: Feetech servo SDK (motor communication)
+pip install feetech-servo-sdk
+
 # Optionnel : installer les dépendances SmolVLA (transformers, num2words)
 pip install -e ".[smolvla]" 2>/dev/null || pip install transformers>=4.48 num2words
 
