@@ -72,9 +72,12 @@ conda activate humanaopen
 # 2. Install LeRobot with Feetech SDK (all dependencies included)
 pip install "lerobot[feetech]"
 
-# 3. Install HumanaOpen (editable, zero extra deps — follows lerobot)
+# 3. Install HumanaOpen (editable)
 cd /path/to/HumanaOpen
 pip install -e . --no-deps
+
+# Required: HumanaOpen-specific dependencies (not covered by lerobot)
+pip install pynput opencv-python rerun-sdk feetech-servo-sdk
 
 # Optional: install SmolVLA dependencies (transformers, num2words)
 pip install -e ".[smolvla]" 2>/dev/null || pip install transformers>=4.48 num2words
