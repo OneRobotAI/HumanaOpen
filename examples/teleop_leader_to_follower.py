@@ -64,8 +64,8 @@ DEFAULT_CAM_DEVICES = {
     "right_wrist": "/dev/video4",
 }
 
-# 各摄像头实际支持的 fps (v4l2-ctl 实测: video4 在 640x480 下 MJPG 最大 25fps, 其余 30)
-CAMERA_FPS_MAP = {"head": 30, "left_wrist": 30, "right_wrist": 25, "chest": 30}
+# 所有摄像头统一 30fps MJPG
+CAMERA_FPS_MAP = {"head": 30, "left_wrist": 30, "right_wrist": 30, "chest": 30}
 
 
 def build_cameras(args) -> dict[str, OpenCVCameraConfig]:
