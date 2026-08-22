@@ -95,8 +95,62 @@ print(robot.get_observation().keys())
 "
 
 # 6. Dual-machine ZMQ mode (⚠️ for Jetson/Raspberry Pi deployment only — skip if single machine)
-# Run this on the ROBOT side (Jetson/RPi), not your dev machine.
-python -c "
+# See "Dual-Machine Deployment" section below for full setup guide.
+```
+
+## Dual-Machine Deployment
+
+For production deployment, the robot hardware (servos + cameras) connects to an
+embedded board (Jetson or Raspberry Pi), while the policy inference runs on a
+separate GPU machine. The two communicate over ZMQ.
+
+```
+┌──────────────────────┐       ZMQ TCP        ┌──────────────────────┐
+│   Dev Machine (GPU)  │ ←──────────────────→ │  Jetson / RPi (Host) │
+│                      │   obs ──────────→    │                      │
+│  • Policy inference  │   ←── action (21DOF) │  • Read servos/cams  │
+│  • ACT / SmolVLA     │                       │  • Execute actions   │
+│  • No servo wiring   │                       │  • Servo + cam wiring│
+└──────────────────────┘                       └──────────────────────┘
+```
+
+### Raspberry Pi (Host only — no GPU inference)
+
+```bash
+# On Raspberry Pi (ARM64, Raspberry Pi OS Lite recommended)
+sudo apt update && sudo apt install -y python3-pip
+pip3 install lerobot[feetech]
+
+# Install HumanaOpen
+cd ~/
+git clone https://github.com/OneRobotAI/HumanaOpen.git
+cd HumanaOpen
+pip3 install -e . --no-deps
+
+# Start Host (reads sensors, executes commands)
+python3 -c "
+from lerobot_robot_humanaopen.humanaopen_host import HumanaOpenHost
+from lerobot_robot_humanaopen import HumanaOpenConfig
+HumanaOpenHost(HumanaOpenConfig(
+    port1='/dev/ttyACM0', port2='/dev/ttyACM1', port3=None,
+    cameras={'head': {'type': 'opencv', 'index_or_path': '/dev/video0', 'width': 640, 'height': 480, 'fps': 30}},
+)).run()
+"
+```
+
+### NVIDIA Jetson (Host + optional local inference)
+
+```bash
+# On Jetson (JetPack 6.x, CUDA 12.x)
+# Install PyTorch for Jetson (NVIDIA build, not pip)
+# Follow: https://docs.nvidia.com/deeplearning/frameworks/install-pytorch-jetson-platform.html
+
+pip3 install lerobot[feetech]
+cd ~/ && git clone https://github.com/OneRobotAI/HumanaOpen.git
+cd HumanaOpen && pip3 install -e . --no-deps
+
+# Start Host (same as Raspberry Pi)
+python3 -c "
 from lerobot_robot_humanaopen.humanaopen_host import HumanaOpenHost
 from lerobot_robot_humanaopen import HumanaOpenConfig
 HumanaOpenHost(HumanaOpenConfig(
@@ -104,6 +158,36 @@ HumanaOpenHost(HumanaOpenConfig(
 )).run()
 "
 ```
+
+> **Note**: Jetson can also run ACT inference locally (~100ms/frame on Orin),
+> but SmolVLA requires a discrete GPU and should run on the dev machine.
+
+### Dev Machine (Client — policy inference)
+
+On your GPU machine, connect to the robot's IP:
+
+```bash
+conda activate humanaopen
+cd /path/to/HumanaOpen
+
+# Set robot IP (Jetson/RPi local network address)
+export ROBOT_IP=192.168.1.100
+
+# Run inference remotely
+python3 examples/eval_data.py \
+    --policy.type=act \
+    --policy.repo_id=your-name/humanaopen_act_policy \
+    --policy.device=cuda \
+    --robot.type=humanaopen_client \
+    --robot.remote_ip=$ROBOT_IP \
+    --num-episodes=5 --duration=30 --fps=30
+```
+
+### Network requirements
+
+- Both machines on the same LAN (Ethernet recommended over WiFi for latency)
+- Ports **5555** (commands) and **5556** (observations) must be open
+- Image streaming bandwidth: ~10 Mbps per camera at 640x480 MJPG
 
 ## Teleoperation
 
