@@ -233,13 +233,17 @@ class HumanaOpen(Robot):
         # Only run interactive calibration if no file exists OR user requests it.
         if self.calibration_fpath.is_file():
             logger.info(f"Calibration file found at {self.calibration_fpath}")
-            ans = input(
-                "Press ENTER to restore calibration, or type 'c' to re-calibrate: "
-            ).strip().lower()
-            if ans != "c":
+            if calibrate:
+                ans = input(
+                    "Press ENTER to restore calibration, or type 'c' to re-calibrate: "
+                ).strip().lower()
+                if ans != "c":
+                    self._restore_calibration()
+                else:
+                    self.calibrate()
+            else:
+                # calibrate=False: silently restore, no prompt
                 self._restore_calibration()
-            elif calibrate:
-                self.calibrate()
         elif calibrate:
             self.calibrate()
 
