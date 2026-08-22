@@ -96,7 +96,11 @@ print(robot.get_observation().keys())
 "
 
 # 6. Mode ZMQ double machine (exécuter sur le robot)
+python -c "
 from lerobot_robot_humanaopen.humanaopen_host import HumanaOpenHost
+from lerobot_robot_humanaopen import HumanaOpenConfig
+HumanaOpenHost(HumanaOpenConfig(port1=/dev/ttyACM0, port2=/dev/ttyACM1, port3=None, cameras={})).run()
+"
 HumanaOpenHost(HumanaOpenConfig()).run()
 ```
 

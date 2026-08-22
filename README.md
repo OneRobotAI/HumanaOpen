@@ -94,9 +94,15 @@ robot.connect()
 print(robot.get_observation().keys())
 "
 
-# 6. Dual-machine ZMQ mode (run on robot)
+# 6. Dual-machine ZMQ mode (run on robot, optional)
+python -c "
 from lerobot_robot_humanaopen.humanaopen_host import HumanaOpenHost
-HumanaOpenHost(HumanaOpenConfig()).run()
+from lerobot_robot_humanaopen import HumanaOpenConfig
+HumanaOpenHost(HumanaOpenConfig(
+    port1='/dev/ttyACM0', port2='/dev/ttyACM1', port3=None, cameras={}
+)).run()
+"
+# Note: This is for dual-machine deployment only. Skip if using single machine.
 ```
 
 ## Teleoperation

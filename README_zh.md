@@ -95,7 +95,11 @@ print(robot.get_observation().keys())
 "
 
 # 6. 双机 ZMQ 模式（在机器人上运行）
+python -c "
 from lerobot_robot_humanaopen.humanaopen_host import HumanaOpenHost
+from lerobot_robot_humanaopen import HumanaOpenConfig
+HumanaOpenHost(HumanaOpenConfig(port1=/dev/ttyACM0, port2=/dev/ttyACM1, port3=None, cameras={})).run()
+"
 HumanaOpenHost(HumanaOpenConfig()).run()
 ```
 
