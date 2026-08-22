@@ -69,14 +69,12 @@ conda create -n humanaopen python=3.12
 conda activate humanaopen
 
 # 2. LeRobot 설치 (필수 의존성)
-pip install lerobot
+pip install "lerobot[feetech]"
 
 # 3. HumanaOpen 설치 (editable)
 cd /path/to/HumanaOpen
 pip install -e . --no-deps
 
-# Required: Feetech servo SDK (motor communication)
-pip install feetech-servo-sdk
 
 # 선택: SmolVLA 의존성 설치 (transformers, num2words)
 pip install -e ".[smolvla]" 2>/dev/null || pip install transformers>=4.48 num2words

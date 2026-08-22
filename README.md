@@ -69,15 +69,12 @@ examples/
 conda create -n humanaopen python=3.12
 conda activate humanaopen
 
-# 2. Install LeRobot (required dependency)
-pip install lerobot
+# 2. Install LeRobot with Feetech SDK (all dependencies included)
+pip install "lerobot[feetech]"
 
-# 3. Install HumanaOpen (editable)
+# 3. Install HumanaOpen (editable, zero extra deps — follows lerobot)
 cd /path/to/HumanaOpen
 pip install -e . --no-deps
-
-# Required: Feetech servo SDK (motor communication)
-pip install feetech-servo-sdk
 
 # Optional: install SmolVLA dependencies (transformers, num2words)
 pip install -e ".[smolvla]" 2>/dev/null || pip install transformers>=4.48 num2words
