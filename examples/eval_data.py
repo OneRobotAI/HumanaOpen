@@ -143,7 +143,7 @@ def main():
         port3=port3,
         cameras=cameras,
     ))
-    robot.connect(calibrate=False)
+    robot.connect(calibrate=True)
     print("  Robot connected")
 
     # ── Optional teleop (safety override) ────────────────────────────
@@ -157,7 +157,7 @@ def main():
             flip_joints=json.loads(d["teleop.flip_joints"]),
             joint_remap=json.loads(d["teleop.joint_remap"]),
         ), robot=robot)
-        leader.connect(calibrate=False)
+        leader.connect(calibrate=True)
         print("  Teleop connected (press 'e' to enable/disable override)")
 
     # ── Rerun display ────────────────────────────────────────────────

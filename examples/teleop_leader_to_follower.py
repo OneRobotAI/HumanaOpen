@@ -188,12 +188,12 @@ def main():
 
     try:
         print("[1] Connecting follower...")
-        follower.connect(calibrate=False)
+        follower.connect(calibrate=True)
         # connect 内已处理: 优先恢复持久化位置 (免归零), 失败才自动归零
         print(f"    Follower connected (cameras: {list(cams.keys()) or 'none'}, lift {follower.lift_axis.get_height_mm():.1f}mm)")
 
         print("[2] Connecting leader...")
-        leader.connect(calibrate=False)
+        leader.connect(calibrate=True)
         print("    Leader connected")
 
         obs = follower.get_observation()
