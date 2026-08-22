@@ -87,6 +87,7 @@ class HumanaOpenConfig(RobotConfig):
     """
 
     # ---- Serial ports (leave empty to skip the bus entirely) ----------------
+    id: str = "follower"
     port1: str = "/dev/ttyACM0"
     port2: str = "/dev/ttyACM1"
     port3: str | None = "/dev/ttyACM2"
