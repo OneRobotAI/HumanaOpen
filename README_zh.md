@@ -235,6 +235,10 @@ python3 examples/teleop_leader_to_follower.py --no-cameras
 | right_wrist | /dev/video4 | MJPG | **25**（640x480 硬件限制）|
 | chest | /dev/video6 | MJPG | 30 |
 
+> **调整帧率**：用 `v4l2-ctl -d /dev/videoN --list-formats-ext` 查看摄像头实际能力，
+> 然后在脚本中修改 `fps` 值。设置不支持的 fps 会在启动时导致连接错误。
+
+
 
 ### 升降轴 — 零位持久化（免归零）
 

@@ -237,6 +237,10 @@ python3 examples/teleop_leader_to_follower.py --no-cameras
 | right_wrist | /dev/video4 | MJPG | **25** (640x480 하드웨어 한계) |
 | chest | /dev/video6 | MJPG | 30 |
 
+> **FPS 조정**: `v4l2-ctl -d /dev/videoN --list-formats-ext`로 실제 기능을 확인하고
+> 스크립트에서 `fps` 값을 수정하세요. 지원되지 않는 fps를 설정하면 시작 시 연결 오류가 발생합니다.
+
+
 `lerobot-find-cameras opencv`로 확인하세요. right_wrist는 MJPG 640x480에서
 
 ### 리프트 축 — 영점 영속화 (免归零)

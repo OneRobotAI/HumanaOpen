@@ -238,6 +238,11 @@ chemin du périphérique ; passer un argument `--*-camera` ajoute automatiquemen
 | right_wrist | /dev/video4 | MJPG | **25** (limite matérielle à 640x480) |
 | chest | /dev/video6 | MJPG | 30 |
 
+> **Ajustement FPS** : Vérifiez les capacités réelles avec
+> `v4l2-ctl -d /dev/videoN --list-formats-ext`, puis mettez à jour la valeur `fps` dans les scripts.
+> Définir un fps non supporté provoquera une erreur de connexion au démarrage.
+
+
 
 ### Axe de levage — persistance du zéro (免归零)
 

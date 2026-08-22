@@ -282,8 +282,13 @@ device path; passing a `--*-camera` arg auto-adds that camera).
 |--------|--------|--------|-----|
 | head | /dev/video0 | MJPG | 30 |
 | left_wrist | /dev/video2 | MJPG | 30 |
-| right_wrist | /dev/video4 | MJPG | 30 |
+| right_wrist | /dev/video4 | MJPG | **25** (hardware limit) |
 | chest | /dev/video6 | MJPG | 30 |
+
+> **Adjusting FPS**: Check your camera's actual capabilities with
+> `v4l2-ctl -d /dev/videoN --list-formats-ext`, then update the `fps` value in scripts.
+> Setting an unsupported fps will cause a connection error at startup.
+
 
 
 ### Lift axis — zero persistence (免归零)
