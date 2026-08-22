@@ -189,6 +189,57 @@ python3 examples/eval_data.py \
 - Ports **5555** (commands) and **5556** (observations) must be open
 - Image streaming bandwidth: ~10 Mbps per camera at 640x480 MJPG
 
+## Calibration
+
+Calibration records the min/max range of each joint. **Only needed once** — the
+results are saved and restored automatically on every connect.
+
+### When to calibrate
+
+- **First time setup** (required)
+- After disassembling/reassembling arms or servos
+- After replacing a servo motor
+- After unlocking new motion range (e.g. head tilt EPROM unlock)
+
+### Leader arm calibration
+
+```bash
+python3 examples/calibrate_leader.py
+```
+
+Steps (per arm):
+1. Arm hanging straight down + gripper closed → `ENTER` (set zero point)
+2. Move each joint through full range → `ENTER` (record real limits)
+3. Gripper: close fully → `ENTER`, open fully → `ENTER`
+4. Calibration saved automatically
+
+> Requires leader arms powered at **7.4V** on `/dev/ttyACM2` (left) and `/dev/ttyACM3` (right).
+
+Saved to:
+```
+~/.cache/huggingface/lerobot/calibration/teleoperators/humanaopen_leader/
+├── leader_left.json
+└── leader_right.json
+```
+
+### Follower calibration (arms + head + wheels + lift)
+
+```bash
+python3 examples/calibrate_follower.py
+```
+
+Steps:
+1. Left arm + head: zero pose → `ENTER`; move joints through full range → `ENTER`
+2. Right arm: zero pose → `ENTER`; move joints through full range → `ENTER`
+3. Auto: wheels full range + lift stall homing to bottom
+
+> Requires follower at **12V**. Torque is released during calibration — arms move freely.
+
+Saved to:
+```
+~/.cache/huggingface/lerobot/calibration/robots/humanaopen/follower.json
+```
+
 ## Teleoperation
 
 ### Full-body teleop (leader arms + keyboard)
@@ -267,57 +318,6 @@ which the calibration file copied — limiting tilt to -54°/+4°. Writing
 `examples/unlock_head_tilt.py --probe`. After unlocking, the calibration file
 (`~/.cache/huggingface/lerobot/calibration/robots/humanaopen/follower.json`) was
 updated to the real range.
-
-## Calibration
-
-Calibration records the min/max range of each joint. **Only needed once** — the
-results are saved and restored automatically on every connect.
-
-### When to calibrate
-
-- **First time setup** (required)
-- After disassembling/reassembling arms or servos
-- After replacing a servo motor
-- After unlocking new motion range (e.g. head tilt EPROM unlock)
-
-### Leader arm calibration
-
-```bash
-python3 examples/calibrate_leader.py
-```
-
-Steps (per arm):
-1. Arm hanging straight down + gripper closed → `ENTER` (set zero point)
-2. Move each joint through full range → `ENTER` (record real limits)
-3. Gripper: close fully → `ENTER`, open fully → `ENTER`
-4. Calibration saved automatically
-
-> Requires leader arms powered at **7.4V** on `/dev/ttyACM2` (left) and `/dev/ttyACM3` (right).
-
-Saved to:
-```
-~/.cache/huggingface/lerobot/calibration/teleoperators/humanaopen_leader/
-├── leader_left.json
-└── leader_right.json
-```
-
-### Follower calibration (arms + head + wheels + lift)
-
-```bash
-python3 examples/calibrate_follower.py
-```
-
-Steps:
-1. Left arm + head: zero pose → `ENTER`; move joints through full range → `ENTER`
-2. Right arm: zero pose → `ENTER`; move joints through full range → `ENTER`
-3. Auto: wheels full range + lift stall homing to bottom
-
-> Requires follower at **12V**. Torque is released during calibration — arms move freely.
-
-Saved to:
-```
-~/.cache/huggingface/lerobot/calibration/robots/humanaopen/follower.json
-```
 
 ## Data Collection
 

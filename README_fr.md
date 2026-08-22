@@ -141,6 +141,58 @@ HumanaOpenHost(HumanaOpenConfig(port1='/dev/ttyACM0', port2='/dev/ttyACM1', port
 - Bande passante : ~10 Mbps par caméra
 
 
+## Calibration
+
+La calibration enregistre la plage min/max de chaque articulation. **Une seule fois nécessaire** —
+les résultats sont sauvegardés et restaurés automatiquement à chaque connexion.
+
+### Quand calibrer
+
+- **Première installation** (requis)
+- Après démontage/remontage des bras ou servos
+- Après remplacement d'un servo moteur
+- Après déblocage d'une nouvelle amplitude (ex: déblocage EPROM du tilt tête)
+
+### Calibration du bras leader
+
+```bash
+python3 examples/calibrate_leader.py
+```
+
+Étapes (par bras) :
+1. Bras pendant verticalement + pince fermée → `ENTER` (point zéro)
+2. Déplacer chaque articulation sur toute sa course → `ENTER` (limites réelles)
+3. Pince : fermer complètement → `ENTER`, ouvrir complètement → `ENTER`
+4. Calibration sauvegardée automatiquement
+
+> Les bras leaders doivent être alimentés en **7.4V** sur `/dev/ttyACM2` (gauche) et `/dev/ttyACM3` (droite).
+
+Sauvegardé dans :
+```
+~/.cache/huggingface/lerobot/calibration/teleoperators/humanaopen_leader/
+├── leader_left.json
+└── leader_right.json
+```
+
+### Calibration du suiveur (bras + tête + roues + levage)
+
+```bash
+python3 examples/calibrate_follower.py
+```
+
+Étapes :
+1. Bras gauche + tête : position zéro → `ENTER` ; parcourir toute la course → `ENTER`
+2. Bras droit : position zéro → `ENTER` ; parcourir toute la course → `ENTER`
+3. Auto : roues pleine plage + homing blocage du levage vers le bas
+
+> Le suiveur doit être alimenté en **12V**. Le couple est relâché pendant la calibration — bras mobiles librement.
+
+Sauvegardé dans :
+```
+~/.cache/huggingface/lerobot/calibration/robots/humanaopen/follower.json
+```
+
+
 ## Téléopération
 
 ### Téléop corps entier (bras leaders + clavier)
@@ -219,58 +271,6 @@ que le fichier de calibration a copiées — limitant l'inclinaison à -54°/+4�
 `examples/unlock_head_tilt.py --probe`. Après le déblocage, le fichier de calibration
 (`~/.cache/huggingface/lerobot/calibration/robots/humanaopen/follower.json`) a été
 mis à jour avec la plage réelle.
-
-## Calibration
-
-La calibration enregistre la plage min/max de chaque articulation. **Une seule fois nécessaire** —
-les résultats sont sauvegardés et restaurés automatiquement à chaque connexion.
-
-### Quand calibrer
-
-- **Première installation** (requis)
-- Après démontage/remontage des bras ou servos
-- Après remplacement d'un servo moteur
-- Après déblocage d'une nouvelle amplitude (ex: déblocage EPROM du tilt tête)
-
-### Calibration du bras leader
-
-```bash
-python3 examples/calibrate_leader.py
-```
-
-Étapes (par bras) :
-1. Bras pendant verticalement + pince fermée → `ENTER` (point zéro)
-2. Déplacer chaque articulation sur toute sa course → `ENTER` (limites réelles)
-3. Pince : fermer complètement → `ENTER`, ouvrir complètement → `ENTER`
-4. Calibration sauvegardée automatiquement
-
-> Les bras leaders doivent être alimentés en **7.4V** sur `/dev/ttyACM2` (gauche) et `/dev/ttyACM3` (droite).
-
-Sauvegardé dans :
-```
-~/.cache/huggingface/lerobot/calibration/teleoperators/humanaopen_leader/
-├── leader_left.json
-└── leader_right.json
-```
-
-### Calibration du suiveur (bras + tête + roues + levage)
-
-```bash
-python3 examples/calibrate_follower.py
-```
-
-Étapes :
-1. Bras gauche + tête : position zéro → `ENTER` ; parcourir toute la course → `ENTER`
-2. Bras droit : position zéro → `ENTER` ; parcourir toute la course → `ENTER`
-3. Auto : roues pleine plage + homing blocage du levage vers le bas
-
-> Le suiveur doit être alimenté en **12V**. Le couple est relâché pendant la calibration — bras mobiles librement.
-
-Sauvegardé dans :
-```
-~/.cache/huggingface/lerobot/calibration/robots/humanaopen/follower.json
-```
-
 
 ## Collecte de données
 

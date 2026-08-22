@@ -140,6 +140,58 @@ HumanaOpenHost(HumanaOpenConfig(port1='/dev/ttyACM0', port2='/dev/ttyACM1', port
 - 대역폭: 카메라당 ~10 Mbps
 
 
+## 캘리브레이션
+
+캘리브레이션은 각 조인트의 min/max 범위를 기록합니다. **한 번만 필요** — 결과가 저장되고
+매 연결 시 자동으로 복원됩니다.
+
+### 언제 캘리브레이션해야 하는가
+
+- **첫 설치** (필수)
+- 암 또는 서보 분해/재조립 후
+- 서보 모터 교체 후
+- 새로운 운동 범위 잠금 해제 후 (예: 헤드 틸트 EPROM 잠금 해제)
+
+### 리더 암 캘리브레이션
+
+```bash
+python3 examples/calibrate_leader.py
+```
+
+단계 (암당):
+1. 팔이 자연스럽게 아래로 처짐 + 그리퍼 닫힘 → `ENTER` (영점 설정)
+2. 각 조인트를 전체 범위로 이동 → `ENTER` (실제 한계 기록)
+3. 그리퍼: 완전히 닫기 → `ENTER`, 완전히 열기 → `ENTER`
+4. 자동 저장됨
+
+> 리더 암은 **7.4V** 전원이 필요하며, `/dev/ttyACM2`(왼쪽)와 `/dev/ttyACM3`(오른쪽)에 연결합니다.
+
+저장 위치:
+```
+~/.cache/huggingface/lerobot/calibration/teleoperators/humanaopen_leader/
+├── leader_left.json
+└── leader_right.json
+```
+
+### 팔로워 캘리브레이션 (암 + 헤드 + 휠 + 리프트)
+
+```bash
+python3 examples/calibrate_follower.py
+```
+
+단계:
+1. 왼쪽 암 + 헤드: 영점 자세 → `ENTER`; 각 조인트 전체 범위 이동 → `ENTER`
+2. 오른쪽 암: 영점 자세 → `ENTER`; 각 조인트 전체 범위 이동 → `ENTER`
+3. 자동: 휠 전체 범위 + 리프트 스톨 호밍 하단
+
+> 팔로워는 **12V** 전원이 필요합니다. 캘리브레이션 중 토크가 해제됩니다 — 팔을 자유롭게 움직일 수 있습니다.
+
+저장 위치:
+```
+~/.cache/huggingface/lerobot/calibration/robots/humanaopen/follower.json
+```
+
+
 ## 텔레오퍼레이션
 
 ### 전신 텔레옵 (리더 암 + 키보드)
@@ -216,58 +268,6 @@ raw > 1000에서 방향이 반전됩니다 (삼각파) — 위험합니다. Phas
 `examples/unlock_head_tilt.py --probe`. 잠금 해제 후 캘리브레이션 파일
 (`~/.cache/huggingface/lerobot/calibration/robots/humanaopen/follower.json`)이
 실제 범위로 업데이트되었습니다.
-
-## 캘리브레이션
-
-캘리브레이션은 각 조인트의 min/max 범위를 기록합니다. **한 번만 필요** — 결과가 저장되고
-매 연결 시 자동으로 복원됩니다.
-
-### 언제 캘리브레이션해야 하는가
-
-- **첫 설치** (필수)
-- 암 또는 서보 분해/재조립 후
-- 서보 모터 교체 후
-- 새로운 운동 범위 잠금 해제 후 (예: 헤드 틸트 EPROM 잠금 해제)
-
-### 리더 암 캘리브레이션
-
-```bash
-python3 examples/calibrate_leader.py
-```
-
-단계 (암당):
-1. 팔이 자연스럽게 아래로 처짐 + 그리퍼 닫힘 → `ENTER` (영점 설정)
-2. 각 조인트를 전체 범위로 이동 → `ENTER` (실제 한계 기록)
-3. 그리퍼: 완전히 닫기 → `ENTER`, 완전히 열기 → `ENTER`
-4. 자동 저장됨
-
-> 리더 암은 **7.4V** 전원이 필요하며, `/dev/ttyACM2`(왼쪽)와 `/dev/ttyACM3`(오른쪽)에 연결합니다.
-
-저장 위치:
-```
-~/.cache/huggingface/lerobot/calibration/teleoperators/humanaopen_leader/
-├── leader_left.json
-└── leader_right.json
-```
-
-### 팔로워 캘리브레이션 (암 + 헤드 + 휠 + 리프트)
-
-```bash
-python3 examples/calibrate_follower.py
-```
-
-단계:
-1. 왼쪽 암 + 헤드: 영점 자세 → `ENTER`; 각 조인트 전체 범위 이동 → `ENTER`
-2. 오른쪽 암: 영점 자세 → `ENTER`; 각 조인트 전체 범위 이동 → `ENTER`
-3. 자동: 휠 전체 범위 + 리프트 스톨 호밍 하단
-
-> 팔로워는 **12V** 전원이 필요합니다. 캘리브레이션 중 토크가 해제됩니다 — 팔을 자유롭게 움직일 수 있습니다.
-
-저장 위치:
-```
-~/.cache/huggingface/lerobot/calibration/robots/humanaopen/follower.json
-```
-
 
 ## 데이터 수집
 
