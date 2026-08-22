@@ -35,7 +35,7 @@ def default_cameras() -> dict[str, CameraConfig]:
         ),
         "right_wrist": OpenCVCameraConfig(
             index_or_path="/dev/video4",
-            fps=25,  # v4l2-ctl 实测: 640x480 下 MJPG 最大 25fps (硬件限制)
+            fps=30,
             width=640,
             height=480,
             fourcc="MJPG",
