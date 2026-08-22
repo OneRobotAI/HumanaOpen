@@ -118,16 +118,15 @@ class HumanaOpenHost:
         sub.bind(f"tcp://*:{self.host_cfg.port_zmq_cmd}")
         sub.RCVTIMEO = self.host_cfg.watchdog_timeout_ms
 
-        logger.info(
-            "Host ready — pub on %d, sub on %d",
-            self.host_cfg.port_zmq_observations,
-            self.host_cfg.port_zmq_cmd,
-        )
+        print(f"✅ Host ready — obs port: {self.host_cfg.port_zmq_observations}, cmd port: {self.host_cfg.port_zmq_cmd}")
+        print(f"   Running at {self.host_cfg.max_loop_freq_hz}Hz, auto-stop after {self.host_cfg.connection_time_s}s")
+        print(f"   Waiting for client connections... (Ctrl+C to stop)")
 
         loop_dt = 1.0 / self.host_cfg.max_loop_freq_hz
         deadline = time.monotonic() + self.host_cfg.connection_time_s
 
         try:
+            frame_count = 0
             while time.monotonic() < deadline:
                 t0 = time.perf_counter()
 
@@ -144,6 +143,10 @@ class HumanaOpenHost:
 
                 if action:
                     robot.send_action(action)
+
+                frame_count += 1
+                if frame_count % 150 == 0:  # every ~5s at 30Hz
+                    print(f"  Host running... frame {frame_count}")
 
                 # ── Rate-limit ──────────────────────────────────────────
                 elapsed = time.perf_counter() - t0
