@@ -75,6 +75,9 @@ pip install "lerobot[feetech]"
 cd /path/to/HumanaOpen
 pip install -e . --no-deps
 
+# Required: HumanaOpen-specific dependencies (not covered by lerobot)
+pip install pynput opencv-python rerun-sdk feetech-servo-sdk
+
 
 # 선택: SmolVLA 의존성 설치 (transformers, num2words)
 pip install -e ".[smolvla]" 2>/dev/null || pip install transformers>=4.48 num2words
