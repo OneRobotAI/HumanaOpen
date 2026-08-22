@@ -65,7 +65,7 @@ DEFAULT_CAM_DEVICES = {
 }
 
 # 所有摄像头统一 30fps MJPG
-CAMERA_FPS_MAP = {"head": 30, "left_wrist": 30, "right_wrist": 30, "chest": 30}
+CAMERA_FPS_MAP = {"head": 30, "left_wrist": 30, "right_wrist": 25, "chest": 30}
 
 
 def build_cameras(args) -> dict[str, OpenCVCameraConfig]:

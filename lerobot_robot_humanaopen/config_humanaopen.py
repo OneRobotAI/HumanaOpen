@@ -35,7 +35,7 @@ def default_cameras() -> dict[str, CameraConfig]:
         ),
         "right_wrist": OpenCVCameraConfig(
             index_or_path="/dev/video4",
-            fps=30,
+            fps=25,
             width=640,
             height=480,
             fourcc="MJPG",
