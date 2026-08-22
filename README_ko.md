@@ -76,7 +76,7 @@ cd /path/to/HumanaOpen
 pip install -e . --no-deps
 
 # Required: HumanaOpen-specific dependencies (not covered by lerobot)
-pip install pynput rerun-sdk feetech-servo-sdk
+pip install pynput rerun-sdk feetech-servo-sdk torchcodec
 
 
 # 선택: SmolVLA 의존성 설치 (transformers, num2words)
