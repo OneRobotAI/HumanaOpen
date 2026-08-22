@@ -94,7 +94,8 @@ robot.connect()
 print(robot.get_observation().keys())
 "
 
-# 6. 双机 ZMQ 模式（在机器人上运行）
+# 6. 双机 ZMQ 模式（⚠️ 仅限 Jetson/树莓派双机部署 — 单机跳过）
+# 在机器人端 (Jetson/RPi) 运行，不在开发机上运行
 python -c "
 from lerobot_robot_humanaopen.humanaopen_host import HumanaOpenHost
 from lerobot_robot_humanaopen import HumanaOpenConfig

@@ -94,7 +94,8 @@ robot.connect()
 print(robot.get_observation().keys())
 "
 
-# 6. Dual-machine ZMQ mode (run on robot, optional)
+# 6. Dual-machine ZMQ mode (⚠️ for Jetson/Raspberry Pi deployment only — skip if single machine)
+# Run this on the ROBOT side (Jetson/RPi), not your dev machine.
 python -c "
 from lerobot_robot_humanaopen.humanaopen_host import HumanaOpenHost
 from lerobot_robot_humanaopen import HumanaOpenConfig
@@ -102,7 +103,6 @@ HumanaOpenHost(HumanaOpenConfig(
     port1='/dev/ttyACM0', port2='/dev/ttyACM1', port3=None, cameras={}
 )).run()
 "
-# Note: This is for dual-machine deployment only. Skip if using single machine.
 ```
 
 ## Teleoperation
