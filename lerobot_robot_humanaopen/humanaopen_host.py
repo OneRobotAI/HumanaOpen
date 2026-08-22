@@ -102,7 +102,7 @@ class HumanaOpenHost:
 
     def run(self) -> None:
         robot = HumanaOpen(self.robot_cfg)
-        robot.connect(calibrate=True)
+        robot.connect(calibrate=False)
         self._robot = robot
 
         ctx = zmq.Context()
