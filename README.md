@@ -477,7 +477,7 @@ The pushed model will be at `https://huggingface.co/your-name/humanaopen_act_pol
 > **Dependencies**: SmolVLA requires `transformers>=4.48` and `num2words`.
 > Install with `pip install transformers>=4.48 num2words` before running SmolVLA inference.
 
-### ACT inference (with human override)
+### ACT inference
 
 ```bash
 python3 examples/eval_data.py \
@@ -489,8 +489,8 @@ python3 examples/eval_data.py \
     --robot.port1=/dev/ttyACM0 \
     --robot.port2=/dev/ttyACM1 \
     --robot.port3=None \
+    --enable-base=false \
     --robot.cameras='{"head": {"type": "opencv", "index_or_path": "/dev/video0", "width": 640, "height": 480, "fps": 30, "fourcc": "MJPG"}, "left_wrist": {"type": "opencv", "index_or_path": "/dev/video2", "width": 640, "height": 480, "fps": 30, "fourcc": "MJPG"}, "right_wrist": {"type": "opencv", "index_or_path": "/dev/video4", "width": 640, "height": 480, "fps": 30, "fourcc": "MJPG"}}' \
-    --teleop.type=humanaopen_teleop \
     --teleop.left_arm_port=/dev/ttyACM2 \
     --teleop.right_arm_port=/dev/ttyACM3 \
     --teleop.flip_joints='{"left": [], "right": []}' \
@@ -500,7 +500,7 @@ python3 examples/eval_data.py \
     --fps=30
 ```
 
-### SmolVLA inference (language-conditioned, no override)
+### SmolVLA inference (language-conditioned)
 
 ```bash
 python3 examples/eval_data.py \
@@ -527,9 +527,17 @@ python3 examples/eval_data.py \
 
 | Control | Keys |
 |---------|------|
-| Quit | `q` |
+| Quit | `q` or Ctrl+C |
 
-> **Note**: Override feature has been removed for simplicity. The policy controls all non-base DOF directly.
+### Safety: torque release on exit
+
+When you press `q` to stop inference, the script will:
+1. Stop all motors and save lift position
+2. Prompt: **"Press ENTER to release torque and disconnect..."**
+3. Hold the arms before pressing ENTER — torque will be released and arms drop freely
+4. Press ENTER when ready → disconnect
+
+This prevents arms from suddenly dropping when servos lose power.
 
 ### Key parameters (inference)
 
@@ -538,12 +546,13 @@ python3 examples/eval_data.py \
 | `--policy.type` | `act` | `act` or `smolvla`. |
 | `--policy.repo_id` | — | **Required.** Hub repo of the trained model. |
 | `--task` | — | Language instruction (required for SmolVLA). |
-| `--enable-base` | off | Allow policy to control base wheels. Default: disabled. |
+| `--enable-base` | `false` | Set `true` to allow policy control of base wheels. Default: disabled. |
 | `--num-episodes` | 5 | Number of inference episodes. |
 | `--duration` | 30 | Seconds per episode. |
 | `--fps` | 30 | Inference frequency (Hz). |
 
 On startup, the script will prompt for calibration confirmation (ENTER to restore).
+On exit, it will prompt for torque release confirmation (ENTER to release).
 
 ## License
 
