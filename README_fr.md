@@ -297,7 +297,6 @@ python3 examples/record_data.py \
     --robot.port3=None \
     --robot.cameras='{"head": {"type": "opencv", "index_or_path": "/dev/video0", "width": 640, "height": 480, "fps": 30, "fourcc": "MJPG"}, "left_wrist": {"type": "opencv", "index_or_path": "/dev/video2", "width": 640, "height": 480, "fps": 30, "fourcc": "MJPG"}, "right_wrist": {"type": "opencv", "index_or_path": "/dev/video4", "width": 640, "height": 480, "fps": 30, "fourcc": "MJPG"}}' \
     --robot.confirm_lift_after_home=true \
-    --teleop.type=humanaopen_teleop \
     --teleop.left_arm_port=/dev/ttyACM2 \
     --teleop.right_arm_port=/dev/ttyACM3 \
     --teleop.flip_joints='{"left": [], "right": []}' \
@@ -434,7 +433,7 @@ Le modèle poussé sera à `https://huggingface.co/votre-nom/humanaopen_act_poli
 > **Dépendances** : SmolVLA nécessite `transformers>=4.48` et `num2words`.
 > Installez avec `pip install transformers>=4.48 num2words` avant l'inférence SmolVLA.
 
-### Inférence ACT (avec override humain)
+### Inférence ACT 
 
 ```bash
 python3 examples/eval_data.py \
@@ -446,8 +445,8 @@ python3 examples/eval_data.py \
     --robot.port1=/dev/ttyACM0 \
     --robot.port2=/dev/ttyACM1 \
     --robot.port3=None \
+    --enable-base=false \
     --robot.cameras='{"head": {"type": "opencv", "index_or_path": "/dev/video0", "width": 640, "height": 480, "fps": 30, "fourcc": "MJPG"}, "left_wrist": {"type": "opencv", "index_or_path": "/dev/video2", "width": 640, "height": 480, "fps": 30, "fourcc": "MJPG"}, "right_wrist": {"type": "opencv", "index_or_path": "/dev/video4", "width": 640, "height": 480, "fps": 30, "fourcc": "MJPG"}}' \
-    --teleop.type=humanaopen_teleop \
     --teleop.left_arm_port=/dev/ttyACM2 \
     --teleop.right_arm_port=/dev/ttyACM3 \
     --teleop.flip_joints='{"left": [], "right": []}' \
