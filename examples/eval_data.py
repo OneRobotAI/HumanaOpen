@@ -210,6 +210,8 @@ def main():
                 if new_override != override_enabled[0]:
                     override_enabled[0] = new_override
                     if override_enabled[0]:
+                        if leader is not None:
+                            leader._keys.clear()
                         print("  🟢 Override ON — arms from leader, head/lift/base from keyboard")
                     else:
                         print("  🔴 Override OFF — policy control")
