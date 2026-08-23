@@ -74,7 +74,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--duration", type=float, default=30.0)
     p.add_argument("--fps", type=int, default=30)
     p.add_argument("--task", default="", help="Language instruction (required for smolvla)")
-    p.add_argument("--enable-base", action="store_true", help="Allow policy to control base wheels")
+    p.add_argument("--enable-base", default="false", choices=["true", "false"], help="Allow policy to control base wheels")
     p.add_argument("--no-display", action="store_true")
     # --teleop.* (optional leader arms for manual control)
     p.add_argument("--teleop.left_arm_port", default="/dev/ttyACM2")
@@ -151,7 +151,7 @@ def main():
         port3 = None
 
     cameras = build_cameras(d["robot.cameras"])
-    enable_base = d.get("enable_base", False)
+    enable_base = d.get("enable_base", "false").strip().lower() == "true"
 
     print("=" * 60)
     print("HumanaOpen Policy Rollout")
