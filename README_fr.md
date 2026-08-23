@@ -456,7 +456,7 @@ python3 examples/eval_data.py \
     --fps=30
 ```
 
-### Inférence SmolVLA (conditionnée par langage, sans override)
+### Inférence SmolVLA (conditionnée par langage)
 
 ```bash
 python3 examples/eval_data.py \
@@ -483,12 +483,7 @@ python3 examples/eval_data.py \
 
 | Contrôle | Touches | Notes |
 |---------|------|-------|
-| Override (ACT uniquement) | `e` (maintenir) | Basculer les bras vers le contrôle leader |
 | Quitter | `q` | Arrêter tous les épisodes |
-
-**Override humain** (ACT uniquement) :
-- Maintenir `e` : les bras suivent le leader, tête/levage/base au clavier, stratégie en pause
-- Relâcher `e` : retour au contrôle par la stratégie
 
 ## Licence
 
