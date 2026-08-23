@@ -444,7 +444,7 @@ python3 examples/eval_data.py \
     --fps=30
 ```
 
-### SmolVLA 推理（语言条件，无 override）
+### SmolVLA 推理（语言条件）
 
 ```bash
 python3 examples/eval_data.py \
@@ -471,7 +471,6 @@ python3 examples/eval_data.py \
 
 | 控制 | 按键 | 说明 |
 |---------|------|-------|
-| Override（仅 ACT）| `e`（按住）| 切换双臂到主臂控制 |
 | 退出 | `q` | 停止所有 episode |
 
 **人工接管**（仅 ACT）：
