@@ -79,6 +79,9 @@ pip install -e . --no-deps
 # Required: HumanaOpen-specific dependencies (not covered by lerobot)
 pip install pynput rerun-sdk feetech-servo-sdk torchcodec
 
+# Required: SOCKS proxy support (for HuggingFace upload behind proxy)
+pip install httpx[socks]
+
 # Optional: install SmolVLA dependencies (transformers, num2words)
 pip install -e ".[smolvla]" 2>/dev/null || pip install transformers>=4.48 num2words
 
