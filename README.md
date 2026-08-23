@@ -525,14 +525,25 @@ python3 examples/eval_data.py \
 
 ### Controls during inference
 
-| Control | Keys | Notes |
-|---------|------|-------|
-| Override (ACT only) | `e` (hold) | Switch arms to leader control |
-| Quit | `q` | Stop all episodes |
+| Control | Keys |
+|---------|------|
+| Quit | `q` |
 
-**Human override** (ACT only):
-- Hold `e`: arms follow leader, head/lift/base by keyboard, strategy paused
-- Release `e`: back to strategy control
+> **Note**: Override feature has been removed for simplicity. The policy controls all non-base DOF directly.
+
+### Key parameters (inference)
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `--policy.type` | `act` | `act` or `smolvla`. |
+| `--policy.repo_id` | — | **Required.** Hub repo of the trained model. |
+| `--task` | — | Language instruction (required for SmolVLA). |
+| `--enable-base` | off | Allow policy to control base wheels. Default: disabled. |
+| `--num-episodes` | 5 | Number of inference episodes. |
+| `--duration` | 30 | Seconds per episode. |
+| `--fps` | 30 | Inference frequency (Hz). |
+
+On startup, the script will prompt for calibration confirmation (ENTER to restore).
 
 ## License
 

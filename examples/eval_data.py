@@ -186,7 +186,7 @@ def main():
         port3=port3,
         cameras=cameras,
     ))
-    robot.connect(calibrate=False)
+    robot.connect(calibrate=True)
     print("  Robot connected")
 
     # Optional: connect leader arms for manual dual-arm control
