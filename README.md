@@ -69,21 +69,15 @@ examples/
 conda create -n humanaopen python=3.12
 conda activate humanaopen
 
-# 2. Install LeRobot with Feetech SDK (all dependencies included)
-pip install "lerobot[feetech]"
+# 2. Install LeRobot with all required extras (feetech + dataset + training + viz)
+pip install "lerobot[dataset,training,feetech,viz,transformers-dep]"
 
 # 3. Install HumanaOpen (editable)
 cd /path/to/HumanaOpen
 pip install -e . --no-deps
 
-# Required: HumanaOpen-specific dependencies (not covered by lerobot)
-pip install pynput rerun-sdk feetech-servo-sdk torchcodec
-
-# Required: SOCKS proxy support (for HuggingFace upload behind proxy)
-pip install httpx[socks]
-
-# Optional: install SmolVLA dependencies (transformers, num2words)
-pip install -e ".[smolvla]" 2>/dev/null || pip install transformers>=4.48 num2words
+# Required: HumanaOpen-specific dependencies
+pip install pynput rerun-sdk torchcodec httpx[socks] num2words
 
 # Optional: GPU with CUDA 12.8+ (Blackwell / RTX 5060+)
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128
