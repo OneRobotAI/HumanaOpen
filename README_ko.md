@@ -446,6 +446,7 @@ python3 examples/eval_data.py \
     --teleop.right_arm_port=/dev/ttyACM3 \
     --teleop.flip_joints='{"left": [], "right": []}' \
     --teleop.joint_remap='{}' \
+    --enable-base=false \
     --num-episodes=5 \
     --duration=30 \
     --fps=30
