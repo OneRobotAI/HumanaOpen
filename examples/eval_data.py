@@ -34,8 +34,8 @@ import rerun as rr
 
 sys.path.insert(0, "/home/zach/HumanaOpen")
 
-from lerobot.utils.import_utils import register_third_party_devices
-register_third_party_devices()
+from lerobot.utils.import_utils import register_third_party_plugins
+register_third_party_plugins()
 
 from lerobot.cameras.opencv.configuration_opencv import OpenCVCameraConfig
 from lerobot.policies.act.modeling_act import ACTPolicy

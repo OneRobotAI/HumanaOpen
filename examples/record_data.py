@@ -22,8 +22,8 @@ import sys
 
 sys.path.insert(0, "/home/zach/HumanaOpen")
 
-from lerobot.utils.import_utils import register_third_party_devices
-register_third_party_devices()  # must run before constructing configs
+from lerobot.utils.import_utils import register_third_party_plugins
+register_third_party_plugins()  # must run before constructing configs
 
 from lerobot.cameras.opencv.configuration_opencv import OpenCVCameraConfig
 from lerobot.scripts.lerobot_record import DatasetRecordConfig, RecordConfig, record
