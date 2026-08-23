@@ -10,14 +10,7 @@ name = "lerobot-robot-humanaopen"
 version = "0.1.0"
 description = "HumanaOpen — open-source semi-humanoid robot for LeRobot"
 requires-python = ">=3.10"
-dependencies = [
-    "numpy",
-    "pyzmq",
-    "feetech-servo-sdk",
-    "pynput",
-    "rerun-sdk",
-]
-
+dependencies = []
 [project.entry-points."lerobot.robots"]
 humanaopen = "lerobot_robot_humanaopen:HumanaOpen"
 humanaopen_client = "lerobot_robot_humanaopen:HumanaOpenClientConfig"
