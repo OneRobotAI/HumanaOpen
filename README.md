@@ -509,6 +509,7 @@ python3 examples/eval_data.py \
     --policy.repo_id=your-name/humanaopen_smolvla_policy \
     --policy.device=cuda \
     --task="wave hello with both arms" \
+    --enable-base=false \
     --robot.type=humanaopen \
     --robot.id=follower \
     --robot.port1=/dev/ttyACM0 \
