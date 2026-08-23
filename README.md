@@ -76,8 +76,8 @@ pip install "lerobot[dataset,training,feetech,viz,transformers-dep,hardware,smol
 cd /path/to/HumanaOpen
 pip install -e . --no-deps
 
-# Required: SOCKS proxy support (for HuggingFace upload behind proxy)
-pip install httpx[socks]
+# Required: SOCKS proxy + SmolVLA tokenizer
+pip install httpx[socks] num2words
 
 # Optional: GPU with CUDA 12.8+ (Blackwell / RTX 5060+)
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128
