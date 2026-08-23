@@ -64,8 +64,10 @@ DEFAULT_CAM_DEVICES = {
     "right_wrist": "/dev/video4",
 }
 
-# 所有摄像头统一 30fps MJPG
-CAMERA_FPS_MAP = {"head": 30, "left_wrist": 30, "right_wrist": 25, "chest": 30}
+# 每个摄像头的 fps 设置 — 请根据实际硬件能力修改
+# 用 v4l2-ctl -d /dev/videoN --list-formats-ext 查看支持的分辨率和帧率
+# 默认值基于当前硬件实测: video4 在 640x480 MJPG 下最大 25fps, 其余 30fps
+CAMERA_FPS_MAP = {"head": 30, "left_wrist": 30, "right_wrist": 30, "chest": 30}
 
 
 def build_cameras(args) -> dict[str, OpenCVCameraConfig]:
