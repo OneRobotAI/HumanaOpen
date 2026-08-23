@@ -108,11 +108,12 @@ def main():
         port3 = None
 
     cameras = build_cameras(d["robot.cameras"])
+    policy_type = d.get("policy.type", "act")
     has_teleop = d["teleop.type"] is not None and policy_type != "smolvla"
 
     print("=" * 60)
-    print("HumanaOpen ACT Policy Rollout")
-    print(f"  Model:     {d['policy.repo_id']} ({d['policy.type'].upper()})")
+    print("HumanaOpen Policy Rollout")
+    print(f"  Model:     {d['policy.repo_id']} ({policy_type.upper()})")
     print(f"  Device:    {d['policy.device']}")
     print(f"  Cameras:   {list(cameras.keys())}")
     print(f"  Episodes:  {d['num_episodes']} x {d['duration']}s @ {d['fps']}Hz")
@@ -122,7 +123,6 @@ def main():
     print()
 
     # ── Load model ───────────────────────────────────────────────────
-    policy_type = d.get("policy.type", "act")
     print(f"Loading {policy_type.upper()} policy...")
     if policy_type == "smolvla":
         from lerobot.policies.smolvla.modeling_smolvla import SmolVLAPolicy
