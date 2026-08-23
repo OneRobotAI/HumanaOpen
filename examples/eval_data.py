@@ -250,6 +250,11 @@ def main():
         print("\n  Stopped")
     finally:
         listener.stop()
+        try:
+            robot.lift_axis.save_zero()
+            print("Lift position saved")
+        except Exception:
+            pass
         # stop all motors
         try:
             robot.send_action({k: 0.0 for k in robot.action_features if k.endswith(".vel")})
