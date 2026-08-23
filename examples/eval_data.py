@@ -184,6 +184,14 @@ def main():
         if ch == "e":
             override_enabled[0] = not override_enabled[0]
             if override_enabled[0]:
+                # 同步当前头部/升降位置到 leader，避免 override 时跳变
+                try:
+                    obs = robot.get_observation()
+                    leader._head_pan = obs.get("head_pan.pos", 0.0)
+                    leader._head_tilt = obs.get("head_tilt.pos", 0.0)
+                    leader._lift_h = robot.lift_axis.get_height_mm()
+                except Exception:
+                    pass
                 print("  🟢 Override ON — arms from leader")
             else:
                 print("  🔴 Override OFF — policy control")
