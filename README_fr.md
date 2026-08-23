@@ -78,7 +78,7 @@ pip install -e . --no-deps
 
 
 # Required: SOCKS proxy support (for HuggingFace upload behind proxy)
-pip install httpx[socks]
+pip install httpx[socks] num2words
 
 
 # Optionnel : installer les dépendances SmolVLA (transformers, num2words)
