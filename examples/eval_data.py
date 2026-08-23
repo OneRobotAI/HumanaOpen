@@ -194,7 +194,9 @@ def main():
                     pass
                 print("  🟢 Override ON — arms from leader")
             else:
-                print("  🔴 Override OFF — policy control")
+                # 清空 action queue，强制基于当前位置重新推理
+                policy.reset()
+                print("  🔴 Override OFF — policy control (re-planning from current pose)")
         elif ch == "q":
             quit_flag[0] = True
 
