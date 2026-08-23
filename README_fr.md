@@ -235,7 +235,7 @@ chemin du périphérique ; passer un argument `--*-camera` ajoute automatiquemen
 |--------|--------|--------|-----|
 | head | /dev/video0 | MJPG | 30 |
 | left_wrist | /dev/video2 | MJPG | 30 |
-| right_wrist | /dev/video4 | MJPG | **25** (limite matérielle à 640x480) |
+| right_wrist | /dev/video4 | MJPG | 30 |
 | chest | /dev/video6 | MJPG | 30 |
 
 > **Ajustement FPS** : Vérifiez les capacités réelles avec

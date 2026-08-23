@@ -234,7 +234,7 @@ python3 examples/teleop_leader_to_follower.py --no-cameras
 |--------|--------|--------|-----|
 | head | /dev/video0 | MJPG | 30 |
 | left_wrist | /dev/video2 | MJPG | 30 |
-| right_wrist | /dev/video4 | MJPG | **25** (640x480 하드웨어 한계) |
+| right_wrist | /dev/video4 | MJPG | 30 |
 | chest | /dev/video6 | MJPG | 30 |
 
 > **FPS 조정**: `v4l2-ctl -d /dev/videoN --list-formats-ext`로 실제 기능을 확인하고
