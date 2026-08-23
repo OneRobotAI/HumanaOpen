@@ -170,32 +170,29 @@ def main():
         except Exception as e:
             print(f"  ⚠️ Rerun unavailable: {e}")
 
-    # ── Keyboard (termios direct read — reliable under heavy GPU load) ─
-    import tty, select as sel
+    # ── Keyboard (pynput toggle — press e to switch, q to quit) ──────
+    from pynput import keyboard as kb
 
     override_enabled = [False]
     quit_flag = [False]
-    _held_keys = {}
 
-    old_term = termios.tcgetattr(sys.stdin)
-    tty.setraw(sys.stdin.fileno())
+    def _on_press(key):
+        try:
+            ch = key.char
+        except AttributeError:
+            return
+        if ch == "e":
+            override_enabled[0] = not override_enabled[0]
+            if override_enabled[0]:
+                print("  🟢 Override ON — arms from leader")
+            else:
+                print("  🔴 Override OFF — policy control")
+        elif ch == "q":
+            quit_flag[0] = True
 
-    def _read_keys():
-        """Non-blocking read of available chars from stdin."""
-        while sel.select([sys.stdin], [], [], 0)[0]:
-            ch = sys.stdin.read(1)
-            if ch:
-                _held_keys[ch] = time.time()
-
-    def _is_held(ch: str, timeout_s: float = 0.3) -> bool:
-        """Key is 'held' if pressed within the last timeout_s seconds."""
-        t = _held_keys.get(ch)
-        return t is not None and (time.time() - t) < timeout_s
-
-    def _cleanup_terminal():
-        termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_term)
-
-    print("  Keyboard: hold e=override, q=quit")
+    listener = kb.Listener(on_press=_on_press)
+    listener.start()
+    print("  Keyboard: press e=toggle override, q=quit")
 
     # ── Rollout loop ─────────────────────────────────────────────────
     try:
@@ -204,28 +201,14 @@ def main():
                 break
             print(f"\n  Episode {ep + 1}/{d['num_episodes']}")
 
-            print("  Policy control active (hold e=override)" if has_teleop else "  Running inference...")
+            print("  Policy control active" if has_teleop else "  Running inference...")
             episode_start = time.time()
 
             for step in range(int(d["duration"] * d["fps"])):
                 if quit_flag[0]:
                     break
                 t_start = time.perf_counter()
-                _read_keys()
 
-                if _is_held("q"):
-                    quit_flag[0] = True
-
-                # Override: hold 'e' = override, release = policy
-                new_override = _is_held("e") and has_teleop
-                if new_override != override_enabled[0]:
-                    override_enabled[0] = new_override
-                    if override_enabled[0]:
-                        if leader is not None:
-                            leader._keys.clear()
-                        print("  🟢 Override ON — arms from leader, head/lift/base from keyboard")
-                    else:
-                        print("  🔴 Override OFF — policy control")
                 obs = robot.get_observation()
 
                 # ── Apply action ──────────────────────────────────────
@@ -266,7 +249,7 @@ def main():
     except KeyboardInterrupt:
         print("\n  Stopped")
     finally:
-        _cleanup_terminal()
+        listener.stop()
         # stop all motors
         try:
             robot.send_action({k: 0.0 for k in robot.action_features if k.endswith(".vel")})
