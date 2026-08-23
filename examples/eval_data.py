@@ -280,8 +280,10 @@ def main():
         except Exception:
             pass
         quit_listener.stop()
+        # 掉使能前确认，防止手臂突然下垂
+        input("\nPress ENTER to release torque and disconnect...")
         robot.disconnect()
-        print("Done")
+        print("Done — torque released, arms free to move")
 
 
 if __name__ == "__main__":
