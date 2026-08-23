@@ -70,14 +70,12 @@ conda create -n humanaopen python=3.12
 conda activate humanaopen
 
 # 2. Installer LeRobot (dépendance requise)
-pip install "lerobot[feetech]"
+pip install "lerobot[dataset,training,feetech,viz,transformers-dep,hardware,smolvla]"
 
 # 3. Installer HumanaOpen (editable)
 cd /chemin/vers/HumanaOpen
 pip install -e . --no-deps
 
-# Required: HumanaOpen-specific dependencies (not covered by lerobot)
-pip install pynput rerun-sdk feetech-servo-sdk torchcodec
 
 # Required: SOCKS proxy support (for HuggingFace upload behind proxy)
 pip install httpx[socks]

@@ -69,14 +69,12 @@ conda create -n humanaopen python=3.12
 conda activate humanaopen
 
 # 2. LeRobot 설치 (필수 의존성)
-pip install "lerobot[feetech]"
+pip install "lerobot[dataset,training,feetech,viz,transformers-dep,hardware,smolvla]"
 
 # 3. HumanaOpen 설치 (editable)
 cd /path/to/HumanaOpen
 pip install -e . --no-deps
 
-# Required: HumanaOpen-specific dependencies (not covered by lerobot)
-pip install pynput rerun-sdk feetech-servo-sdk torchcodec
 
 # Required: SOCKS proxy support (for HuggingFace upload behind proxy)
 pip install httpx[socks]
