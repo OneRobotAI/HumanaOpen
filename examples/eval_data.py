@@ -93,6 +93,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--fps", type=int, default=30)
     # display
     p.add_argument("--no-display", action="store_true", help="skip rerun visualization")
+    p.add_argument("--enable-base", action="store_true", help="allow policy to control base wheels (default: disabled)")
     p.add_argument("--task", default="wave hello with both arms", help="Language instruction for SmolVLA (required for VLA policies)")
     p.add_argument("--save-video", default=None, help="save rollout video to this path")
     return p
@@ -225,7 +226,7 @@ def main():
                     with torch.no_grad():
                         action_tensor = policy.select_action(policy_obs)
                     action_np = action_tensor.cpu().numpy().flatten()
-                    action_dict = _action_to_dict(action_np, policy, robot)
+                    action_dict = _action_to_dict(action_np, policy, robot, enable_base=d.get("enable_base", False))
                     robot.send_action(action_dict)
 
                 # ── Log to rerun ──────────────────────────────────────
@@ -299,12 +300,16 @@ def _build_policy_obs(obs, policy, cameras, device, robot, task: str = ""):
     return batch
 
 
-def _action_to_dict(action_np, policy, robot):
+def _action_to_dict(action_np, policy, robot, enable_base=False):
     """Convert 21-dim action array to robot send_action dict."""
     action_keys = list(robot.action_features.keys())
     action_dict = {}
     for i, key in enumerate(action_keys):
-        action_dict[key] = float(action_np[i]) if i < len(action_np) else 0.0
+        val = float(action_np[i]) if i < len(action_np) else 0.0
+        # 底盘速度默认禁用（策略输出不稳定），加 --enable-base 启用
+        if not enable_base and key in ("x.vel", "theta.vel"):
+            val = 0.0
+        action_dict[key] = val
     return action_dict
 
 
