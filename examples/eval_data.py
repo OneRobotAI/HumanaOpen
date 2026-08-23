@@ -76,6 +76,11 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--task", default="", help="Language instruction (required for smolvla)")
     p.add_argument("--enable-base", action="store_true", help="Allow policy to control base wheels")
     p.add_argument("--no-display", action="store_true")
+    # --teleop.* (optional leader arms for manual control)
+    p.add_argument("--teleop.left_arm_port", default="/dev/ttyACM2")
+    p.add_argument("--teleop.right_arm_port", default="/dev/ttyACM3")
+    p.add_argument("--teleop.flip_joints", default='{"left": [], "right": []}')
+    p.add_argument("--teleop.joint_remap", default="{}")
     return p
 
 
@@ -183,6 +188,23 @@ def main():
     ))
     robot.connect(calibrate=False)
     print("  Robot connected")
+
+    # Optional: connect leader arms for manual dual-arm control
+    from lerobot_robot_humanaopen.leader import BiHumanaOpenLeader, BiHumanaOpenLeaderConfig
+    leader = None
+    print("Connecting leader arms...")
+    try:
+        leader = BiHumanaOpenLeader(BiHumanaOpenLeaderConfig(
+            id="leader",
+            left_arm_port=d["teleop.left_arm_port"],
+            right_arm_port=d["teleop.right_arm_port"],
+            flip_joints=json.loads(d["teleop.flip_joints"]),
+            joint_remap=json.loads(d["teleop.joint_remap"]),
+        ))
+        leader.connect(calibrate=False)
+        print("  Leader arms connected (dual-arm manual control active)")
+    except Exception as e:
+        print(f"  ⚠️ Leader arms not available: {e}")
 
     # Rerun display
     if not d["no_display"]:
