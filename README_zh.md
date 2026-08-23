@@ -422,7 +422,7 @@ outputs/humanaopen_act_demo/
 > **依赖**：SmolVLA 需要 `transformers>=4.48` 和 `num2words`。
 > 运行 SmolVLA 推理前安装：`pip install transformers>=4.48 num2words`。
 
-### ACT 推理（支持人工接管）
+### ACT 推理
 
 ```bash
 python3 examples/eval_data.py \
@@ -473,9 +473,6 @@ python3 examples/eval_data.py \
 |---------|------|-------|
 | 退出 | `q` | 停止所有 episode |
 
-**人工接管**（仅 ACT）：
-- 按住 `e`：双臂跟随主臂，头部/升降/底盘由键盘控制，策略暂停
-- 松开 `e`：恢复策略控制
 
 ## 许可证
 
