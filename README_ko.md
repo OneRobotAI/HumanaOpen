@@ -133,7 +133,13 @@ HumanaOpenHost(HumanaOpenConfig(port1='/dev/ttyACM0', port2='/dev/ttyACM1', port
 
 ### Jetson (Host + 선택적 로컬 추론)
 ```bash
-pip3 install lerobot[feetech]
+# 라즈베리파이와 동일 — Host는 torch/transformers 불필요
+conda create -n humanaopen python=3.12
+conda activate humanaopen
+
+pip install pyzmq feetech-servo-sdk
+# conda install -y ffmpeg=7.1.1 -c conda-forge  # 선택사항
+
 cd ~/ && git clone https://github.com/OneRobotAI/HumanaOpen.git
 cd HumanaOpen && pip3 install -e . --no-deps
 python3 -c "

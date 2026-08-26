@@ -111,19 +111,58 @@ HumanaOpenHost(HumanaOpenConfig()).run()
 ## 双机部署
 
 正式部署时，机器人硬件连接到嵌入式板（Jetson 或树莓派），策略推理在独立 GPU 机器上运行。
-两者通过 ZMQ 通信。完整设置请参考英文版 [Dual-Machine Deployment](README.md#dual-machine-deployment) 章节。
+两者通过 ZMQ 通信。
 
-架构：开发机(GPU) ←→ Jetson/RPi(Host)，ZMQ 端口 5555/5556。
+```
+┌──────────────────────┐       ZMQ TCP        ┌──────────────────────┐
+│   开发机 (GPU)       │ ←──────────────────→ │  Jetson / RPi (Host) │
+│                      │   obs ──────────→    │                      │
+│  • 策略推理          │   ←── action (21DOF) │  • 读舵机/摄像头      │
+│  • ACT / SmolVLA     │                       │  • 执行动作          │
+│  • 无需接舵机        │                       │  • 舵机 + 摄像头接线 │
+└──────────────────────┘                       └──────────────────────┘
+```
 
-### 树莓派（仅 Host）
+### 树莓派（仅 Host — 无 GPU 推理）
+
 ```bash
+# 树莓派 (ARM64)
 conda create -n humanaopen python=3.12
 conda activate humanaopen
 
-# Host dependencies (lightweight — no torch/transformers needed)
+# Host 依赖（轻量 — 不需要 torch/transformers）
 pip install pyzmq feetech-servo-sdk
+# 可选：视频编码用（仅 ZMQ 流式传输则不需要）
+# conda install -y ffmpeg=7.1.1 -c conda-forge
+
+# 安装 HumanaOpen
 cd ~/ && git clone https://github.com/OneRobotAI/HumanaOpen.git
 cd HumanaOpen && pip3 install -e . --no-deps
+
+# 启动 Host
+python3 -c "
+from lerobot_robot_humanaopen.humanaopen_host import HumanaOpenHost
+from lerobot_robot_humanaopen import HumanaOpenConfig
+HumanaOpenHost(HumanaOpenConfig(
+    port1='/dev/ttyACM0', port2='/dev/ttyACM1', port3=None, cameras={}
+)).run()
+"
+```
+
+### NVIDIA Jetson（Host + 可选本地推理）
+
+```bash
+# Jetson (JetPack 6.x, CUDA 12.x)
+# 安装方式与树莓派相同 — Host 不需要 torch/transformers
+conda create -n humanaopen python=3.12
+conda activate humanaopen
+
+pip install pyzmq feetech-servo-sdk
+# conda install -y ffmpeg=7.1.1 -c conda-forge  # 可选
+
+cd ~/ && git clone https://github.com/OneRobotAI/HumanaOpen.git
+cd HumanaOpen && pip3 install -e . --no-deps
+
 python3 -c "
 from lerobot_robot_humanaopen.humanaopen_host import HumanaOpenHost
 from lerobot_robot_humanaopen import HumanaOpenConfig
@@ -131,21 +170,35 @@ HumanaOpenHost(HumanaOpenConfig(port1='/dev/ttyACM0', port2='/dev/ttyACM1', port
 "
 ```
 
-### Jetson（Host + 可选本地推理）
+> **注意**：Jetson 也可以本地运行 ACT 推理（Orin 上约 100ms/帧），
+> 但 SmolVLA 需要独立 GPU，应在开发机上运行。
+
+### 开发机（Client — 策略推理）
+
+在 GPU 机器上连接机器人的 IP：
+
 ```bash
-pip3 install lerobot[feetech]
-cd ~/ && git clone https://github.com/OneRobotAI/HumanaOpen.git
-cd HumanaOpen && pip3 install -e . --no-deps
-python3 -c "
-from lerobot_robot_humanaopen.humanaopen_host import HumanaOpenHost
-from lerobot_robot_humanaopen import HumanaOpenConfig
-HumanaOpenHost(HumanaOpenConfig(port1='/dev/ttyACM0', port2='/dev/ttyACM1', port3=None, cameras={})).run()
-"
+conda activate humanaopen
+cd /path/to/HumanaOpen
+
+# 设置机器人 IP（Jetson/RPi 局域网地址）
+export ROBOT_IP=192.168.1.100
+
+# 远程运行推理
+python3 examples/eval_data.py \
+    --policy.type=act \
+    --policy.repo_id=your-name/humanaopen_act_policy \
+    --policy.device=cuda \
+    --robot.type=humanaopen_client \
+    --robot.remote_ip=$ROBOT_IP \
+    --num-episodes=5 --duration=30 --fps=30
 ```
 
 ### 网络要求
-- 同一局域网，端口 5555 和 5556 开放
-- 图像流带宽：每摄像头约 10 Mbps
+
+- 两台机器在同一局域网（建议以太网优于 WiFi 以降低延迟）
+- 端口 **5555**（命令）和 **5556**（观测）必须开放
+- 图像流带宽：每摄像头约 10 Mbps（640x480 MJPG）
 
 
 ## 校准
