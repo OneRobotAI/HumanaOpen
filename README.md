@@ -117,23 +117,25 @@ separate GPU machine. The two communicate over ZMQ.
 ### Raspberry Pi (Host only — no GPU inference)
 
 ```bash
-# On Raspberry Pi (ARM64, Raspberry Pi OS Lite recommended)
-sudo apt update && sudo apt install -y python3-pip
-pip3 install lerobot[feetech]
+# On Raspberry Pi (ARM64)
+conda create -n humanaopen python=3.12
+conda activate humanaopen
+
+# Host dependencies (lightweight — no torch/transformers needed)
+pip install pyzmq feetech-servo-sdk
+# Optional: ffmpeg for video encoding (not needed if only streaming via ZMQ)
+# conda install -y ffmpeg=7.1.1 -c conda-forge
 
 # Install HumanaOpen
-cd ~/
-git clone https://github.com/OneRobotAI/HumanaOpen.git
-cd HumanaOpen
-pip3 install -e . --no-deps
+cd ~/ && git clone https://github.com/OneRobotAI/HumanaOpen.git
+cd HumanaOpen && pip3 install -e . --no-deps
 
-# Start Host (reads sensors, executes commands)
+# Start Host
 python3 -c "
 from lerobot_robot_humanaopen.humanaopen_host import HumanaOpenHost
 from lerobot_robot_humanaopen import HumanaOpenConfig
 HumanaOpenHost(HumanaOpenConfig(
-    port1='/dev/ttyACM0', port2='/dev/ttyACM1', port3=None,
-    cameras={'head': {'type': 'opencv', 'index_or_path': '/dev/video0', 'width': 640, 'height': 480, 'fps': 30}},
+    port1='/dev/ttyACM0', port2='/dev/ttyACM1', port3=None, cameras={}
 )).run()
 "
 ```
@@ -142,20 +144,20 @@ HumanaOpenHost(HumanaOpenConfig(
 
 ```bash
 # On Jetson (JetPack 6.x, CUDA 12.x)
-# Install PyTorch for Jetson (NVIDIA build, not pip)
-# Follow: https://docs.nvidia.com/deeplearning/frameworks/install-pytorch-jetson-platform.html
+# Same installation as Raspberry Pi — Host does not need torch/transformers
+conda create -n humanaopen python=3.12
+conda activate humanaopen
 
-pip3 install lerobot[feetech]
+pip install pyzmq feetech-servo-sdk
+# conda install -y ffmpeg=7.1.1 -c conda-forge  # optional
+
 cd ~/ && git clone https://github.com/OneRobotAI/HumanaOpen.git
 cd HumanaOpen && pip3 install -e . --no-deps
 
-# Start Host (same as Raspberry Pi)
 python3 -c "
 from lerobot_robot_humanaopen.humanaopen_host import HumanaOpenHost
 from lerobot_robot_humanaopen import HumanaOpenConfig
-HumanaOpenHost(HumanaOpenConfig(
-    port1='/dev/ttyACM0', port2='/dev/ttyACM1', port3=None, cameras={}
-)).run()
+HumanaOpenHost(HumanaOpenConfig(port1='/dev/ttyACM0', port2='/dev/ttyACM1', port3=None, cameras={})).run()
 "
 ```
 

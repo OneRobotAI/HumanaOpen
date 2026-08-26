@@ -118,7 +118,8 @@ Architecture : Machine dev (GPU) ←→ Jetson/RPi (Host), ports ZMQ 5555/5556.
 
 ### Raspberry Pi (Host uniquement)
 ```bash
-pip3 install lerobot[feetech]
+# Host dependencies (lightweight)
+pip install pyzmq feetech-servo-sdk
 cd ~/ && git clone https://github.com/OneRobotAI/HumanaOpen.git
 cd HumanaOpen && pip3 install -e . --no-deps
 python3 -c "

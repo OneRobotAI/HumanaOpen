@@ -117,7 +117,8 @@ HumanaOpenHost(HumanaOpenConfig()).run()
 
 ### 라즈베리파이 (Host 전용)
 ```bash
-pip3 install lerobot[feetech]
+# Host dependencies (lightweight)
+pip install pyzmq feetech-servo-sdk
 cd ~/ && git clone https://github.com/OneRobotAI/HumanaOpen.git
 cd HumanaOpen && pip3 install -e . --no-deps
 python3 -c "
