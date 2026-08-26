@@ -149,30 +149,24 @@ HumanaOpenHost(HumanaOpenConfig(port1='/dev/ttyACM0', port2='/dev/ttyACM1', port
 "
 ```
 
-### 개발 머신 (클라이언트)
+### 듀얼 머신 모드 (--remote_ip)
 
-GPU 머신에서 ZMQ를 통해 Host에 연결:
+모든 스크립트(record, eval, teleop)가 `--remote_ip` 매개변수를 통해 듀얼 머신 모드를 지원합니다.
+단일 머신 모드(기본값)는 직렬 직렬 포트를 사용하고, 듀얼 머신은 ZMQ를 추가합니다:
 
 ```bash
-conda activate humanaopen
-cd /path/to/HumanaOpen
+# 단일 머신 모드 (기본값 - --remote_ip 불필요)
+python3 examples/record_data.py ...
 
-# 데이터 수집 (듀얼 머신)
-python3 examples/record_data_client.py \
-    --remote_ip=192.168.1.100 \
-    --dataset.repo_id=your-name/humanaopen_demo \
-    --dataset.single_task="wave hello"
-
-# 추론 (듀얼 머신)
-python3 examples/eval_data_client.py \
-    --remote_ip=192.168.1.100 \
-    --policy.type=act \
-    --policy.repo_id=your-name/humanaopen_act_policy \
-    --num-episodes=5 --duration=30 --fps=30
-
-# 텔레옵 (듀얼 머신)
-python3 examples/teleop_client.py --remote_ip=192.168.1.100
+# 듀얼 머신 모드 (--remote_ip 추가)
+python3 examples/record_data.py --remote_ip=192.168.1.100 ...
+python3 examples/eval_data.py --remote_ip=192.168.1.100 ...
+python3 examples/teleop_leader_to_follower.py --remote_ip=192.168.1.100 ...
 ```
+
+### 네트워크 요구사항
+- 동일 LAN, 포트 5555 및 5556 개방
+- 대역폭: 카메라당 ~10 Mbps
 
 ### 네트워크 요구사항
 - 동일 LAN, 포트 5555 및 5556 개방

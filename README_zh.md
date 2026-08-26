@@ -173,30 +173,25 @@ HumanaOpenHost(HumanaOpenConfig(port1='/dev/ttyACM0', port2='/dev/ttyACM1', port
 > **注意**：Jetson 也可以本地运行 ACT 推理（Orin 上约 100ms/帧），
 > 但 SmolVLA 需要独立 GPU，应在开发机上运行。
 
-### 开发机（Client）
+### 双机模式 (--remote_ip)
 
-在 GPU 机器上通过 ZMQ 连接到 Host：
+所有脚本（record/eval/teleop）通过 `--remote_ip` 参数支持双机模式。单机模式（默认）直接串口；双机加 ZMQ：
 
 ```bash
-conda activate humanaopen
-cd /path/to/HumanaOpen
+# 单机模式（默认，无需 --remote_ip）
+python3 examples/record_data.py ...
 
-# 录制数据（双机）
-python3 examples/record_data_client.py \
-    --remote_ip=192.168.1.100 \
-    --dataset.repo_id=your-name/humanaopen_demo \
-    --dataset.single_task="wave hello"
-
-# 推理（双机）
-python3 examples/eval_data_client.py \
-    --remote_ip=192.168.1.100 \
-    --policy.type=act \
-    --policy.repo_id=your-name/humanaopen_act_policy \
-    --num-episodes=5 --duration=30 --fps=30
-
-# 遥操（双机）
-python3 examples/teleop_client.py --remote_ip=192.168.1.100
+# 双机模式（加 --remote_ip）
+python3 examples/record_data.py --remote_ip=192.168.1.100 ...
+python3 examples/eval_data.py --remote_ip=192.168.1.100 ...
+python3 examples/teleop_leader_to_follower.py --remote_ip=192.168.1.100 ...
 ```
+
+### 网络要求
+
+- 两台机器在同一局域网（建议以太网优于 WiFi 以降低延迟）
+- 端口 **5555**（命令）和 **5556**（观测）必须开放
+- 图像流带宽：每摄像头约 10 Mbps（640x480 MJPG）
 
 ### 网络要求
 
