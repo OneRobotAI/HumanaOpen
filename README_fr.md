@@ -150,6 +150,31 @@ HumanaOpenHost(HumanaOpenConfig(port1='/dev/ttyACM0', port2='/dev/ttyACM1', port
 "
 ```
 
+### Machine de développement (Client)
+
+Sur votre machine GPU, connectez-vous à l'Host via ZMQ :
+
+```bash
+conda activate humanaopen
+cd /path/to/HumanaOpen
+
+# Enregistrement (double machine)
+python3 examples/record_data_client.py \
+    --remote_ip=192.168.1.100 \
+    --dataset.repo_id=votre-nom/humanaopen_demo \
+    --dataset.single_task="wave hello"
+
+# Inférence (double machine)
+python3 examples/eval_data_client.py \
+    --remote_ip=192.168.1.100 \
+    --policy.type=act \
+    --policy.repo_id=votre-nom/humanaopen_act_policy \
+    --num-episodes=5 --duration=30 --fps=30
+
+# Téléop (double machine)
+python3 examples/teleop_client.py --remote_ip=192.168.1.100
+```
+
 ### Exigences réseau
 - Même LAN, ports 5555 et 5556 ouverts
 - Bande passante : ~10 Mbps par caméra

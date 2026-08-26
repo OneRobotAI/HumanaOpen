@@ -173,25 +173,29 @@ HumanaOpenHost(HumanaOpenConfig(port1='/dev/ttyACM0', port2='/dev/ttyACM1', port
 > **注意**：Jetson 也可以本地运行 ACT 推理（Orin 上约 100ms/帧），
 > 但 SmolVLA 需要独立 GPU，应在开发机上运行。
 
-### 开发机（Client — 策略推理）
+### 开发机（Client）
 
-在 GPU 机器上连接机器人的 IP：
+在 GPU 机器上通过 ZMQ 连接到 Host：
 
 ```bash
 conda activate humanaopen
 cd /path/to/HumanaOpen
 
-# 设置机器人 IP（Jetson/RPi 局域网地址）
-export ROBOT_IP=192.168.1.100
+# 录制数据（双机）
+python3 examples/record_data_client.py \
+    --remote_ip=192.168.1.100 \
+    --dataset.repo_id=your-name/humanaopen_demo \
+    --dataset.single_task="wave hello"
 
-# 远程运行推理
-python3 examples/eval_data.py \
+# 推理（双机）
+python3 examples/eval_data_client.py \
+    --remote_ip=192.168.1.100 \
     --policy.type=act \
     --policy.repo_id=your-name/humanaopen_act_policy \
-    --policy.device=cuda \
-    --robot.type=humanaopen_client \
-    --robot.remote_ip=$ROBOT_IP \
     --num-episodes=5 --duration=30 --fps=30
+
+# 遥操（双机）
+python3 examples/teleop_client.py --remote_ip=192.168.1.100
 ```
 
 ### 网络要求
@@ -199,7 +203,6 @@ python3 examples/eval_data.py \
 - 两台机器在同一局域网（建议以太网优于 WiFi 以降低延迟）
 - 端口 **5555**（命令）和 **5556**（观测）必须开放
 - 图像流带宽：每摄像头约 10 Mbps（640x480 MJPG）
-
 
 ## 校准
 

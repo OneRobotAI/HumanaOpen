@@ -149,6 +149,31 @@ HumanaOpenHost(HumanaOpenConfig(port1='/dev/ttyACM0', port2='/dev/ttyACM1', port
 "
 ```
 
+### 개발 머신 (클라이언트)
+
+GPU 머신에서 ZMQ를 통해 Host에 연결:
+
+```bash
+conda activate humanaopen
+cd /path/to/HumanaOpen
+
+# 데이터 수집 (듀얼 머신)
+python3 examples/record_data_client.py \
+    --remote_ip=192.168.1.100 \
+    --dataset.repo_id=your-name/humanaopen_demo \
+    --dataset.single_task="wave hello"
+
+# 추론 (듀얼 머신)
+python3 examples/eval_data_client.py \
+    --remote_ip=192.168.1.100 \
+    --policy.type=act \
+    --policy.repo_id=your-name/humanaopen_act_policy \
+    --num-episodes=5 --duration=30 --fps=30
+
+# 텔레옵 (듀얼 머신)
+python3 examples/teleop_client.py --remote_ip=192.168.1.100
+```
+
 ### 네트워크 요구사항
 - 동일 LAN, 포트 5555 및 5556 개방
 - 대역폭: 카메라당 ~10 Mbps
