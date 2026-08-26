@@ -36,14 +36,11 @@ lerobot_robot_humanaopen/
 ├── humanaopen_host.py       # ZMQ host (robot-side, for dual-machine mode)
 └── humanaopen_client.py     # ZMQ client (teleop-side)
 examples/
-├── record_data.py              # Data collection (single-machine)
-├── record_data_client.py       # Data collection (dual-machine ZMQ)
-├── eval_data.py                # Inference (single-machine)
-├── eval_data_client.py         # Inference (dual-machine ZMQ)
-├── teleop_client.py            # Keyboard teleop (dual-machine ZMQ)
+├── record_data.py              # Data collection (single + dual-machine)
+├── eval_data.py                # Inference (single + dual-machine)
+├── teleop_leader_to_follower.py  # Full-body teleop: leader arms + keyboard
 ├── single_machine.py           # Single machine operation
 ├── teleop_keyboard.py          # Keyboard teleoperation via ZMQ
-├── teleop_leader_to_follower.py  # Full-body teleop: leader arms + keyboard
 ├── calibrate_follower.py       # Full follower-side calibration (arms+head+wheels+lift)
 ├── calibrate_leader.py         # Leader arm calibration (open-arms-mini)
 ├── diagnose_teleop.py          # Teleop joint direction diagnosis
@@ -167,29 +164,21 @@ HumanaOpenHost(HumanaOpenConfig(port1='/dev/ttyACM0', port2='/dev/ttyACM1', port
 > **Note**: Jetson can also run ACT inference locally (~100ms/frame on Orin),
 > but SmolVLA requires a discrete GPU and should run on the dev machine.
 
-### Dev Machine (Client)
+### Dual-machine mode (--remote_ip)
 
-On your GPU machine, connect to the robot's Host via ZMQ:
+All scripts (record, eval, teleop) support dual-machine mode via `--remote_ip`.
+Single-machine mode (default) uses direct serial; dual-machine adds ZMQ:
 
 ```bash
-conda activate humanaopen
-cd /path/to/HumanaOpen
+# Single-machine (default — no --remote_ip needed)
+python3 examples/record_data.py ...
 
-# Recording (dual-machine)
-python3 examples/record_data_client.py \
-    --remote_ip=192.168.1.100 \
-    --dataset.repo_id=your-name/humanaopen_demo \
-    --dataset.single_task="wave hello"
+# Dual-machine (add --remote_ip to any script)
+python3 examples/record_data.py --remote_ip=192.168.1.100 ...
 
-# Inference (dual-machine)
-python3 examples/eval_data_client.py \
-    --remote_ip=192.168.1.100 \
-    --policy.type=act \
-    --policy.repo_id=your-name/humanaopen_act_policy \
-    --num-episodes=5 --duration=30 --fps=30
+python3 examples/eval_data.py --remote_ip=192.168.1.100 ...
 
-# Teleop (dual-machine)
-python3 examples/teleop_client.py --remote_ip=192.168.1.100
+python3 examples/teleop_leader_to_follower.py --remote_ip=192.168.1.100 ...
 ```
 
 ### Network requirements

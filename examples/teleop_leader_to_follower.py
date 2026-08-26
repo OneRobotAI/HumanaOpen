@@ -144,6 +144,9 @@ class KeyState:
 
 def main():
     parser = argparse.ArgumentParser(description="HumanaOpen 全身遥操 (主臂 + 键盘)")
+    parser.add_argument("--remote_ip", default=None, help="Host IP for ZMQ (omit for direct serial)")
+    parser.add_argument("--port_zmq_cmd", type=int, default=5555)
+    parser.add_argument("--port_zmq_obs", type=int, default=5556)
     parser.add_argument("--no-cameras", action="store_true", help="跳过所有摄像头 (纯遥操)")
     parser.add_argument(
         "--cameras",
@@ -160,28 +163,57 @@ def main():
     args = parser.parse_args()
 
     cams = build_cameras(args)
-    follower_cfg = HumanaOpenConfig(
-        id="follower",
-        port1="/dev/ttyACM0",
-        port2="/dev/ttyACM1",
-        port3=None,
-        cameras=cams,
-        # 升降: connect 时优先恢复持久化位置 (免归零), 失败才自动归零.
-        # 默认 zero_file 已启用, 无需显式指定.
-        # 现象: i(前进指令) 变左转 → 两轮反向 → 单轮装反
-        # 左轮取反使两轮同向; 万向轮卡住曾干扰判断, 现已修复
-        wheel_dir_signs={"base_left_wheel": -1, "base_right_wheel": 1},
-    )
+    is_dual = args.remote_ip is not None
+
+    if is_dual:
+        # ── ZMQ dual-machine mode ────────────────────────────
+        from lerobot_robot_humanaopen.humanaopen_client import HumanaOpenClient, HumanaOpenClientConfig
+        _client_cfg = HumanaOpenClientConfig(
+            remote_ip=args.remote_ip, port_zmq_cmd=args.port_zmq_cmd,
+            port_zmq_observations=args.port_zmq_obs,
+        )
+        _client = HumanaOpenClient(_client_cfg)
+
+        class _ZMQRobot:
+            """Minimal robot adapter for ZMQ — provides .connect / .get_observation / .send_action / .calibration / .lift_axis."""
+            def connect(self, calibrate=True):
+                _client.connect()
+                self._obs = _client.get_observation()
+            def get_observation(self):
+                self._obs = _client.get_observation()
+                return self._obs
+            def send_action(self, action):
+                _client.send_action(action)
+            @property
+            def calibration(self):
+                return {}
+            @property
+            def lift_axis(self):
+                _obs_ref = self._obs
+                class _Lift:
+                    def get_height_mm(_s):
+                        return _obs_ref.get("lift_axis.height_mm", 0.0)
+                return _Lift()
+
+        follower = _ZMQRobot()
+        print(f"  Mode: ZMQ (Host: {args.remote_ip})")
+    else:
+        # ── Direct serial mode ──────────────────────────────
+        follower_cfg = HumanaOpenConfig(
+            id="follower", port1="/dev/ttyACM0", port2="/dev/ttyACM1",
+            port3=None, cameras=cams,
+            wheel_dir_signs={"base_left_wheel": -1, "base_right_wheel": 1},
+        )
+        follower = HumanaOpen(follower_cfg)
+        print("  Mode: direct serial")
+
     leader_cfg = BiHumanaOpenLeaderConfig(
         id="leader",
         left_arm_port="/dev/ttyACM2",
         right_arm_port="/dev/ttyACM3",
-        # 主从臂方向天然一致, 禁用官方默认翻转表.
         flip_joints={"left": [], "right": []},
         joint_remap={},
     )
-
-    follower = HumanaOpen(follower_cfg)
     leader = BiHumanaOpenLeader(leader_cfg)
 
     keys = KeyState()

@@ -44,8 +44,12 @@ DEFAULT_CAMERAS_JSON = json.dumps(
 
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
-        description="Record HumanaOpen episodes (Python API, lerobot-record-style args)"
+        description="Record HumanaOpen episodes — single-machine or dual-machine (ZMQ)"
     )
+    # --remote (dual-machine: connect to Host via ZMQ; omit for direct serial)
+    p.add_argument("--remote_ip", default=None, help="Host IP for ZMQ (omit for direct serial)")
+    p.add_argument("--port_zmq_cmd", type=int, default=5555)
+    p.add_argument("--port_zmq_obs", type=int, default=5556)
     # --robot.*
     p.add_argument("--robot.type", default="humanaopen")
     p.add_argument("--robot.id", default="follower")
@@ -156,6 +160,60 @@ def _parse_port(s: str | None) -> str | None:
     return str(s)
 
 
+class ClientRobot:
+    """Minimal Robot-like wrapper over HumanaOpenClient for ZMQ mode.
+
+    Implements the interface needed by lerobot record():
+    connect, disconnect, get_observation, send_action,
+    observation_features, action_features, is_connected, is_calibrated.
+    """
+
+    def __init__(self, config):
+        from lerobot_robot_humanaopen.humanaopen_client import HumanaOpenClient
+        self._client = HumanaOpenClient(config)
+        self._obs_keys = []
+        self._act_keys = []
+
+    def connect(self, calibrate=True):
+        self._client.connect()
+        obs = self._client.get_observation()
+        self._obs_keys = list(obs.keys())
+        self._act_keys = [k for k in self._obs_keys if k.endswith(".pos")]
+        if "lift_axis.height_mm" not in self._act_keys:
+            self._act_keys.append("lift_axis.height_mm")
+
+    def disconnect(self):
+        self._client.disconnect()
+
+    def get_observation(self):
+        return self._client.get_observation()
+
+    def send_action(self, action):
+        self._client.send_action(action)
+
+    @property
+    def observation_features(self):
+        return {k: float for k in self._obs_keys}
+
+    @property
+    def action_features(self):
+        return {k: float for k in self._act_keys}
+
+    @property
+    def is_connected(self):
+        return self._client.is_connected
+
+    @property
+    def is_calibrated(self):
+        return True
+
+    def calibrate(self):
+        pass
+
+    def configure(self):
+        pass
+
+
 def main():
     parser = build_parser()
     args = parser.parse_args()
@@ -180,23 +238,59 @@ def main():
         cameras["chest"] = OpenCVCameraConfig(
             index_or_path="/dev/video6", fps=30, width=640, height=480, fourcc="MJPG"
         )
+
+    is_dual = d["remote_ip"] is not None
+    print(f"Mode:     {'dual-machine (ZMQ)' if is_dual else 'single-machine (direct serial)'}")
+    if is_dual:
+        print(f"  Host:   {d['remote_ip']}:{d['port_zmq_obs']}/{d['port_zmq_cmd']}")
+    else:
+        print(f"  Ports:  {d['robot.port1']}, {d['robot.port2']}")
     print(f"Cameras:  {list(cameras.keys())}")
     print(f"Task:     {d['dataset.single_task']}")
     print(f"Episodes: {d['dataset.num_episodes']} x {d['dataset.episode_time_s']}s "
           f"(push_to_hub={_parse_bool(d['dataset.push_to_hub'])})")
     print()
 
-    cfg = RecordConfig(
-        robot=HumanaOpenConfig(
+    from lerobot_robot_humanaopen.leader import HumanaOpenTeleopConfig
+
+    teleop_cfg = HumanaOpenTeleopConfig(
+        id="leader",
+        left_arm_port=d["teleop.left_arm_port"],
+        right_arm_port=d["teleop.right_arm_port"],
+        flip_joints=json.loads(d["teleop.flip_joints"]),
+        joint_remap=json.loads(d["teleop.joint_remap"]),
+    )
+
+    if is_dual:
+        # ── ZMQ mode: monkey-patch make_robot_from_config ─────────
+        from lerobot_robot_humanaopen.humanaopen_client import HumanaOpenClientConfig
+        import lerobot.robots.utils as robot_utils
+        _orig_make = robot_utils.make_robot_from_config
+
+        def _make_robot(config):
+            if config.type == "humanaopen_client":
+                return ClientRobot(config)
+            return _orig_make(config)
+        robot_utils.make_robot_from_config = _make_robot
+
+        robot_config = HumanaOpenClientConfig(
+            remote_ip=d["remote_ip"],
+            port_zmq_cmd=d["port_zmq_cmd"],
+            port_zmq_observations=d["port_zmq_obs"],
+        )
+    else:
+        robot_config = HumanaOpenConfig(
             id=d["robot.id"],
             port1=d["robot.port1"],
             port2=d["robot.port2"],
             port3=d["robot.port3"],
             cameras=cameras,
             confirm_lift_after_home=_parse_bool(d["robot.confirm_lift_after_home"]),
-            # 与遥操脚本一致: 左轮装反需取反, 否则 i/j/k/l 方向错乱
             wheel_dir_signs={"base_left_wheel": -1, "base_right_wheel": 1},
-        ),
+        )
+
+    cfg = RecordConfig(
+        robot=robot_config,
         dataset=DatasetRecordConfig(
             repo_id=d["dataset.repo_id"],
             single_task=d["dataset.single_task"],
@@ -210,19 +304,12 @@ def main():
             private=_parse_bool(d["dataset.private"]),
             tags=d["dataset.tags"].split(",") if d["dataset.tags"] else None,
         ),
-        teleop=HumanaOpenTeleopConfig(
-            id="leader",
-            left_arm_port=d["teleop.left_arm_port"],
-            right_arm_port=d["teleop.right_arm_port"],
-            flip_joints=json.loads(d["teleop.flip_joints"]),
-            joint_remap=json.loads(d["teleop.joint_remap"]),
-        ),
+        teleop=teleop_cfg,
         display_data=True,
     )
     try:
         record(cfg)
     finally:
-        # 保存升降最新位置, 下次连接免归零 (record 结束时升降可能已移动)
         try:
             from lerobot_robot_humanaopen.leader import get_connected_robot
             r = get_connected_robot()

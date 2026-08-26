@@ -63,6 +63,9 @@ def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description="HumanaOpen policy rollout")
     p.add_argument("--robot.type", default="humanaopen")
     p.add_argument("--robot.id", default="follower")
+    p.add_argument("--remote_ip", default=None, help="Host IP for ZMQ (omit for direct serial)")
+    p.add_argument("--port_zmq_cmd", type=int, default=5555)
+    p.add_argument("--port_zmq_obs", type=int, default=5556)
     p.add_argument("--robot.port1", default="/dev/ttyACM0")
     p.add_argument("--robot.port2", default="/dev/ttyACM1")
     p.add_argument("--robot.port3", default=None)
@@ -179,13 +182,31 @@ def main():
 
     # Connect robot
     print("Connecting robot...")
-    robot = HumanaOpen(HumanaOpenConfig(
-        id=d["robot.id"],
-        port1=d["robot.port1"],
-        port2=d["robot.port2"],
-        port3=port3,
-        cameras=cameras,
-    ))
+    if d["remote_ip"]:
+        # ZMQ dual-machine mode
+        from lerobot_robot_humanaopen.humanaopen_client import HumanaOpenClientConfig
+        import lerobot.robots.utils as robot_utils
+        _orig = robot_utils.make_robot_from_config
+        def _make_robot(config):
+            if config.type == "humanaopen_client":
+                return ClientRobot(config)
+            return _orig(config)
+        robot_utils.make_robot_from_config = _make_robot
+        robot = HumanaOpenClientConfig(
+            remote_ip=d["remote_ip"],
+            port_zmq_cmd=d["port_zmq_cmd"],
+            port_zmq_observations=d["port_zmq_obs"],
+        )
+        print(f"  ZMQ mode → Host {d['remote_ip']}")
+    else:
+        # Direct serial mode
+        robot = HumanaOpen(HumanaOpenConfig(
+            id=d["robot.id"],
+            port1=d["robot.port1"],
+            port2=d["robot.port2"],
+            port3=port3,
+            cameras=cameras,
+        ))
     robot.connect(calibrate=True)
     print("  Robot connected")
 
