@@ -117,7 +117,10 @@ HumanaOpenHost(HumanaOpenConfig()).run()
 
 ### 라즈베리파이 (Host 전용)
 ```bash
-# Host dependencies (lightweight)
+conda create -n humanaopen python=3.12
+conda activate humanaopen
+
+# Host dependencies (lightweight — no torch/transformers needed)
 pip install pyzmq feetech-servo-sdk
 cd ~/ && git clone https://github.com/OneRobotAI/HumanaOpen.git
 cd HumanaOpen && pip3 install -e . --no-deps
