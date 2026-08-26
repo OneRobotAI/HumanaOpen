@@ -357,7 +357,7 @@ python3 examples/record_data.py \
     --dataset.push_to_hub=true
 ```
 
-### 4 摄像头（含胸口导航摄像头）
+### 4 摄像头
 
 与上面相同，替换 `--robot.cameras` JSON 加入 chest：
 
