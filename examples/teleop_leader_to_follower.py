@@ -270,6 +270,7 @@ def main():
         head_tilt_min, head_tilt_max = -100.0, 100.0
         print(f"  Head limits: pan range {head_pan_lim}, tilt range {head_tilt_lim} (normalized ±100)")
         lift_h = obs.get("lift_axis.height_mm", 0.0)
+        _last_lift_dir = 0  # 0=无, 1=上次按u, -1=上次按h
         speed_idx = 1  # 底盘速度档位 (1 = 基础)
         _last_lift_print = 0.0  # 升降状态显示节流
         _last_display = 0.0  # rerun 日志节流
@@ -315,13 +316,15 @@ def main():
             action["theta.vel"] = theta
 
             # 键盘 → 升降: 按住 u/h 时目标递增, 松开保持
-            # 按下瞬间记录初始高度, 之后在初始值上累加 (不回读实际高度,
-            # 否则慢速 P 控制器追赶会把目标拉回实际值, 导致几乎不动)
-            if keys.pressed_once("u") or keys.pressed_once("h"):
-                try:
-                    lift_h = follower.lift_axis.get_height_mm()
-                except Exception:
-                    pass
+            # 升降: 按下 u/h 时若方向改变则从当前高度重新累加
+            # (不回读会慢追; 但同向连续按不应重置, 否则目标倒退)
+            for _k, _dir in (("u", 1), ("h", -1)):
+                if keys.pressed_once(_k) and _dir != _last_lift_dir:
+                    try:
+                        lift_h = follower.lift_axis.get_height_mm()
+                    except Exception:
+                        pass
+                    _last_lift_dir = _dir
             if keys.is_down("u"):
                 lift_h += LIFT_SPEED_MM / FPS
             elif keys.is_down("h"):
