@@ -655,6 +655,42 @@ class HumanaOpen(Robot):
         logger.debug("get_observation: %.1f ms", dt_ms)
         return obs
 
+    def get_observation_no_cameras(self) -> dict[str, Any]:
+        """Read joint state only (no cameras) — fast path for high-frequency teleop.
+
+        Camera images are skipped, so this returns in a few ms instead of waiting
+        for image capture/decode. Used by the ZMQ host to keep the action loop fast
+        while images are streamed less frequently.
+        """
+        if not self.is_connected:
+            raise DeviceNotConnectedError(f"{self} is not connected.")
+
+        obs: dict[str, Any] = {}
+
+        left_pos = self.bus1.sync_read("Present_Position", self.left_arm_motors)
+        head_pos = self.bus1.sync_read("Present_Position", self.head_motors)
+        right_pos = self.bus2.sync_read("Present_Position", self.right_arm_motors)
+
+        for k, v in left_pos.items():
+            obs[f"{k}.pos"] = v
+        for k, v in head_pos.items():
+            obs[f"{k}.pos"] = v
+        for k, v in right_pos.items():
+            obs[f"{k}.pos"] = v
+
+        if self.wheel_motors:
+            wheel_bus = self.bus3 if self.bus3 is not None else self.bus2
+            wheel_vel = wheel_bus.sync_read("Present_Velocity", self.wheel_motors)
+            body = self._wheel_raw_to_body(
+                wheel_vel.get("base_left_wheel", 0),
+                wheel_vel.get("base_right_wheel", 0),
+            )
+            obs["x.vel"] = body["x.vel"]
+            obs["theta.vel"] = body["theta.vel"]
+
+        self.lift_axis.contribute_observation(obs)
+        return obs
+
     # ── Action ─────────────────────────────────────────────────────────────
 
     def send_action(self, action: dict[str, Any]) -> dict[str, Any]:

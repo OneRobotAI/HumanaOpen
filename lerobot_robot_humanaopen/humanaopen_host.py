@@ -126,13 +126,29 @@ class HumanaOpenHost:
         loop_dt = 1.0 / self.host_cfg.max_loop_freq_hz
         deadline = time.monotonic() + self.host_cfg.connection_time_s
 
+        # 高频状态/动作循环 + 低频图像采集
+        # 摄像头图像采集很慢（Jetson 上解码 3 张 640x480 需 50-200ms），
+        # 若每循环都读会严重拖慢动作响应。这里状态高频（每循环），图像低频（每 200ms）。
+        cam_interval = 0.2
+        last_cam_time = 0.0
+
         try:
             frame_count = 0
             while time.monotonic() < deadline:
                 t0 = time.perf_counter()
 
-                # ── Read sensors ────────────────────────────────────────
-                obs = robot.get_observation()
+                # 高频: 读关节状态（不读摄像头，毫秒级）
+                obs = robot.get_observation_no_cameras()
+
+                # 低频: 附加摄像头图像（每 cam_interval 更新一次）
+                if time.time() - last_cam_time > cam_interval:
+                    try:
+                        for cam_key, cam in robot.cameras.items():
+                            obs[cam_key] = cam.async_read()
+                    except Exception:
+                        pass
+                    last_cam_time = time.time()
+
                 pub.send_multipart([b"obs", _serialize_obs(obs)])
 
                 # ── Receive command (non-blocking, with timeout) ────────
