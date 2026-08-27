@@ -209,8 +209,8 @@ def main():
 
     leader_cfg = BiHumanaOpenLeaderConfig(
         id="leader",
-        left_arm_port="/dev/ttyACM2",
-        right_arm_port="/dev/ttyACM3",
+        left_arm_port="/dev/ttyACM0",
+        right_arm_port="/dev/ttyACM1",
         flip_joints={"left": [], "right": []},
         joint_remap={},
     )
@@ -256,9 +256,14 @@ def main():
         # 初始化头部位置 + 从校准文件读取头部限位 (校准时录的 MIN/MAX)
         head_pan = obs.get("head_pan.pos", 0.0)
         head_tilt = obs.get("head_tilt.pos", 0.0)
-        cal = follower.calibration
-        head_pan_lim = (cal["head_pan"].range_min, cal["head_pan"].range_max)
-        head_tilt_lim = (cal["head_tilt"].range_min, cal["head_tilt"].range_max)
+        try:
+            cal = follower.calibration
+            head_pan_min = (cal["head_pan"].range_min, 2048)
+            head_tilt_min = (cal["head_tilt"].range_min, 2048)
+            head_pan_lim = (cal["head_pan"].range_min, cal["head_pan"].range_max)
+            head_tilt_lim = (cal["head_tilt"].range_min, cal["head_tilt"].range_max)
+        except (KeyError, TypeError, AttributeError):
+            head_pan_lim = head_tilt_lim = (0, 4096)
         # 归一化空间: use_degrees=False → RANGE_M100_100, 限位就是 ±100
         # (obs 值域 [-100,100] 线性映射到校准 range 两端, 见 motors_bus._normalize)
         head_pan_min, head_pan_max = -100.0, 100.0

@@ -24,8 +24,8 @@ from lerobot_robot_humanaopen.leader import BiHumanaOpenLeader, BiHumanaOpenLead
 
 config = BiHumanaOpenLeaderConfig(
     id="leader",                # 主臂校准文件名 (leader_left/leader_right.json)
-    left_arm_port="/dev/ttyACM2",
-    right_arm_port="/dev/ttyACM3",
+    left_arm_port="/dev/ttyACM0",
+    right_arm_port="/dev/ttyACM1",
     # calibration_mode 默认 "full" (录真实行程); 纯实时遥操可改 "quick"
 )
 
