@@ -62,8 +62,9 @@ def _deserialize_cmd(data: bytes) -> dict[str, Any]:
     """Unpack an action dict from bytes (mirror of above)."""
     action: dict[str, Any] = {}
     pos = 0
-    magic, n_floats, n_images = struct.unpack_from("<III", data, pos)
-    pos += 12
+    # Client _serialize_cmd 用 "<II" (magic, n_floats) — 不是 "<III"
+    magic, n_floats = struct.unpack_from("<II", data, pos)
+    pos += 8
     if magic != 0x4F4253:
         raise ValueError(f"Bad magic: {magic:#x}")
 
