@@ -104,7 +104,7 @@ python -c "
 from lerobot_robot_humanaopen.humanaopen_host import HumanaOpenHost
 from lerobot_robot_humanaopen import HumanaOpenConfig
 HumanaOpenHost(HumanaOpenConfig(port1='/dev/ttyACM0', port2='/dev/ttyACM1', port3=None, cameras={},
-        wheel_dir_signs={'base_left_wheel': 1, 'base_right_wheel': 1}
+        wheel_dir_signs={'base_left_wheel': 1, 'base_right_wheel': -1}
     )).run().run()
 "
 HumanaOpenHost(HumanaOpenConfig()).run()
@@ -169,7 +169,7 @@ python3 -c "
 from lerobot_robot_humanaopen.humanaopen_host import HumanaOpenHost
 from lerobot_robot_humanaopen import HumanaOpenConfig
 HumanaOpenHost(HumanaOpenConfig(port1='/dev/ttyACM0', port2='/dev/ttyACM1', port3=None, cameras={},
-        wheel_dir_signs={'base_left_wheel': 1, 'base_right_wheel': 1}
+        wheel_dir_signs={'base_left_wheel': 1, 'base_right_wheel': -1}
     )).run().run()
 "
 ```
