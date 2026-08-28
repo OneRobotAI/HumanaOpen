@@ -1,14 +1,16 @@
-"""诊断双机模式轮子方向 — 找出正确的 wheel_dir_signs.
+"""轮子方向精测 — 单轮驱动，确定每个轮子的物理转向.
 
 用法:
-    1. Host 在 Jetson 运行 (HumanaOpenHost)
-    2. 本脚本从 Client 端发送不同的 x.vel/theta.vel, 观察轮子实际转向
-    3. 根据结果确定 wheel_dir_signs
+    python3 examples/diag_wheel_direction.py --remote_ip=192.168.1.100
 
-按压序列:
-    按 1: x.vel=+10  (期望直行前进, 两轮都正转)
-    按 2: theta.vel=+30 (期望左转)
-    按 q: 退出
+按键:
+    a  = 只发左轮 +3000 (不碰右轮)
+    d  = 只发右轮 +3000 (不碰左轮)
+    1  = x.vel=+10 (直行测试)
+    2  = theta.vel=+30 (转向测试)
+    q  = 退出
+
+观察每个轮子的实际转动方向，确定装反的轮子和正确符号。
 """
 
 import sys
@@ -27,12 +29,14 @@ cfg = HumanaOpenClientConfig(remote_ip=args.remote_ip, port_zmq_cmd=5555, port_z
 client = HumanaOpenClient(cfg)
 client.connect()
 print(f"已连接 {args.remote_ip}")
-print("命令:")
+print("按键:")
+print("  a = 左轮 +3000")
+print("  d = 右轮 +3000")
 print("  1 = x.vel=+10 (直行)")
-print("  2 = theta.vel=+30 (转)")
-print("  3 = x.vel=-10 (后退)")
-print("  4 = theta.vel=-30 (反转)")
-print("  q = 退出, 每次后先观察轮子再按 next")
+print("  2 = theta.vel=+30 (转向)")
+print("  3 = x.vel=-10")
+print("  4 = theta.vel=-30")
+print("  q = 退出")
 
 from pynput import keyboard as kb
 _pressed = {}
@@ -46,25 +50,29 @@ def on_release(key):
     except: pass
 kb.Listener(on_press=on_press, on_release=on_release).start()
 
+def send_and_hold(label, action, hold=1.0):
+    client.send_action(action)
+    print(f"  → {label} (观察轮子)")
+    time.sleep(hold)
+    client.send_action({"x.vel": 0.0, "theta.vel": 0.0,
+                        "base_left_wheel": 0, "base_right_wheel": 0})
+    time.sleep(0.3)
+
 try:
     while True:
         if "q" in _pressed: break
-        if "1" in _pressed:
-            client.send_action({"x.vel": 10.0, "theta.vel": 0.0})
-            print("发送: x.vel=10 → 应直行前进 (观察两轮)")
-            time.sleep(1); _pressed.pop("1", None)
+        if "a" in _pressed:
+            send_and_hold("左轮 +3000 (不碰右轮)", {"base_left_wheel": 3000, "base_right_wheel": 0}); _pressed.pop("a", None)
+        elif "d" in _pressed:
+            send_and_hold("右轮 +3000 (不碰左轮)", {"base_left_wheel": 0, "base_right_wheel": 3000}); _pressed.pop("d", None)
+        elif "1" in _pressed:
+            send_and_hold("x.vel=+10 (应直行)", {"x.vel": 10.0, "theta.vel": 0.0}); _pressed.pop("1", None)
         elif "2" in _pressed:
-            client.send_action({"x.vel": 0.0, "theta.vel": 30.0})
-            print("发送: theta.vel=30 → 应左转 (观察)")
-            time.sleep(1); _pressed.pop("2", None)
+            send_and_hold("theta.vel=+30 (应转向)", {"x.vel": 0.0, "theta.vel": 30.0}); _pressed.pop("2", None)
         elif "3" in _pressed:
-            client.send_action({"x.vel": -10.0, "theta.vel": 0.0})
-            print("发送: x.vel=-10 → 应后退")
-            time.sleep(1); _pressed.pop("3", None)
+            send_and_hold("x.vel=-10", {"x.vel": -10.0, "theta.vel": 0.0}); _pressed.pop("3", None)
         elif "4" in _pressed:
-            client.send_action({"x.vel": 0.0, "theta.vel": -30.0})
-            print("发送: theta.vel=-30 → 应右转")
-            time.sleep(1); _pressed.pop("4", None)
+            send_and_hold("theta.vel=-30", {"x.vel": 0.0, "theta.vel": -30.0}); _pressed.pop("4", None)
         else:
             client.send_action({"x.vel": 0.0, "theta.vel": 0.0})
             time.sleep(0.05)
