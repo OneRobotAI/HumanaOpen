@@ -667,9 +667,10 @@ class HumanaOpen(Robot):
 
         obs: dict[str, Any] = {}
 
-        left_pos = self.bus1.sync_read("Present_Position", self.left_arm_motors)
-        head_pos = self.bus1.sync_read("Present_Position", self.head_motors)
-        right_pos = self.bus2.sync_read("Present_Position", self.right_arm_motors)
+        # 高频读取加重试, 避免偶发串口通信错误导致 Host 崩溃
+        left_pos = self.bus1.sync_read("Present_Position", self.left_arm_motors, num_retry=3)
+        head_pos = self.bus1.sync_read("Present_Position", self.head_motors, num_retry=3)
+        right_pos = self.bus2.sync_read("Present_Position", self.right_arm_motors, num_retry=3)
 
         for k, v in left_pos.items():
             obs[f"{k}.pos"] = v

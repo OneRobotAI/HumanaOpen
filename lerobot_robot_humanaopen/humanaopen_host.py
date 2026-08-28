@@ -160,7 +160,11 @@ class HumanaOpenHost:
                 t0 = time.perf_counter()
 
                 # 高频: 读关节状态（不读摄像头，毫秒级）
-                obs = robot.get_observation_no_cameras()
+                try:
+                    obs = robot.get_observation_no_cameras()
+                except Exception:
+                    time.sleep(loop_dt)
+                    continue
 
                 # 附加最新图像缓存（不阻塞, 后台线程已在采集）
                 with cam_lock:
