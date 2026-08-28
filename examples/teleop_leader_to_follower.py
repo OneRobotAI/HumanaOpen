@@ -315,22 +315,14 @@ def main():
             action["x.vel"] = x
             action["theta.vel"] = theta
 
-            # 键盘 → 升降: 按住 u/h 时目标递增, 松开保持
-            # 升降: 按下 u/h 时若方向改变则从当前高度重新累加
-            # (不回读会慢追; 但同向连续按不应重置, 否则目标倒退)
-            for _k, _dir in (("u", 1), ("h", -1)):
-                if keys.pressed_once(_k) and _dir != _last_lift_dir:
-                    try:
-                        lift_h = follower.lift_axis.get_height_mm()
-                    except Exception:
-                        pass
-                    _last_lift_dir = _dir
+            # 键盘 → 升降: 按住 u/h 直接控制速度 (松开即停)
+            # 双机模式用 vel 控制; 单机模式也统一用 vel (避免 P 控制器目标追赶漂移)
+            v = 0
             if keys.is_down("u"):
-                lift_h += LIFT_SPEED_MM / FPS
+                v = 60  # 上升速度 (BIT2=0: 60×50=3000 step/s ≈ 5.9mm/s)
             elif keys.is_down("h"):
-                lift_h -= LIFT_SPEED_MM / FPS
-            lift_h = max(LIFT_MIN_MM, min(LIFT_MAX_MM, lift_h))
-            action["lift_axis.height_mm"] = lift_h
+                v = -60  # 下降速度
+            action["lift_axis.vel"] = v
 
             # 实时显示升降状态 (每0.5秒刷一次)
             if time.time() - _last_lift_print > 0.5:
