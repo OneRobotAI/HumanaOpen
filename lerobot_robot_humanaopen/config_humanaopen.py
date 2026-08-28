@@ -131,7 +131,7 @@ class HumanaOpenConfig(RobotConfig):
     wheel_dir_signs: dict[str, int] = field(
         default_factory=lambda: {
             "base_left_wheel": 1,
-            "base_right_wheel": 1,
+            "base_right_wheel": -1,
         }
     )
     # ---- Lift Axis ---------------------------------------------------------
