@@ -130,7 +130,7 @@ class HumanaOpenConfig(RobotConfig):
     # robot into a spin, flip the sign of the wheel that is mounted backwards.
     wheel_dir_signs: dict[str, int] = field(
         default_factory=lambda: {
-            "base_left_wheel": 1,
+            "base_left_wheel": -1,
             "base_right_wheel": -1,
         }
     )
