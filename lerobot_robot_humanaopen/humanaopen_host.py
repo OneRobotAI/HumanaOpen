@@ -127,9 +127,8 @@ class HumanaOpenHost:
         deadline = time.monotonic() + self.host_cfg.connection_time_s
 
         # 高频状态/动作循环 + 低频图像采集
-        # 摄像头图像采集很慢（Jetson 上解码 3 张 640x480 需 50-200ms），
-        # 若每循环都读会严重拖慢动作响应。这里状态高频（每循环），图像低频（每 200ms）。
-        cam_interval = 0.2
+        # 图像采集频率可配置: 遥操建议 5Hz (低延迟), 数据采集建议 30Hz (高画质)
+        cam_interval = 1.0 / self.host_cfg.image_fps if self.host_cfg.image_fps > 0 else 0.0
         last_cam_time = 0.0
 
         try:
@@ -141,7 +140,7 @@ class HumanaOpenHost:
                 obs = robot.get_observation_no_cameras()
 
                 # 低频: 附加摄像头图像（每 cam_interval 更新一次）
-                if time.time() - last_cam_time > cam_interval:
+                if cam_interval == 0.0 or time.time() - last_cam_time > cam_interval:
                     try:
                         for cam_key, cam in robot.cameras.items():
                             obs[cam_key] = cam.async_read()
