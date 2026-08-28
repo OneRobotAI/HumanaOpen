@@ -728,10 +728,7 @@ class HumanaOpen(Robot):
 
         # ── Wheel velocity commands ─────────────────────────────────────
         if base_cmd and self.wheel_motors:
-            import os
             wheel_raw = self._body_to_wheel_raw(base_cmd.get("x.vel", 0.0), base_cmd.get("theta.vel", 0.0))
-            if os.environ.get("HUMANAOPEN_DEBUG_WHEEL"):
-                print(f"  [DEBUG] signs={self.config.wheel_dir_signs} {base_cmd} → {wheel_raw}")
             wheel_bus = self.bus3 if self.bus3 is not None else self.bus2
             wheel_bus.sync_write("Goal_Velocity", wheel_raw)
 
