@@ -126,10 +126,33 @@ class HumanaOpenHost:
         loop_dt = 1.0 / self.host_cfg.max_loop_freq_hz
         deadline = time.monotonic() + self.host_cfg.connection_time_s
 
-        # 高频状态/动作循环 + 低频图像采集
-        # 图像采集频率可配置: 遥操建议 5Hz (低延迟), 数据采集建议 30Hz (高画质)
-        cam_interval = 1.0 / self.host_cfg.image_fps if self.host_cfg.image_fps > 0 else 0.0
-        last_cam_time = 0.0
+        # 共享图像缓存 + 线程安全锁
+        # 图像由独立线程持续采集, 主循环只读最新缓存, 不阻塞动作响应
+        import threading
+        cam_lock = threading.Lock()
+        cam_cache: dict[str, Any] = {}
+        stop_cam = threading.Event()
+
+        def _camera_thread():
+            """后台持续采集图像到缓存."""
+            cam_interval = 1.0 / self.host_cfg.image_fps if self.host_cfg.image_fps > 0 else 0.0
+            while not stop_cam.is_set():
+                try:
+                    frames = {}
+                    for cam_key, cam in robot.cameras.items():
+                        frames[cam_key] = cam.async_read()
+                    with cam_lock:
+                        cam_cache.clear()
+                        cam_cache.update(frames)
+                except Exception:
+                    pass
+                if cam_interval > 0:
+                    time.sleep(cam_interval)
+                else:
+                    time.sleep(0.05)
+
+        cam_thread = threading.Thread(target=_camera_thread, daemon=True)
+        cam_thread.start()
 
         try:
             frame_count = 0
@@ -139,14 +162,9 @@ class HumanaOpenHost:
                 # 高频: 读关节状态（不读摄像头，毫秒级）
                 obs = robot.get_observation_no_cameras()
 
-                # 低频: 附加摄像头图像（每 cam_interval 更新一次）
-                if cam_interval == 0.0 or time.time() - last_cam_time > cam_interval:
-                    try:
-                        for cam_key, cam in robot.cameras.items():
-                            obs[cam_key] = cam.async_read()
-                    except Exception:
-                        pass
-                    last_cam_time = time.time()
+                # 附加最新图像缓存（不阻塞, 后台线程已在采集）
+                with cam_lock:
+                    obs.update(cam_cache)
 
                 pub.send_multipart([b"obs", _serialize_obs(obs)])
 
@@ -174,6 +192,8 @@ class HumanaOpenHost:
         except Exception:
             logger.error("Host crashed:\n%s", traceback.format_exc())
         finally:
+            stop_cam.set()
+            cam_thread.join(timeout=1.0)
             robot.disconnect()
             pub.close()
             sub.close()
