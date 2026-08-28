@@ -171,8 +171,8 @@ class HumanaOpenHostConfig:
     connection_time_s: int = 3600
     watchdog_timeout_ms: int = 500
     max_loop_freq_hz: int = 30
-    # 图像采集频率: 遥操建议 5Hz (低延迟), 数据采集建议 30Hz (高画质)
-    image_fps: int = 5
+    # 图像采集频率: 线程方案下不影响动作延迟, 统一用 30Hz (高画质)
+    image_fps: int = 30
 
 
 @RobotConfig.register_subclass("humanaopen_client")
