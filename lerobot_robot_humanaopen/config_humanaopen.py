@@ -134,7 +134,6 @@ class HumanaOpenConfig(RobotConfig):
             "base_right_wheel": 1,
         }
     )
-
     # ---- Lift Axis ---------------------------------------------------------
     # 默认启用零位持久化: home 后保存绝对位置, 后续连接免归零恢复.
     lift: LiftAxisConfig = field(
