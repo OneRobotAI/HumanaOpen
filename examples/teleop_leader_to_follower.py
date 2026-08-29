@@ -181,6 +181,18 @@ def main():
             return obs
 
     if is_dual:
+        # Warn about PC-side camera args that have no effect in dual-machine mode:
+        # a non-default --cameras list or any explicit --<name>-camera device only
+        # configures local/single-machine cameras; the Host decides what is streamed.
+        explicit_dev_args = {n for n in ("head", "left_wrist", "right_wrist", "chest")
+                             if getattr(args, f"{n}_camera") is not None}
+        if explicit_dev_args or args.cameras != "head,left_wrist,right_wrist":
+            extra = "".join(f"    --{n}-camera is ignored in dual-machine mode; configure '{n}' on the Host\n"
+                            for n in sorted(explicit_dev_args))
+            if extra:
+                extra = "\n" + extra
+            print(f"  ⚠️ Camera args ({', '.join(sorted(explicit_dev_args)) or args.cameras}) are ignored "
+                  f"in dual-machine mode — set up cameras on the Host side instead.{extra}")
         # ── ZMQ dual-machine mode ────────────────────────────
         from lerobot_robot_humanaopen.humanaopen_client import HumanaOpenClient, HumanaOpenClientConfig
         _client_cfg = HumanaOpenClientConfig(
