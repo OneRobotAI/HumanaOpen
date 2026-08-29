@@ -135,18 +135,29 @@ class HumanaOpenHost:
         stop_cam = threading.Event()
 
         def _camera_thread():
-            """Continuously capture images into the cache in the background."""
+            """Continuously capture images into the cache in the background.
+
+            Each camera is read independently so that a single failing camera
+            cannot blank the others. On a transient read error the previous
+            good frame is kept (no clear()), so the obs stream keeps images.
+            """
             cam_interval = 1.0 / self.host_cfg.image_fps if self.host_cfg.image_fps > 0 else 0.0
             while not stop_cam.is_set():
-                try:
-                    frames = {}
-                    for cam_key, cam in robot.cameras.items():
-                        frames[cam_key] = cam.async_read()
+                frames: dict[str, Any] = {}
+                for cam_key, cam in robot.cameras.items():
+                    try:
+                        frame = cam.async_read()
+                        if frame is not None and getattr(frame, "ndim", 0) == 3:
+                            frames[cam_key] = frame
+                    except Exception as e:
+                        # Log the failure once per camera; keep whatever the
+                        # camera delivered last time (cache is not cleared).
+                        logger.warning("camera '%s' read failed: %s", cam_key, e)
+                if frames:
                     with cam_lock:
-                        cam_cache.clear()
                         cam_cache.update(frames)
-                except Exception:
-                    pass
+                elif not cam_cache:
+                    logger.warning("no camera delivered any frame yet")
                 if cam_interval > 0:
                     time.sleep(cam_interval)
                 else:

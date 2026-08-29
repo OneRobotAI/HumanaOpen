@@ -252,8 +252,15 @@ def main():
         follower.connect(calibrate=True)
         # connect handles this internally: prefer restoring the persisted position (no re-zeroing); only auto-home on failure
         if is_dual:
-            # Show which image keys the Host actually streams (may differ from --cameras)
-            obs0 = follower.get_observation()
+            # Show which image keys the Host actually streams (may differ from --cameras).
+            # ZMQ PUB/SUB has a slow-joiner window (~1s) during which the first frames are
+            # dropped, so wait a moment and sample a few times before deciding.
+            obs0 = {}
+            for _ in range(10):
+                obs0 = follower.get_observation()
+                if any(isinstance(v, np.ndarray) and v.ndim == 3 for v in obs0.values()):
+                    break
+                time.sleep(0.2)
             received = [k for k in obs0 if isinstance(obs0[k], np.ndarray) and obs0[k].ndim == 3]
             if args.no_cameras:
                 print(f"    Follower connected (--no-cameras: image display suppressed; Host still streams: {received or 'none'})")
