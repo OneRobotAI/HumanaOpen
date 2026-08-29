@@ -34,6 +34,7 @@ import argparse
 import threading
 import time
 
+import numpy as np
 from pynput import keyboard
 
 from lerobot.cameras.opencv.configuration_opencv import OpenCVCameraConfig
@@ -147,7 +148,7 @@ def main():
     parser.add_argument("--remote_ip", default=None, help="Host IP for ZMQ (omit for direct serial)")
     parser.add_argument("--port_zmq_cmd", type=int, default=5555)
     parser.add_argument("--port_zmq_obs", type=int, default=5556)
-    parser.add_argument("--no-cameras", action="store_true", help="跳过所有摄像头 (纯遥操)")
+    parser.add_argument("--no-cameras", action="store_true", help="跳过所有摄像头 (纯遥操; 单机模式生效, 双机模式下仅抑制 rerun 图像显示)")
     parser.add_argument(
         "--cameras",
         default="head,left_wrist,right_wrist",
@@ -164,6 +165,20 @@ def main():
 
     cams = build_cameras(args)
     is_dual = args.remote_ip is not None
+
+    # In dual-machine mode the camera HARDWARE lives on the Host (it owns the
+    # /dev/video* devices and streams the frames over ZMQ). The PC-side camera
+    # args (--cameras/--no-cameras) only apply to single-machine mode; here they
+    # merely tell rerun which received image keys to display.
+    if args.no_cameras and is_dual:
+        # Client-side: suppress image frames before visualization (Host keeps streaming)
+        def _strip_images(obs: dict) -> dict:
+            return {k: v for k, v in obs.items() if not (isinstance(v, np.ndarray) and v.ndim == 3)}
+
+    else:
+
+        def _strip_images(obs: dict) -> dict:
+            return obs
 
     if is_dual:
         # ── ZMQ dual-machine mode ────────────────────────────
@@ -224,7 +239,16 @@ def main():
         print("[1] Connecting follower...")
         follower.connect(calibrate=True)
         # connect handles this internally: prefer restoring the persisted position (no re-zeroing); only auto-home on failure
-        print(f"    Follower connected (cameras: {list(cams.keys()) or 'none'}, lift {follower.lift_axis.get_height_mm():.1f}mm)")
+        if is_dual:
+            # Show which image keys the Host actually streams (may differ from --cameras)
+            obs0 = follower.get_observation()
+            received = [k for k in obs0 if isinstance(obs0[k], np.ndarray) and obs0[k].ndim == 3]
+            if args.no_cameras:
+                print(f"    Follower connected (--no-cameras: image display suppressed; Host still streams: {received or 'none'})")
+            else:
+                print(f"    Follower connected (Host cameras received: {received or 'none'})")
+        else:
+            print(f"    Follower connected (cameras: {list(cams.keys()) or 'none'}, lift {follower.lift_axis.get_height_mm():.1f}mm)")
 
         print("[2] Connecting leader...")
         leader.connect(calibrate=True)
@@ -237,7 +261,7 @@ def main():
             try:
                 from lerobot.utils.visualization_utils import init_rerun, log_rerun_data
                 init_rerun(session_name="humanaopen_teleop")
-                log_rerun_data(observation=obs)
+                log_rerun_data(observation=_strip_images(obs))
                 print("  👁 Rerun visualization started (view in rerun viewer)")
             except Exception as e:
                 print(f"  ⚠️ Rerun startup failed (ignored): {str(e)[:60]}")
@@ -337,7 +361,7 @@ def main():
             if _rerun and time.time() - _last_display > 0.2:
                 _last_display = time.time()
                 try:
-                    log_rerun_data(observation=follower.get_observation(), action=action)
+                    log_rerun_data(observation=_strip_images(follower.get_observation()), action=action)
                 except Exception:
                     pass
 
