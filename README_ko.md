@@ -170,14 +170,22 @@ python3 examples/eval_data.py --remote_ip=192.168.1.100 ...
 python3 examples/teleop_leader_to_follower.py --remote_ip=192.168.1.100 ...
 ```
 
-### 네트워크 요구사항
-- 동일 LAN, 포트 5555 및 5556 개방
-- 대역폭: 카메라당 ~10 Mbps
 
 ### 네트워크 요구사항
 - 동일 LAN, 포트 5555 및 5556 개방
 - 대역폭: 카메라당 ~10 Mbps
 
+
+### 성능
+
+- 제어 루프: 30Hz (조인트 상태 읽기 + 액션 명령)
+- 이미지 캡처: 30fps (전용 백그라운드 스레드 — 제어를 차단하지 않음)
+- 낮은 지연: 이미지 캡처가 제어 루프에서 분리
+- 설정 가능: `image_fps` 및 `max_loop_freq_hz` (HumanaOpenHostConfig)
+
+### 휠 방향 (듀얼 머신)
+
+왼쪽 휠이 거울 설치됨; `wheel_dir_signs={'base_left_wheel': -1, 'base_right_wheel': 1}` 사용. HumanaOpenConfig의 기본값입니다.
 
 ## 캘리브레이션
 

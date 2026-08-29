@@ -171,14 +171,22 @@ python3 examples/eval_data.py --remote_ip=192.168.1.100 ...
 python3 examples/teleop_leader_to_follower.py --remote_ip=192.168.1.100 ...
 ```
 
-### Exigences réseau
-- Même LAN, ports 5555 et 5556 ouverts
-- Bande passante : ~10 Mbps par caméra
 
 ### Exigences réseau
 - Même LAN, ports 5555 et 5556 ouverts
 - Bande passante : ~10 Mbps par caméra
 
+
+### Performances
+
+- Boucle de contrôle : 30Hz (lecture état + commande action)
+- Capture image : 30fps (thread dédié — ne bloque pas le contrôle)
+- Faible latence : la capture image est découplée de la boucle de contrôle
+- Configurable : `image_fps` et `max_loop_freq_hz` dans `HumanaOpenHostConfig`
+
+### Direction des roues (double machine)
+
+La roue gauche est montée en miroir ; utilisez `wheel_dir_signs={'base_left_wheel': -1, 'base_right_wheel': 1}`. C'est le défaut dans `HumanaOpenConfig`.
 
 ## Calibration
 

@@ -203,6 +203,17 @@ python3 examples/teleop_leader_to_follower.py --remote_ip=192.168.1.100 ...
 - 端口 **5555**（命令）和 **5556**（观测）必须开放
 - 图像流带宽：每摄像头约 10 Mbps（640x480 MJPG）
 
+### 性能
+
+- 控制循环：30Hz（关节状态读取 + 动作命令）
+- 图像采集：30fps（独立后台线程 — 不阻塞控制）
+- 低延迟：图像采集与控制循环解耦，30fps 全速图像流下遥操臂仍即时响应
+- 可配置：`image_fps` 和 `max_loop_freq_hz` 在 `HumanaOpenHostConfig` 中
+
+### 轮子方向（双机）
+
+机器人左轮镜像安装，Host 使用 `wheel_dir_signs={'base_left_wheel': -1, 'base_right_wheel': 1}`。这也是 `HumanaOpenConfig` 的默认值。
+
 ## 校准
 
 校准记录每个关节的 min/max 范围。**只需一次** — 结果保存后每次连接自动恢复。
