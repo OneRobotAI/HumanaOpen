@@ -55,9 +55,19 @@ def _deserialize_obs(data: bytes) -> dict[str, Any]:
         pos += klen
         H, W, C = struct.unpack_from("<III", data, pos)
         pos += 12
-        npx = H * W * C
-        obs[key] = np.frombuffer(data[pos : pos + npx], dtype=np.uint8).reshape(H, W, C)
-        pos += npx
+        fmt = data[pos]
+        pos += 1
+        payload_len = struct.unpack_from("<I", data, pos)[0]
+        pos += 4
+        payload = data[pos : pos + payload_len]
+        pos += payload_len
+        if fmt == 1:  # JPEG-encoded
+            import cv2
+
+            img = cv2.imdecode(np.frombuffer(payload, dtype=np.uint8), cv2.IMREAD_COLOR)  # BGR
+            obs[key] = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        else:  # fmt 0 = raw
+            obs[key] = np.frombuffer(payload, dtype=np.uint8).reshape(H, W, C)
 
     return obs
 

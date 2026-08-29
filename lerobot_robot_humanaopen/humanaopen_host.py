@@ -15,13 +15,18 @@ from typing import Any
 import numpy as np
 import zmq
 
+try:
+    import cv2
+except ImportError:  # pragma: no cover - host without opencv falls back to raw frames
+    cv2 = None  # type: ignore[assignment]
+
 from .config_humanaopen import HumanaOpenConfig, HumanaOpenHostConfig
 from .humanaopen import HumanaOpen
 
 logger = logging.getLogger(__name__)
 
 
-def _serialize_obs(obs: dict[str, Any]) -> bytes:
+def _serialize_obs(obs: dict[str, Any], jpeg_quality: int = 85) -> bytes:
     """Pack an observation dict into a flat byte buffer.
 
     Layout (little-endian):
@@ -33,7 +38,9 @@ def _serialize_obs(obs: dict[str, Any]) -> bytes:
       For each image:
         [4 bytes] key_len + key_utf8
         [4 bytes] H, [4 bytes] W, [4 bytes] C
-        [H*W*C bytes] np.uint8 data
+        [1 byte]  fmt              1=JPEG, 0=raw
+        [4 bytes] payload_len      length of the encoded frame data
+        [payload_len bytes] image data (JPEG bytes if fmt=1, else raw H*W*C uint8)
     """
     floats = {k: v for k, v in obs.items() if isinstance(v, (int, float, np.floating))}
     images = {k: v for k, v in obs.items() if isinstance(v, np.ndarray) and v.ndim == 3}
@@ -53,7 +60,20 @@ def _serialize_obs(obs: dict[str, Any]) -> bytes:
         buf.extend(k_bytes)
         H, W, C = v.shape
         buf.extend(struct.pack("<III", H, W, C))
-        buf.extend(v.astype(np.uint8).tobytes())
+        if jpeg_quality > 0 and cv2 is not None:
+            # cv2.imencode expects BGR; HumanaOpen observation frames are RGB.
+            ok, enc = cv2.imencode(
+                ".jpg",
+                cv2.cvtColor(v, cv2.COLOR_RGB2BGR),
+                [int(cv2.IMWRITE_JPEG_QUALITY), jpeg_quality],
+            )
+            payload = enc.tobytes() if ok else b""
+            fmt = 1  # JPEG
+        else:
+            payload = v.astype(np.uint8).tobytes()
+            fmt = 0  # raw
+        buf.extend(struct.pack("<BI", fmt, len(payload)))
+        buf.extend(payload)
 
     return bytes(buf)
 
@@ -182,7 +202,7 @@ class HumanaOpenHost:
                 with cam_lock:
                     obs.update(cam_cache)
 
-                pub.send_multipart([b"obs", _serialize_obs(obs)])
+                pub.send_multipart([b"obs", _serialize_obs(obs, self.host_cfg.jpeg_quality)])
 
                 # ── Receive command (non-blocking, with timeout) ────────
                 try:
