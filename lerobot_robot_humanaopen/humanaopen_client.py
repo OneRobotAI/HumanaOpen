@@ -150,10 +150,10 @@ class HumanaOpenClient(Robot):
         # Subscribe to observations
         self._sub = self._ctx.socket(zmq.SUB)
         self._sub.setsockopt_string(zmq.SUBSCRIBE, "obs")
-        # Keep ONLY the newest observation: with high-rate obs + image payloads,
-        # queued stale frames would pile up and add latency. CONFLATE drops
-        # older messages so we always read the freshest state.
-        self._sub.setsockopt(zmq.CONFLATE, 1)
+        # NOTE: ZMQ_CONFLATE is NOT used here — it asserts/crashes on multipart
+        # messages (libzmq fq.cpp:80, issue #3373) and our obs are 2-frame
+        # multipart. "Keep only the newest" is implemented by draining the
+        # socket in get_observation() instead.
         self._sub.connect(f"tcp://{self.config.remote_ip}:{self.config.port_zmq_observations}")
         self._sub.RCVTIMEO = self.config.polling_timeout_ms
 
@@ -191,17 +191,23 @@ class HumanaOpenClient(Robot):
         pass
 
     def get_observation(self) -> dict[str, Any]:
-        """Return the latest observation from the robot host."""
+        """Return the latest observation from the robot host.
+
+        Drains the socket in non-blocking mode so only the freshest queued
+        observation is kept — the multipart-safe replacement for ZMQ_CONFLATE.
+        """
         if not self.is_connected:
             raise RuntimeError("Client is not connected")
 
-        try:
-            _, obs_data = self._sub.recv_multipart()
-            self._last_obs = _deserialize_obs(obs_data)
-            self._last_obs_time = time.time()
-        except zmq.Again:
-            # No new data — return cached
-            pass
+        pending = self._sub.poll(0)
+        while pending:
+            try:
+                _, obs_data = self._sub.recv_multipart(flags=zmq.NOBLOCK)
+                self._last_obs = _deserialize_obs(obs_data)
+                self._last_obs_time = time.time()
+            except zmq.Again:
+                break
+            pending = self._sub.poll(0)
 
         return dict(self._last_obs)
 
