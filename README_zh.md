@@ -104,10 +104,15 @@ print(robot.get_observation().keys())
 python3 -c "
 from lerobot_robot_humanaopen.humanaopen_host import HumanaOpenHost
 from lerobot_robot_humanaopen import HumanaOpenConfig
-from lerobot_robot_humanaopen.config_humanaopen import default_cameras
+from lerobot.cameras.opencv.configuration_opencv import OpenCVCameraConfig
+
 HumanaOpenHost(HumanaOpenConfig(
     port1='/dev/ttyACM0', port2='/dev/ttyACM1', port3=None,
-    cameras=default_cameras(),  # head / left_wrist / right_wrist — 在板子上跑 lerobot-find-cameras 确认 /dev/video* 设备号
+    cameras={
+        'head':         OpenCVCameraConfig(index_or_path='/dev/video0', fps=30, width=640, height=480, fourcc='MJPG'),  # 按板子上 lerobot-find-cameras 的输出改成实际设备号
+        'left_wrist':   OpenCVCameraConfig(index_or_path='/dev/video2', fps=30, width=640, height=480, fourcc='MJPG'),  # 按板子上 lerobot-find-cameras 的输出改成实际设备号
+        'right_wrist':  OpenCVCameraConfig(index_or_path='/dev/video4', fps=30, width=640, height=480, fourcc='MJPG'),  # 按板子上 lerobot-find-cameras 的输出改成实际设备号
+    },
     wheel_dir_signs={'base_left_wheel': -1, 'base_right_wheel': 1}
 )).run()
 "
@@ -148,10 +153,15 @@ cd HumanaOpen && pip3 install -e . --no-deps
 python3 -c "
 from lerobot_robot_humanaopen.humanaopen_host import HumanaOpenHost
 from lerobot_robot_humanaopen import HumanaOpenConfig
-from lerobot_robot_humanaopen.config_humanaopen import default_cameras
+from lerobot.cameras.opencv.configuration_opencv import OpenCVCameraConfig
+
 HumanaOpenHost(HumanaOpenConfig(
     port1='/dev/ttyACM0', port2='/dev/ttyACM1', port3=None,
-    cameras=default_cameras(),  # head / left_wrist / right_wrist — 在板子上跑 lerobot-find-cameras 确认 /dev/video* 设备号
+    cameras={
+        'head':         OpenCVCameraConfig(index_or_path='/dev/video0', fps=30, width=640, height=480, fourcc='MJPG'),  # 按板子上 lerobot-find-cameras 的输出改成实际设备号
+        'left_wrist':   OpenCVCameraConfig(index_or_path='/dev/video2', fps=30, width=640, height=480, fourcc='MJPG'),  # 按板子上 lerobot-find-cameras 的输出改成实际设备号
+        'right_wrist':  OpenCVCameraConfig(index_or_path='/dev/video4', fps=30, width=640, height=480, fourcc='MJPG'),  # 按板子上 lerobot-find-cameras 的输出改成实际设备号
+    },
     wheel_dir_signs={'base_left_wheel': -1, 'base_right_wheel': 1}
 )).run()
 "
@@ -175,10 +185,15 @@ cd HumanaOpen && pip3 install -e . --no-deps
 python3 -c "
 from lerobot_robot_humanaopen.humanaopen_host import HumanaOpenHost
 from lerobot_robot_humanaopen import HumanaOpenConfig
-from lerobot_robot_humanaopen.config_humanaopen import default_cameras
+from lerobot.cameras.opencv.configuration_opencv import OpenCVCameraConfig
+
 HumanaOpenHost(HumanaOpenConfig(
     port1='/dev/ttyACM0', port2='/dev/ttyACM1', port3=None,
-    cameras=default_cameras(),  # head / left_wrist / right_wrist — 在板子上跑 lerobot-find-cameras 确认 /dev/video* 设备号
+    cameras={
+        'head':         OpenCVCameraConfig(index_or_path='/dev/video0', fps=30, width=640, height=480, fourcc='MJPG'),  # 按板子上 lerobot-find-cameras 的输出改成实际设备号
+        'left_wrist':   OpenCVCameraConfig(index_or_path='/dev/video2', fps=30, width=640, height=480, fourcc='MJPG'),  # 按板子上 lerobot-find-cameras 的输出改成实际设备号
+        'right_wrist':  OpenCVCameraConfig(index_or_path='/dev/video4', fps=30, width=640, height=480, fourcc='MJPG'),  # 按板子上 lerobot-find-cameras 的输出改成实际设备号
+    },
     wheel_dir_signs={'base_left_wheel': -1, 'base_right_wheel': 1}
 )).run()
 "
