@@ -99,14 +99,17 @@ print(robot.get_observation().keys())
 "
 
 # 6. 듀얼 머신 ZMQ 모드 (로봇에서 실행)
-python -c "
+# Host 시작 (카메라 포함). 영상 없이 순수 원격조작만? cameras={} 사용.
+python3 -c "
 from lerobot_robot_humanaopen.humanaopen_host import HumanaOpenHost
 from lerobot_robot_humanaopen import HumanaOpenConfig
-HumanaOpenHost(HumanaOpenConfig(port1='/dev/ttyACM0', port2='/dev/ttyACM1', port3=None, cameras={},
-        wheel_dir_signs={'base_left_wheel': -1, 'base_right_wheel': 1}
-    )).run().run()
+from lerobot_robot_humanaopen.config_humanaopen import default_cameras
+HumanaOpenHost(HumanaOpenConfig(
+    port1='/dev/ttyACM0', port2='/dev/ttyACM1', port3=None,
+    cameras=default_cameras(),  # head / left_wrist / right_wrist — 보드에서 lerobot-find-cameras 실행 후 /dev/video* 경로 조정
+    wheel_dir_signs={'base_left_wheel': -1, 'base_right_wheel': 1}
+)).run()
 "
-HumanaOpenHost(HumanaOpenConfig()).run()
 ```
 
 ## 듀얼 머신 배포
@@ -126,12 +129,16 @@ conda activate humanaopen
 pip install pyzmq feetech-servo-sdk
 cd ~/ && git clone https://github.com/OneRobotAI/HumanaOpen.git
 cd HumanaOpen && pip3 install -e . --no-deps
+# Host 시작 (카메라 포함). 영상 없이 순수 원격조작만? cameras={} 사용.
 python3 -c "
 from lerobot_robot_humanaopen.humanaopen_host import HumanaOpenHost
 from lerobot_robot_humanaopen import HumanaOpenConfig
-HumanaOpenHost(HumanaOpenConfig(port1='/dev/ttyACM0', port2='/dev/ttyACM1', port3=None, cameras={},
-        wheel_dir_signs={'base_left_wheel': -1, 'base_right_wheel': 1}
-    )).run().run()
+from lerobot_robot_humanaopen.config_humanaopen import default_cameras
+HumanaOpenHost(HumanaOpenConfig(
+    port1='/dev/ttyACM0', port2='/dev/ttyACM1', port3=None,
+    cameras=default_cameras(),  # head / left_wrist / right_wrist — 보드에서 lerobot-find-cameras 실행 후 /dev/video* 경로 조정
+    wheel_dir_signs={'base_left_wheel': -1, 'base_right_wheel': 1}
+)).run()
 "
 ```
 
@@ -146,12 +153,16 @@ pip install pyzmq feetech-servo-sdk
 
 cd ~/ && git clone https://github.com/OneRobotAI/HumanaOpen.git
 cd HumanaOpen && pip3 install -e . --no-deps
+# Host 시작 (카메라 포함). 영상 없이 순수 원격조작만? cameras={} 사용.
 python3 -c "
 from lerobot_robot_humanaopen.humanaopen_host import HumanaOpenHost
 from lerobot_robot_humanaopen import HumanaOpenConfig
-HumanaOpenHost(HumanaOpenConfig(port1='/dev/ttyACM0', port2='/dev/ttyACM1', port3=None, cameras={},
-        wheel_dir_signs={'base_left_wheel': -1, 'base_right_wheel': 1}
-    )).run().run()
+from lerobot_robot_humanaopen.config_humanaopen import default_cameras
+HumanaOpenHost(HumanaOpenConfig(
+    port1='/dev/ttyACM0', port2='/dev/ttyACM1', port3=None,
+    cameras=default_cameras(),  # head / left_wrist / right_wrist — 보드에서 lerobot-find-cameras 실행 후 /dev/video* 경로 조정
+    wheel_dir_signs={'base_left_wheel': -1, 'base_right_wheel': 1}
+)).run()
 "
 ```
 

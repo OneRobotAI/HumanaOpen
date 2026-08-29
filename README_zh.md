@@ -100,14 +100,17 @@ print(robot.get_observation().keys())
 
 # 6. 双机 ZMQ 模式（⚠️ 仅限 Jetson/树莓派双机部署 — 单机跳过）
 # 在机器人端 (Jetson/RPi) 运行，不在开发机上运行
-python -c "
+# 启动 Host（带摄像头）。纯摇操不需要画面？改用 cameras={} 即可。
+python3 -c "
 from lerobot_robot_humanaopen.humanaopen_host import HumanaOpenHost
 from lerobot_robot_humanaopen import HumanaOpenConfig
-HumanaOpenHost(HumanaOpenConfig(port1='/dev/ttyACM0', port2='/dev/ttyACM1', port3=None, cameras={},
-        wheel_dir_signs={'base_left_wheel': -1, 'base_right_wheel': 1}
-    )).run().run()
+from lerobot_robot_humanaopen.config_humanaopen import default_cameras
+HumanaOpenHost(HumanaOpenConfig(
+    port1='/dev/ttyACM0', port2='/dev/ttyACM1', port3=None,
+    cameras=default_cameras(),  # head / left_wrist / right_wrist — 在板子上跑 lerobot-find-cameras 确认 /dev/video* 设备号
+    wheel_dir_signs={'base_left_wheel': -1, 'base_right_wheel': 1}
+)).run()
 "
-HumanaOpenHost(HumanaOpenConfig()).run()
 ```
 
 ## 双机部署
@@ -141,12 +144,15 @@ pip install pyzmq feetech-servo-sdk
 cd ~/ && git clone https://github.com/OneRobotAI/HumanaOpen.git
 cd HumanaOpen && pip3 install -e . --no-deps
 
-# 启动 Host
+# 启动 Host（带摄像头）。纯摇操不需要画面？改用 cameras={} 即可。
 python3 -c "
 from lerobot_robot_humanaopen.humanaopen_host import HumanaOpenHost
 from lerobot_robot_humanaopen import HumanaOpenConfig
+from lerobot_robot_humanaopen.config_humanaopen import default_cameras
 HumanaOpenHost(HumanaOpenConfig(
-    port1='/dev/ttyACM0', port2='/dev/ttyACM1', port3=None, cameras={}
+    port1='/dev/ttyACM0', port2='/dev/ttyACM1', port3=None,
+    cameras=default_cameras(),  # head / left_wrist / right_wrist — 在板子上跑 lerobot-find-cameras 确认 /dev/video* 设备号
+    wheel_dir_signs={'base_left_wheel': -1, 'base_right_wheel': 1}
 )).run()
 "
 ```
@@ -165,12 +171,16 @@ pip install pyzmq feetech-servo-sdk
 cd ~/ && git clone https://github.com/OneRobotAI/HumanaOpen.git
 cd HumanaOpen && pip3 install -e . --no-deps
 
+# 启动 Host（带摄像头）。纯摇操不需要画面？改用 cameras={} 即可。
 python3 -c "
 from lerobot_robot_humanaopen.humanaopen_host import HumanaOpenHost
 from lerobot_robot_humanaopen import HumanaOpenConfig
-HumanaOpenHost(HumanaOpenConfig(port1='/dev/ttyACM0', port2='/dev/ttyACM1', port3=None, cameras={},
-        wheel_dir_signs={'base_left_wheel': -1, 'base_right_wheel': 1}
-    )).run().run()
+from lerobot_robot_humanaopen.config_humanaopen import default_cameras
+HumanaOpenHost(HumanaOpenConfig(
+    port1='/dev/ttyACM0', port2='/dev/ttyACM1', port3=None,
+    cameras=default_cameras(),  # head / left_wrist / right_wrist — 在板子上跑 lerobot-find-cameras 确认 /dev/video* 设备号
+    wheel_dir_signs={'base_left_wheel': -1, 'base_right_wheel': 1}
+)).run()
 "
 ```
 

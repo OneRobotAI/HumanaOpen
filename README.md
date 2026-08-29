@@ -130,12 +130,15 @@ pip install pyzmq feetech-servo-sdk
 cd ~/ && git clone https://github.com/OneRobotAI/HumanaOpen.git
 cd HumanaOpen && pip3 install -e . --no-deps
 
-# Start Host
+# Start Host (with cameras — required for camera views / recording)
+# Pure teleop without camera views? Use cameras={} instead (no images are streamed).
 python3 -c "
 from lerobot_robot_humanaopen.humanaopen_host import HumanaOpenHost
 from lerobot_robot_humanaopen import HumanaOpenConfig
+from lerobot_robot_humanaopen.config_humanaopen import default_cameras
 HumanaOpenHost(HumanaOpenConfig(
-    port1='/dev/ttyACM0', port2='/dev/ttyACM1', port3=None, cameras={},
+    port1='/dev/ttyACM0', port2='/dev/ttyACM1', port3=None,
+    cameras=default_cameras(),  # head / left_wrist / right_wrist — run lerobot-find-cameras on the board and adjust /dev/video* if needed
     wheel_dir_signs={'base_left_wheel': -1, 'base_right_wheel': 1}
 )).run()
 "
@@ -155,12 +158,17 @@ pip install pyzmq feetech-servo-sdk
 cd ~/ && git clone https://github.com/OneRobotAI/HumanaOpen.git
 cd HumanaOpen && pip3 install -e . --no-deps
 
+# Start Host (with cameras — required for camera views / recording)
+# Pure teleop without camera views? Use cameras={} instead (no images are streamed).
 python3 -c "
 from lerobot_robot_humanaopen.humanaopen_host import HumanaOpenHost
 from lerobot_robot_humanaopen import HumanaOpenConfig
-HumanaOpenHost(HumanaOpenConfig(port1='/dev/ttyACM0', port2='/dev/ttyACM1', port3=None, cameras={},
-        wheel_dir_signs={'base_left_wheel': -1, 'base_right_wheel': 1}
-    )).run()
+from lerobot_robot_humanaopen.config_humanaopen import default_cameras
+HumanaOpenHost(HumanaOpenConfig(
+    port1='/dev/ttyACM0', port2='/dev/ttyACM1', port3=None,
+    cameras=default_cameras(),  # head / left_wrist / right_wrist — run lerobot-find-cameras on the board and adjust /dev/video* if needed
+    wheel_dir_signs={'base_left_wheel': -1, 'base_right_wheel': 1}
+)).run()
 "
 ```
 
