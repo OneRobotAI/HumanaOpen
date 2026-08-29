@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import logging
 import struct
+import threading
 import time
 from functools import cached_property
 from typing import Any
@@ -113,6 +114,10 @@ class HumanaOpenClient(Robot):
         self._pub: zmq.Socket | None = None
         self._last_obs: dict[str, Any] = {}
         self._last_obs_time = 0.0
+        # Image frames arrive at a lower rate than joint state (host divider);
+        # cache them so fresh non-image obs frames can re-attach them.
+        self._img_cache: dict[str, Any] = {}
+        self._img_lock = threading.Lock()
 
     # ── Feature descriptors (mirror HumanaOpen so the dataset schema matches) ──
     # Cameras are a *schema* only: images arrive over ZMQ, so no local camera is
@@ -195,6 +200,9 @@ class HumanaOpenClient(Robot):
 
         Drains the socket in non-blocking mode so only the freshest queued
         observation is kept — the multipart-safe replacement for ZMQ_CONFLATE.
+        Images arrive on a subset of frames (host image_fps_divider), so a
+        frame carrying no image keeps the previously received one: joint/
+        action state is always freshest, image stream stays at its own rate.
         """
         if not self.is_connected:
             raise RuntimeError("Client is not connected")
@@ -203,11 +211,23 @@ class HumanaOpenClient(Robot):
         while pending:
             try:
                 _, obs_data = self._sub.recv_multipart(flags=zmq.NOBLOCK)
-                self._last_obs = _deserialize_obs(obs_data)
+                obs = _deserialize_obs(obs_data)
+                # Persist image frames separately: they arrive less often than
+                # joint state (host divider), so retain them across calls.
+                for k, v in obs.items():
+                    if isinstance(v, np.ndarray) and v.ndim == 3:
+                        with self._img_lock:
+                            self._img_cache[k] = v
+                self._last_obs = obs
                 self._last_obs_time = time.time()
             except zmq.Again:
                 break
             pending = self._sub.poll(0)
+
+        # Re-attach the most recent images to the freshest joint frame.
+        with self._img_lock:
+            if self._img_cache:
+                self._last_obs.update(self._img_cache)
 
         return dict(self._last_obs)
 
