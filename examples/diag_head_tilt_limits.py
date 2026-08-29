@@ -41,32 +41,32 @@ try:
     time.sleep(0.5)
 
     # Start 100 ticks outside the known boundary, approach in 10-tick steps, watch the current rise
-    print("向下极限精测 (从 1247 开始):")
+    print("Downward limit fine measurement (starting from 1247):")
     for raw in range(1247, 1367, 10):
         pos, cur = probe(raw)
         deg = (pos - 2048) * 360 / 4096
         print(f"  target={raw:>4} → pos={pos:>4} ({deg:+.1f}°)  I={cur}mA")
         if pos < raw - 30:  # Servo refuses to approach the target (hard limit)
-            print(f"  ⛔ 硬限位确认在 pos={pos} 附近")
+            print(f"  ⛔ Hard limit confirmed near pos={pos}")
             break
 
     # Return to center position
     probe(2048)
     print()
 
-    print("向上极限精测 (从 2342 开始):")
+    print("Upward limit fine measurement (starting from 2342):")
     for raw in range(2342, 2222, -10):
         pos, cur = probe(raw)
         deg = (pos - 2048) * 360 / 4096
         print(f"  target={raw:>4} → pos={pos:>4} ({deg:+.1f}°)  I={cur}mA")
         if pos > raw + 30:
-            print(f"  ⛔ 硬限位确认在 pos={pos} 附近")
+            print(f"  ⛔ Hard limit confirmed near pos={pos}")
             break
 
     probe(2048)
 
 except KeyboardInterrupt:
-    print("\n⛔ 中断")
+    print("\n⛔ Interrupted")
 
 finally:
     try:
@@ -79,4 +79,4 @@ finally:
         bus.disconnect()
     except Exception:
         pass
-    print("已断开")
+    print("Disconnected")

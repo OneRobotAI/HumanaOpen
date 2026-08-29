@@ -31,7 +31,7 @@ builtins.input = lambda *a, **k: ""
 try:
     robot.connect(calibrate=False)
 except Exception as e:
-    print(f"connect 警告: {e}")
+    print(f"connect warning: {e}")
 
 lift = robot.lift_axis
 name = "lift_axis"
@@ -39,11 +39,11 @@ bus = lift._bus
 
 # current Phase
 phase = int(bus.read("Phase", name, normalize=False))
-print(f"当前 Phase = {phase} (0x{phase:02X}) BIT2={'1' if phase & 0x04 else '0'}")
+print(f"Current Phase = {phase} (0x{phase:02X}) BIT2={'1' if phase & 0x04 else '0'}")
 
 new_phase = (phase & ~0x04) if not RESTORE else (phase | 0x04)
-action = "清除 BIT2 (→50step/s/raw)" if not RESTORE else "恢复 BIT2 (→1step/s/raw)"
-print(f"执行: {action} → Phase = {new_phase} (0x{new_phase:02X})")
+action = "clear BIT2 (->50step/s/raw)" if not RESTORE else "restore BIT2 (->1step/s/raw)"
+print(f"Executing: {action} -> Phase = {new_phase} (0x{new_phase:02X})")
 
 # modify Phase: need Torque_Enable=0, Lock=0, write Phase, then write Lock=1
 try:
@@ -57,15 +57,15 @@ try:
     time.sleep(0.3)
     # power-cycle to confirm? not needed, just read back
     verify = int(bus.read("Phase", name, normalize=False))
-    print(f"验证 Phase = {verify} (0x{verify:02X}) BIT2={'1' if verify & 0x04 else '0'}")
+    print(f"Verify Phase = {verify} (0x{verify:02X}) BIT2={'1' if verify & 0x04 else '0'}")
 except Exception as e:
-    print(f"修改失败: {str(e)[:100]}")
+    print(f"Modification failed: {str(e)[:100]}")
     robot.disconnect()
     sys.exit(1)
 
 if not RESTORE:
     # speed test with BIT2=0 (50 step/s/raw)
-    print("\nBIT2=0 测速 (50 step/s/raw):")
+    print("\nBIT2=0 speed test (50 step/s/raw):")
     def probe(raw, dur=2):
         try:
             e0 = bus.read("Present_Position", name, normalize=False)
@@ -79,7 +79,7 @@ if not RESTORE:
             elif d < -2048: d += 4096
             mm = abs(d)/4096*8
             speed = mm/dur
-            print(f"  raw={raw:>4}: Δenc={d:>6} ({speed:.2f}mm/s) 反馈vel={pv:>5} → {'↑' if d>0 else '↓'}")
+            print(f"  raw={raw:>4}: Δenc={d:>6} ({speed:.2f}mm/s) feedback_vel={pv:>5} -> {'↑' if d>0 else '↓'}")
             time.sleep(0.5)
         except Exception as e:
             print(f"  raw={raw}: {str(e)[:40]}")
@@ -88,7 +88,7 @@ if not RESTORE:
     # physical upper limit 5500 steps/s = raw 110
     for raw in [20, 60, 110]:
         probe(raw)
-    print("\n若 raw 110 → ~10mm/s 且方向正确 = 提速成功!")
-    print("记住用 --restore 切回, 或保持 BIT2=0 并修改 v_max/kp_vel")
+    print("\nIf raw 110 -> ~10mm/s and direction is correct = speed-up succeeded!")
+    print("Remember to switch back with --restore, or keep BIT2=0 and modify v_max/kp_vel")
 
 robot.disconnect()

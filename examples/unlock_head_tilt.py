@@ -34,17 +34,17 @@ bus.connect()
 name = "head_tilt"
 try:
     # 1. Disable torque -> unlock the limits
-    print("[1] 关扭矩...")
+    print("[1] Disabling torque...")
     bus.write("Torque_Enable", name, 0)
     time.sleep(0.3)
 
     # 2. Read current limits
     for label, addr in [("Min_Position_Limit", 9), ("Max_Position_Limit", 11)]:
         val = bus._read(addr, 2, 13, raise_on_error=True)[0]
-        print(f"    当前 {label} = {val}")
+        print(f"    Current {label} = {val}")
 
     # 3. Write 0 / 4095 (requires Lock=0 first)
-    print("[2] 写全行程限制 [0, 4095]...")
+    print("[2] Writing full-travel limits [0, 4095]...")
     try:
         bus.write("Lock", name, 0)
     except Exception:
@@ -59,7 +59,7 @@ try:
         pass
 
     # 4. Verify
-    print("[3] 验证:")
+    print("[3] Verify:")
     ok = True
     for label, addr in [("Min_Position_Limit", 9), ("Max_Position_Limit", 11)]:
         val = bus._read(addr, 2, 13, raise_on_error=True)[0]
@@ -68,15 +68,15 @@ try:
             ok = False
         if label.startswith("Max") and val != 4095:
             ok = False
-    print(f"    {'✅ 限制已解锁!' if ok else '⚠️ 写入未生效'}")
+    print(f"    {'✅ Limits unlocked!' if ok else '⚠️ Write did not take effect'}")
 
     # 5. Optional: probe the real travel
     if PROBE:
-        print("\n[4] 试探真实行程 (小步, 撞限位停):")
+        print("\n[4] Probing real travel (small steps, stops at the limit):")
         bus.write("Torque_Enable", name, 1)
         time.sleep(0.3)
         cur = int(bus.read("Present_Position", name, normalize=False))
-        print(f"    起始 raw={cur}")
+        print(f"    Start raw={cur}")
         # Probe downward
         target = cur
         for i in range(80):
@@ -85,11 +85,11 @@ try:
             time.sleep(0.15)
             new_cur = int(bus.read("Present_Position", name, normalize=False))
             if new_cur == cur:
-                print(f"    ⛔ 向下限位 raw={new_cur} ({(new_cur-2048)*360/4096:+.1f}°)")
+                print(f"    ⛔ Downward limit raw={new_cur} ({(new_cur-2048)*360/4096:+.1f}°)")
                 break
             cur = new_cur
         # Probe upward (from the current lower-limit point)
-        print("    向上试探:")
+        print("    Probing upward:")
         target = cur
         for i in range(120):
             target += 50
@@ -97,16 +97,16 @@ try:
             time.sleep(0.15)
             new_cur = int(bus.read("Present_Position", name, normalize=False))
             if new_cur == cur:
-                print(f"    ⛔ 向上限位 raw={new_cur} ({(new_cur-2048)*360/4096:+.1f}°)")
+                print(f"    ⛔ Upward limit raw={new_cur} ({(new_cur-2048)*360/4096:+.1f}°)")
                 break
             cur = new_cur
         # Return to center
         bus.write("Goal_Position", name, 2048, normalize=False)
         time.sleep(0.5)
-        print(f"    回到中间 raw={int(bus.read('Present_Position', name, normalize=False))}")
+        print(f"    Back to center raw={int(bus.read('Present_Position', name, normalize=False))}")
 
 except KeyboardInterrupt:
-    print("\n⛔ 中断")
+    print("\n⛔ Interrupted")
 
 finally:
     try:
@@ -119,4 +119,4 @@ finally:
         bus.disconnect()
     except Exception:
         pass
-    print("已断开")
+    print("Disconnected")

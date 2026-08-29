@@ -31,17 +31,17 @@ builtins.input = lambda *a, **k: ""
 try:
     robot.connect(calibrate=False)
 except Exception as e:
-    print(f"connect 警告: {e}")
+    print(f"connect warning: {e}")
 
 print("=" * 55)
-print("[A] 校准加载 (bus1/bus2 calibration keys):")
+print("[A] Calibration load (bus1/bus2 calibration keys):")
 for bk in ["bus1", "bus2"]:
     bus = getattr(robot, bk, None)
     if bus is None:
         continue
-    print(f"  {bk}: {list(bus.calibration.keys()) if bus.calibration else '空!'}")
+    print(f"  {bk}: {list(bus.calibration.keys()) if bus.calibration else 'empty!'}")
 
-print("\n[B] 舵机 EPROM 位置限制:")
+print("\n[B] Servo EPROM position limits:")
 for bk, mid, label in [("bus1", 13, "head_tilt"), ("bus2", 9, "lift")]:
     bus = getattr(robot, bk, None)
     if bus is None:
@@ -53,29 +53,29 @@ for bk, mid, label in [("bus1", 13, "head_tilt"), ("bus2", 9, "lift")]:
     except Exception as e:
         print(f"  {label}: {str(e)[:60]}")
 
-print("\n[C] 升降配置:")
+print("\n[C] Lift config:")
 lift = robot.lift_axis
 print(f"  v_max={lift.cfg.v_max} kp_vel={lift.cfg.kp_vel} home_down_speed={lift.cfg.home_down_speed}")
 print(f"  soft_max={lift.cfg.soft_max_mm}mm descent_floor={lift.cfg.descent_floor_mm}mm")
 
-print("\n[D] 升降高度跟踪:")
+print("\n[D] Lift height tracking:")
 lift._extended_ticks = 0.0
 lift._z0_deg = 0.0
 try:
     lift._last_tick = float(lift._bus.read("Present_Position", "lift_axis", normalize=False))
 except Exception as e:
-    print(f"  read pos 失败: {str(e)[:60]}")
+    print(f"  read pos failed: {str(e)[:60]}")
 try:
     h = lift.get_height_mm()
-    print(f"  get_height_mm = {h:.1f} mm (重置跟踪后)")
+    print(f"  get_height_mm = {h:.1f} mm (after resetting tracking)")
 except Exception as e:
-    print(f"  get_height_mm 异常: {str(e)[:80]}")
+    print(f"  get_height_mm exception: {str(e)[:80]}")
 
-print("\n[E] 头部实测 (只读 + 安全范围测试):")
+print("\n[E] Head tilt live test (read-only + safe range test):")
 try:
     obs = robot.get_observation()
-    print(f"  当前 head_tilt.pos = {obs.get('head_tilt.pos', 'N/A')}")
-    print(f"  当前 head_pan.pos  = {obs.get('head_pan.pos', 'N/A')}")
+    print(f"  current head_tilt.pos = {obs.get('head_tilt.pos', 'N/A')}")
+    print(f"  current head_pan.pos  = {obs.get('head_pan.pos', 'N/A')}")
     # send only -50 (when calibration is sane, -50 ↔ raw ~1794, absolutely safe range)
     action = {k: obs[k] for k in obs if k.endswith(".pos")}
     action["head_tilt.pos"] = -50.0
@@ -86,9 +86,9 @@ try:
     time.sleep(1.0)
     bus1 = robot.bus1
     raw = bus1.read("Present_Position", "head_tilt", normalize=False)
-    print(f"  发送 -50 后 head_tilt raw = {raw} (校准正常时应在 1750~1850 附近)")
+    print(f"  after sending -50, head_tilt raw = {raw} (should be around 1750~1850 when calibration is sane)")
 except Exception as e:
-    print(f"  实测异常: {str(e)[:80]}")
+    print(f"  live test exception: {str(e)[:80]}")
 
 try:
     robot.bus1.write("Goal_Position", "head_tilt", 2048, normalize=False)
@@ -97,4 +97,4 @@ except Exception:
     pass
 
 robot.disconnect()
-print("\n✅ 诊断完成")
+print("\n✅ Diagnosis complete")

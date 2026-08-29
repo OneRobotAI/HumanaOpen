@@ -19,7 +19,7 @@ builtins.input = lambda *a, **k: ""
 try:
     robot.connect(calibrate=False)
 except Exception as e:
-    print(f"connect 警告: {e}")
+    print(f"connect warning: {e}")
 
 lift = robot.lift_axis
 name = "lift_axis"
@@ -36,7 +36,7 @@ for reg in ["Present_Position", "Present_Velocity", "Present_Current", "Present_
 
 try:
     bus.write("Goal_Velocity", name, 0)
-    print("  Goal_Velocity=0 写入 ✅ (电机已停止/保持)")
+    print("  Goal_Velocity=0 written ✅ (motor stopped/held)")
 except Exception as e:
     print(f"  Goal_Velocity: {str(e)[:60]}  ❌")
 

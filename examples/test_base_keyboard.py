@@ -87,8 +87,8 @@ def main():
     speed_idx = 1
 
     try:
-        print("底盘键盘控制开始。键位: i/k 前后, j/l 转向, n/m 速度, b 退出")
-        print("按住按键连续移动, 松开即停。")
+        print("Chassis keyboard control started. Keys: i/k forward/backward, j/l turn, n/m speed, b quit")
+        print("Hold a key to keep moving, release to stop.")
         while True:
             speed = speed_levels[speed_idx]
             x, theta = 0.0, 0.0
@@ -121,7 +121,7 @@ def main():
             pass
         robot.disconnect()
         listener.stop()
-        print("\n已退出, 轮子已停")
+        print("\nExited, wheels stopped")
 
 
 if __name__ == "__main__":

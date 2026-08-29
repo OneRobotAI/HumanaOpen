@@ -44,7 +44,7 @@ def read_wheel_raw() -> dict[str, int]:
 
 def show_wheels(label: str) -> None:
     v = read_wheel_raw()
-    print(f"    [{label}] 左轮={v.get('base_left_wheel', 0):>6}  右轮={v.get('base_right_wheel', 0):>6}")
+    print(f"    [{label}]  left_wheel={v.get('base_left_wheel', 0):>6}  right_wheel={v.get('base_right_wheel', 0):>6}")
 
 
 def test_move(label: str, action: dict, duration: float = 2.0) -> None:
@@ -54,26 +54,26 @@ def test_move(label: str, action: dict, duration: float = 2.0) -> None:
     show_wheels(label)
     robot.send_action({"x.vel": 0.0, "theta.vel": 0.0})
     time.sleep(0.5)
-    show_wheels("停 " + label)
+    show_wheels("stop " + label)
     print()
 
 
 try:
-    print("[0] 连接中... (升降会自动归零, 到底即停)")
+    print("[0] Connecting... (lift auto-homes, stops at the bottom)")
     robot.connect(calibrate=False)
-    print("    连接完成\n")
+    print("    Connected\n")
 
     # start at low speed; ramp up only after confirming the directions are correct
-    test_move("前进", {"x.vel": 0.1, "theta.vel": 0.0})
-    test_move("后退", {"x.vel": -0.1, "theta.vel": 0.0})
-    test_move("左转", {"x.vel": 0.0, "theta.vel": 30.0})
-    test_move("右转", {"x.vel": 0.0, "theta.vel": -30.0})
+    test_move("forward", {"x.vel": 0.1, "theta.vel": 0.0})
+    test_move("backward", {"x.vel": -0.1, "theta.vel": 0.0})
+    test_move("turn left", {"x.vel": 0.0, "theta.vel": 30.0})
+    test_move("turn right", {"x.vel": 0.0, "theta.vel": -30.0})
 
     print("=" * 45)
-    print("测试完成。轮速 raw 值方向正确即通过 (前进=两轮同正, 左转=左负右正)。")
+    print("Test complete. Pass if the raw wheel-speed value directions are correct (forward = both wheels positive, turn left = left negative right positive).")
 
 except KeyboardInterrupt:
-    print("\n⛔ 紧急停止...")
+    print("\n⛔ Emergency stop...")
     try:
         robot.send_action({"x.vel": 0.0, "theta.vel": 0.0})
     except Exception:
@@ -83,5 +83,5 @@ finally:
     try:
         robot.disconnect()
     except Exception as e:
-        print(f"断开: {e}")
-    print("已断开 (轮子已停, 扭矩已释放)")
+        print(f"Disconnect error: {e}")
+    print("Disconnected (wheels stopped, torque released)")

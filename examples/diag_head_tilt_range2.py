@@ -43,51 +43,51 @@ try:
     bus.write("Torque_Enable", name, 1)
     time.sleep(0.5)
     start = int(bus.read("Present_Position", name, normalize=False))
-    print(f"起始 raw={start}")
+    print(f"Starting raw={start}")
 
     # First return to center position 2048
     pos, _ = move_to(2048)
-    print(f"中位 raw={pos}")
+    print(f"Center raw={pos}")
 
     # Probe downward (each step -STEP from the current position, stop on stall/no movement)
-    print("\n向下探测:")
+    print("\nProbing downward:")
     cur = pos
     for i in range(100):
         target = cur - STEP
         new_pos, current = move_to(target)
         moved = abs(new_pos - cur) >= 2
         if not moved:
-            print(f"  ⛔ 向下限位 raw={cur} ({(cur-2048)*360/4096:+.1f}°)  current={current}mA")
+            print(f"  ⛔ Downward limit raw={cur} ({(cur-2048)*360/4096:+.1f}°)  current={current}mA")
             break
         cur = new_pos
         if i % 4 == 0:
-            print(f"  步 {i:2d}: raw={cur:>5} ({(cur-2048)*360/4096:+.1f}°)  I={current}")
+            print(f"  step {i:2d}: raw={cur:>5} ({(cur-2048)*360/4096:+.1f}°)  I={current}")
 
     down_limit = cur
 
     # Probe upward (reverse from the limit point, confirm it can return + find the upper limit)
-    print("\n向上探测 (从向下限位点):")
+    print("\nProbing upward (from the downward limit point):")
     cur = down_limit
     for i in range(120):
         target = cur + STEP
         new_pos, current = move_to(target)
         moved = abs(new_pos - cur) >= 2
         if not moved:
-            print(f"  ⛔ 向上限位 raw={cur} ({(cur-2048)*360/4096:+.1f}°)  current={current}mA")
+            print(f"  ⛔ Upward limit raw={cur} ({(cur-2048)*360/4096:+.1f}°)  current={current}mA")
             break
         cur = new_pos
         if i % 5 == 0:
-            print(f"  步 {i:2d}: raw={cur:>5} ({(cur-2048)*360/4096:+.1f}°)  I={current}")
+            print(f"  step {i:2d}: raw={cur:>5} ({(cur-2048)*360/4096:+.1f}°)  I={current}")
 
     up_limit = cur
-    print(f"\n真实行程: [{down_limit} ({-63.4 if down_limit<1327 else '?'}°) ... {up_limit} ({up_limit-2048})°]")
+    print(f"\nTrue travel: [{down_limit} ({-63.4 if down_limit<1327 else '?'}°) ... {up_limit} ({up_limit-2048})°]")
 
     # Return to center position
     pos, _ = move_to(2048)
-    print(f"回中位 raw={pos}")
+    print(f"Back to center raw={pos}")
 
 except KeyboardInterrupt:
-    print("\n⛔ 中断")
+    print("\n⛔ Interrupted")
 
 finally:
     try:
@@ -100,4 +100,4 @@ finally:
         bus.disconnect()
     except Exception:
         pass
-    print("已断开")
+    print("Disconnected")

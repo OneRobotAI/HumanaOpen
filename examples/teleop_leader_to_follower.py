@@ -144,23 +144,23 @@ class KeyState:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="HumanaOpen 全身遥操 (主臂 + 键盘)")
+    parser = argparse.ArgumentParser(description="HumanaOpen full-body teleoperation (leader arm + keyboard)")
     parser.add_argument("--remote_ip", default=None, help="Host IP for ZMQ (omit for direct serial)")
     parser.add_argument("--port_zmq_cmd", type=int, default=5555)
     parser.add_argument("--port_zmq_obs", type=int, default=5556)
-    parser.add_argument("--no-cameras", action="store_true", help="跳过所有摄像头 (纯遥操; 单机模式生效, 双机模式下仅抑制 rerun 图像显示)")
+    parser.add_argument("--no-cameras", action="store_true", help="skip all cameras (pure teleoperation; takes effect in single-machine mode, only suppresses rerun image display in dual-machine mode)")
     parser.add_argument(
         "--cameras",
         default="head,left_wrist,right_wrist",
-        help="要加载的摄像头名, 逗号分隔 (head/left_wrist/right_wrist/chest)",
+        help="camera names to load, comma-separated (head/left_wrist/right_wrist/chest)",
     )
     for name in ("head", "left_wrist", "right_wrist", "chest"):
         parser.add_argument(
             f"--{name}-camera",
             default=None,
-            help=f"{name} 摄像头设备号 (默认 {DEFAULT_CAM_DEVICES.get(name, '未定义')})",
+            help=f"{name} camera device (default {DEFAULT_CAM_DEVICES.get(name, 'undefined')})",
         )
-    parser.add_argument("--display", action="store_true", help="用 rerun 实时显示摄像头画面和关节状态")
+    parser.add_argument("--display", action="store_true", help="use rerun to display camera feeds and joint states in real time")
     args = parser.parse_args()
 
     cams = build_cameras(args)

@@ -29,15 +29,15 @@ try:
     # Release torque on both arm grippers (to prevent the opposite side from locking)
     for name in ("left_arm_gripper", "right_arm_gripper"):
         bus = robot.bus1 if name.startswith("left") else robot.bus2
-        print(f"释放 {name} 扭矩...")
+        print(f"Releasing {name} torque...")
         bus.write("Torque_Enable", name, 0)
     time.sleep(0.3)
 
     bus = robot.bus1 if side == "left" else robot.bus2
-    print(f"从臂 {side} 已连接, 夹爪: {gripper_name}")
-    print("手动张开/闭合从臂夹爪, 观察读数变化 (Ctrl+C 退出)")
+    print(f"Follower arm {side} connected, gripper: {gripper_name}")
+    print("Manually open/close the follower-arm gripper and watch the reading change (Ctrl+C to exit)")
     print("=" * 55)
-    print(f"{'原始编码器':>10} | {'归一化(0-100)':>14}")
+    print(f"{'Raw encoder':>10} | {'Normalized(0-100)':>14}")
     print("-" * 55)
 
     while True:
@@ -47,7 +47,7 @@ try:
         time.sleep(0.3)
 
 except KeyboardInterrupt:
-    print("\n退出")
+    print("\nExiting")
 
 finally:
     robot.disconnect()

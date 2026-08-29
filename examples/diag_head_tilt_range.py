@@ -39,12 +39,12 @@ bus.connect()
 try:
     # current position
     cur = int(bus.read("Present_Position", "head_tilt", normalize=False))
-    print(f"起始 raw 位置 = {cur}")
-    print(f"校准范围: [1430, 2096] (当前 telop 上限)")
+    print(f"Starting raw position = {cur}")
+    print(f"Calibration range: [1430, 2096] (current telop upper limit)")
 
     # probe toward "down" from the calibration lower bound (small steps + mechanical limit detection)
     target = cur
-    print(f"\n向'下'试探 (STEP={STEP} ticks/步)...")
+    print(f"\nProbing 'down' (STEP={STEP} ticks/step)...")
     for i in range(MAX_STEPS):
         target -= STEP
         bus.write("Goal_Position", "head_tilt", target, normalize=False)
@@ -53,28 +53,28 @@ try:
         new_cur = int(bus.read("Present_Position", "head_tilt", normalize=False))
         moved = new_cur != cur
         if not moved:
-            print(f"  ⛔ 机械限位! 停在 raw={new_cur} (第 {i} 步)")
+            print(f"  ⛔ Mechanical limit! Stopped at raw={new_cur} (step {i})")
             break
         cur = new_cur
         if i % 5 == 0 or i == MAX_STEPS - 1:
-            print(f"  步 {i:2d}: raw={cur:>5}")
+            print(f"  step {i:2d}: raw={cur:>5}")
 
-    print(f"\n向下真实下限 ≈ raw {cur}")
-    print(f"  = 归一化 {(cur-2048)*360/4096:+.1f}° (校准文件是 {(1430-2048)*360/4096:+.1f}°)")
+    print(f"\nDownward true lower limit ≈ raw {cur}")
+    print(f"  = normalized {(cur-2048)*360/4096:+.1f}° (calibration file is {(1430-2048)*360/4096:+.1f}°)")
 
     # return to the middle of the calibration range (avoid leaving it at the limit position)
-    print(f"\n回到校准范围中间 (raw 1763)...")
+    print(f"\nReturn to the middle of the calibration range (raw 1763)...")
     bus.write("Goal_Position", "head_tilt", 1763, normalize=False)
     time.sleep(0.5)
     cur = int(bus.read("Present_Position", "head_tilt", normalize=False))
-    print(f"  当前 raw = {cur}")
+    print(f"  current raw = {cur}")
 
 except KeyboardInterrupt:
-    print("\n⛔ 中断")
+    print("\n⛔ Interrupted")
 
 finally:
     try:
         bus.disconnect()
     except Exception:
         pass
-    print("已断开")
+    print("Disconnected")

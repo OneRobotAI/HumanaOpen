@@ -29,7 +29,7 @@ builtins.input = lambda *a, **k: ""
 try:
     robot.connect(calibrate=False)
 except Exception as e:
-    print(f"connect 警告: {e}")
+    print(f"connect warning: {e}")
 
 lift = robot.lift_axis
 name = "lift_axis"
@@ -42,15 +42,15 @@ lift.cfg.v_max = 110            # 110x50 = 5500 step/s = physical upper limit
 phase = int(bus.read("Phase", name, normalize=False))
 print(f"Phase = {phase} (0x{phase:02X}) BIT2={'1' if phase & 0x04 else '0'}")
 if phase & 0x04:
-    print("⚠️  BIT2=1! 请先运行 switch_phase_bit2.py 切换")
+    print("⚠️  BIT2=1! Please run switch_phase_bit2.py first to switch")
 
 # 1. Home to the bottom
-print("\n[1] 归零到底 (home)...")
+print("\n[1] Home to the bottom...")
 try:
     lift.home()
-    print(f"    归零完成, 高度 = {lift.get_height_mm():.1f} mm")
+    print(f"    Home complete, height = {lift.get_height_mm():.1f} mm")
 except Exception as e:
-    print(f"    home 失败: {str(e)[:80]}, 继续 (可能已在底部)")
+    print(f"    home failed: {str(e)[:80]}, continuing (may already be at the bottom)")
     lift._extended_ticks = 0.0
     lift._last_tick = float(bus.read("Present_Position", name, normalize=False))
     lift._z0_deg = 0.0
@@ -93,20 +93,20 @@ def probe(raw, dur=3.0):
     h1 = lift.get_height_mm()
     dt = time.time() - t0
     dist = h1 - h0
-    print(f"  raw={raw:>4}: {dt:4.1f}s 走了 {dist:6.1f} mm = {dist/dt:5.2f} mm/s  (Δticks={lift._extended_ticks:.0f})")
+    print(f"  raw={raw:>4}: {dt:4.1f}s traveled {dist:6.1f} mm = {dist/dt:5.2f} mm/s  (Δticks={lift._extended_ticks:.0f})")
     time.sleep(1.0)  # Let it settle
 
-print("\n[2] BIT2=0 测速 (从底部向上):")
+print("\n[2] BIT2=0 speed test (upward from the bottom):")
 for raw in [20, 60, 110]:
     probe(raw)
 
 # 3. Return to the bottom
-print("\n[3] 回到底部...")
+print("\n[3] Return to the bottom...")
 try:
     lift.home()
-    print(f"    完成, 高度 = {lift.get_height_mm():.1f} mm")
+    print(f"    Done, height = {lift.get_height_mm():.1f} mm")
 except Exception as e:
     print(f"    home: {str(e)[:80]}")
 
 robot.disconnect()
-print("\n✅ 测速完成")
+print("\n✅ Speed test complete")

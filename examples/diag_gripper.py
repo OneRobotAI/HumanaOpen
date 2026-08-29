@@ -30,14 +30,14 @@ try:
     arm = leader.left_arm if side == "left" else leader.right_arm
 
     # Explicitly release gripper torque so it can be pried by hand
-    print("释放 gripper 扭矩...")
+    print("Releasing gripper torque...")
     arm.bus.write("Torque_Enable", "gripper", 0)
     time.sleep(0.3)
 
-    print(f"主臂 {side} 已连接, 夹爪电机名: {list(arm.bus.motors.keys())}")
-    print("现在手动张开/闭合主臂夹爪, 观察读数变化 (Ctrl+C 退出)")
+    print(f"Main arm {side} connected, gripper motor name: {list(arm.bus.motors.keys())}")
+    print("Now manually open/close the main-arm gripper and watch the reading change (Ctrl+C to exit)")
     print("=" * 55)
-    print(f"{'原始编码器':>10} | {'归一化(0-100)':>14} | {'get_action':>10}")
+    print(f"{'Raw encoder':>10} | {'Normalized(0-100)':>14} | {'get_action':>10}")
     print("-" * 55)
 
     while True:
@@ -48,7 +48,7 @@ try:
         time.sleep(0.3)
 
 except KeyboardInterrupt:
-    print("\n退出")
+    print("\nExiting")
 
 finally:
     leader.disconnect()
