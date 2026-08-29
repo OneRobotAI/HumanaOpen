@@ -160,13 +160,15 @@ class HumanaOpenHost:
             Each camera is read independently so that a single failing camera
             cannot blank the others. On a transient read error the previous
             good frame is kept (no clear()), so the obs stream keeps images.
+            Capture rate = main loop Hz / image_fps_divider (default 30/3 = 10Hz),
+            matching how often the main loop attaches the cache to obs.
             """
-            cam_interval = 1.0 / self.host_cfg.image_fps if self.host_cfg.image_fps > 0 else 0.0
+            cam_interval = loop_dt * self.host_cfg.image_fps_divider
             while not stop_cam.is_set():
                 frames: dict[str, Any] = {}
                 for cam_key, cam in robot.cameras.items():
                     try:
-                        frame = cam.async_read()
+                        frame = cam.async_read(timeout_ms=max(200, int(cam_interval * 1000)))
                         if frame is not None and getattr(frame, "ndim", 0) == 3:
                             frames[cam_key] = frame
                     except Exception as e:
@@ -178,10 +180,7 @@ class HumanaOpenHost:
                         cam_cache.update(frames)
                 elif not cam_cache:
                     logger.warning("no camera delivered any frame yet")
-                if cam_interval > 0:
-                    time.sleep(cam_interval)
-                else:
-                    time.sleep(0.05)
+                time.sleep(cam_interval)
 
         cam_thread = threading.Thread(target=_camera_thread, daemon=True)
         cam_thread.start()
@@ -198,9 +197,13 @@ class HumanaOpenHost:
                     time.sleep(loop_dt)
                     continue
 
-                # Attach the latest image cache (non-blocking; the background thread is already capturing)
-                with cam_lock:
-                    obs.update(cam_cache)
+                # Attach the latest image cache only every few control frames:
+                # images are large (even JPEG ~100KB), and sending them on every
+                # frame saturates the link and delays the action channel.
+                # Image frames therefore run at max_loop_freq_hz/image_fps_divider.
+                if frame_count % self.host_cfg.image_fps_divider == 0:
+                    with cam_lock:
+                        obs.update(cam_cache)
 
                 pub.send_multipart([b"obs", _serialize_obs(obs, self.host_cfg.jpeg_quality)])
 

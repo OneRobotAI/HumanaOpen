@@ -176,9 +176,11 @@ class HumanaOpenHostConfig:
     connection_time_s: int = 3600
     watchdog_timeout_ms: int = 500
     max_loop_freq_hz: int = 30
-    # Image capture frequency: under the threaded scheme this does not affect action
-    # latency, so it is fixed at 30Hz (high quality)
-    image_fps: int = 30
+    # Divide the main loop rate for image frames: images are attached to the obs
+    # every `image_fps_divider` frames, so at max_loop_freq_hz=30 with divider=3
+    # the image stream is ~10Hz while the action channel stays 30Hz. Keeps the
+    # control latency low even with 3 cameras (~100KB/frame JPEG payloads).
+    image_fps_divider: int = 3
     # JPEG quality for image frames sent over ZMQ (0-100). Zero disables JPEG and
     # sends raw frames (huge: 640x480x3 ~= 920KB each). 85 gives ~30-80KB per frame.
     jpeg_quality: int = 85

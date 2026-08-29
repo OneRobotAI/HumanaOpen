@@ -207,7 +207,7 @@ python3 examples/teleop_leader_to_follower.py --remote_ip=192.168.1.100 ...
 - 제어 루프: 30Hz (조인트 상태 읽기 + 액션 명령)
 - 이미지 캡처: 30fps (전용 백그라운드 스레드 — 제어를 차단하지 않음)
 - 낮은 지연: 이미지 캡처가 제어 루프에서 분리
-- 설정 가능: `image_fps` 및 `max_loop_freq_hz` (HumanaOpenHostConfig)
+- 설정 가능: `image_fps_divider`(제어/영상 주파수 비율) 및 `max_loop_freq_hz`(제어 주파수)
 
 ### 휠 방향 (듀얼 머신)
 

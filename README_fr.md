@@ -208,7 +208,7 @@ python3 examples/teleop_leader_to_follower.py --remote_ip=192.168.1.100 ...
 - Boucle de contrôle : 30Hz (lecture état + commande action)
 - Capture image : 30fps (thread dédié — ne bloque pas le contrôle)
 - Faible latence : la capture image est découplée de la boucle de contrôle
-- Configurable : `image_fps` et `max_loop_freq_hz` dans `HumanaOpenHostConfig`
+- Configurable : `image_fps_divider` (ratio boucle/image) et `max_loop_freq_hz` (fréquence contrôle) dans
 
 ### Direction des roues (double machine)
 

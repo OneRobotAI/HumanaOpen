@@ -150,6 +150,10 @@ class HumanaOpenClient(Robot):
         # Subscribe to observations
         self._sub = self._ctx.socket(zmq.SUB)
         self._sub.setsockopt_string(zmq.SUBSCRIBE, "obs")
+        # Keep ONLY the newest observation: with high-rate obs + image payloads,
+        # queued stale frames would pile up and add latency. CONFLATE drops
+        # older messages so we always read the freshest state.
+        self._sub.setsockopt(zmq.CONFLATE, 1)
         self._sub.connect(f"tcp://{self.config.remote_ip}:{self.config.port_zmq_observations}")
         self._sub.RCVTIMEO = self.config.polling_timeout_ms
 

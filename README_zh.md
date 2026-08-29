@@ -233,7 +233,7 @@ python3 examples/teleop_leader_to_follower.py --remote_ip=192.168.1.100 ...
 - 控制循环：30Hz（关节状态读取 + 动作命令）
 - 图像采集：30fps（独立后台线程 — 不阻塞控制）
 - 低延迟：图像采集与控制循环解耦，30fps 全速图像流下遥操臂仍即时响应
-- 可配置：`image_fps` 和 `max_loop_freq_hz` 在 `HumanaOpenHostConfig` 中
+- 可配置：`image_fps_divider`（控制/图像频率比）和 `max_loop_freq_hz`（控制率）在
 
 ### 轮子方向（双机）
 

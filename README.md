@@ -223,7 +223,7 @@ python3 examples/teleop_leader_to_follower.py --remote_ip=192.168.1.100 ...
 - **Image capture**: 30fps (running in a dedicated background thread — does not block control)
 - **Low latency**: image capture is decoupled from the control loop, so teleop arms respond
   instantly even at full 30fps image streaming
-- **Configurable**: `image_fps` (camera rate) and `max_loop_freq_hz` (control rate) in
+- **Configurable**: `image_fps_divider` (control/image rate ratio) and `max_loop_freq_hz` (control rate) in
   `HumanaOpenHostConfig`
 
 ### Wheel direction (dual-machine)
