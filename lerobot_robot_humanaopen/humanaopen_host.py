@@ -62,7 +62,7 @@ def _deserialize_cmd(data: bytes) -> dict[str, Any]:
     """Unpack an action dict from bytes (mirror of above)."""
     action: dict[str, Any] = {}
     pos = 0
-    # Client _serialize_cmd 用 "<II" (magic, n_floats) — 不是 "<III"
+    # Client _serialize_cmd uses "<II" (magic, n_floats) — not "<III"
     magic, n_floats = struct.unpack_from("<II", data, pos)
     pos += 8
     if magic != 0x4F4253:
@@ -126,15 +126,16 @@ class HumanaOpenHost:
         loop_dt = 1.0 / self.host_cfg.max_loop_freq_hz
         deadline = time.monotonic() + self.host_cfg.connection_time_s
 
-        # 共享图像缓存 + 线程安全锁
-        # 图像由独立线程持续采集, 主循环只读最新缓存, 不阻塞动作响应
+        # Shared image cache + thread-safe lock
+        # Images are captured continuously by a dedicated thread; the main loop only
+        # reads the latest cache, without blocking the action response
         import threading
         cam_lock = threading.Lock()
         cam_cache: dict[str, Any] = {}
         stop_cam = threading.Event()
 
         def _camera_thread():
-            """后台持续采集图像到缓存."""
+            """Continuously capture images into the cache in the background."""
             cam_interval = 1.0 / self.host_cfg.image_fps if self.host_cfg.image_fps > 0 else 0.0
             while not stop_cam.is_set():
                 try:
@@ -159,14 +160,14 @@ class HumanaOpenHost:
             while time.monotonic() < deadline:
                 t0 = time.perf_counter()
 
-                # 高频: 读关节状态（不读摄像头，毫秒级）
+                # High frequency: read joint state (no cameras, millisecond-level)
                 try:
                     obs = robot.get_observation_no_cameras()
                 except Exception:
                     time.sleep(loop_dt)
                     continue
 
-                # 附加最新图像缓存（不阻塞, 后台线程已在采集）
+                # Attach the latest image cache (non-blocking; the background thread is already capturing)
                 with cam_lock:
                     obs.update(cam_cache)
 

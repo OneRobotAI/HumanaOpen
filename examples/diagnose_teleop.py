@@ -1,24 +1,24 @@
-"""遥操关节方向诊断脚本 — 逐关节实测主从臂映射.
+"""Teleop joint-direction diagnosis script — measures the leader→follower mapping joint by joint.
 
-用法:
+Usage:
     python3 examples/diagnose_teleop.py
 
-原理:
-    用"无翻转、无重映射"的原始映射逐个关节测试:
-    - 你手动把主臂某关节向一个方向转动
-    - 脚本记录主臂该关节的读数变化 Δ_leader
-    - 同时把动作发给从臂
-    - 记录从臂各关节的读数变化
-    - 判断: 从臂哪个关节动了 (映射), 方向是否一致 (是否需要翻转)
+Principle:
+    Test each joint using the raw "no-flip, no-remap" mapping:
+    - you manually rotate one joint of the leader arm in a direction
+    - the script records that joint's reading change on the leader, Δ_leader
+    - simultaneously sends the action to the follower
+    - records the reading changes of each follower joint
+    - determines: which follower joint moved (mapping) and whether the directions match (whether a flip is needed)
 
-诊断后根据输出配置:
-    flip_joints:  方向反的关节 → 加入该侧翻转表
-    joint_remap:  映射错位 (从臂动的是别的关节) → 建立重映射
+After diagnosis, configure from the output:
+    flip_joints:  joints with the opposite direction → add to that side's flip table
+    joint_remap:  misaligned mapping (a different follower joint moved) → set up a remap
 
-准备:
-    1. 主臂、从臂都已校准 (从臂用自然下垂+夹爪闭合零位)
-    2. 从臂 12V, 主臂 7.4V 供电
-    3. 确保周围无障碍物, 从臂手臂会动
+Preparation:
+    1. Both leader and follower calibrated (follower zeroed with arms hanging naturally + gripper closed)
+    2. Follower powered at 12V, leader at 7.4V
+    3. Make sure there are no obstacles around; follower arms will move
 """
 
 import time
@@ -39,25 +39,25 @@ follower_cfg = HumanaOpenConfig(
     home_lift_on_connect=False,
 )
 
-# 诊断模式: 无翻转、无重映射, 用原始 1:1 映射
+# diagnosis mode: no flipping, no remapping; use the raw 1:1 mapping
 leader_cfg = BiHumanaOpenLeaderConfig(
     id="leader",
     left_arm_port="/dev/ttyACM2",
     right_arm_port="/dev/ttyACM3",
-    # flip_joints / joint_remap 不传 → 默认官方表; 诊断时需原始映射, 见下方构造
+    # not passing flip_joints / joint_remap → defaults to the official tables; diagnosis needs the raw mapping, see the construction below
 )
 
 follower = HumanaOpen(follower_cfg)
-# 手动构造 leader: 用空翻转表和空重映射
+# manually construct the leader: use an empty flip table and empty remap
 leader_left = BiHumanaOpenLeader(leader_cfg)
-# 强制原始映射: 清空翻转和重映射
+# force the raw mapping: clear flips and remaps
 for arm in (leader_left.left_arm, leader_left.right_arm):
     arm._motors_to_flip = []
     arm._joint_remap = {}
 
 SIDES = [("left", "left_arm"), ("right", "right_arm")]
 
-# 每个关节建议的"正方向"转动提示 (供操作者参考)
+# suggested "positive direction" motion per joint (for the operator's reference)
 JOINT_DIR_HINT = {
     "shoulder_pan": "rotate left (horizontal)",
     "shoulder_lift": "raise up",
@@ -84,19 +84,19 @@ def main():
             print(f"  Move the leader {side} arm's {joint} joint ({JOINT_DIR_HINT.get(joint, 'rotate')})")
             input("  Press ENTER to record baseline...")
 
-            # 记录主臂和从臂的初始值
-            # 主臂读数: 直接读
+            # record the leader's and follower's initial readings
+            # leader reading: read directly
             la = leader_left.left_arm if side == "left" else leader_left.right_arm
             l0 = la.get_action().get(f"{joint}.pos", 0.0)
-            # 从臂读数
+            # follower reading
             obs0 = follower.get_observation()
             f0 = obs0.get(action_key, 0.0)
 
             input("  Now move the leader joint (hold it), then press ENTER...")
 
-            # 读取主臂动作 (完整双臂, 原始映射) → 发送到从臂
+            # read leader action (full dual-arm, raw mapping) → send to the follower
             action = leader_left.get_action()
-            # 保留从臂非双臂部分不动 (头部保持, 轮子/升降停)
+            # keep the follower's non-arm parts still (hold the head, stop wheels/lift)
             obs_static = follower.get_observation()
             for k, v in obs_static.items():
                 if k.startswith("head_") and k.endswith(".pos"):
@@ -106,7 +106,7 @@ def main():
             action["lift_axis.height_mm"] = obs_static.get("lift_axis.height_mm", 0)
             follower.send_action(action)
 
-            # 等待从臂电机跟上 (速度受 max_relative_target 限制, 给足时间)
+            # wait for the follower motors to catch up (speed is capped by max_relative_target; allow enough time)
             time.sleep(0.5)
 
             l1 = la.get_action().get(f"{joint}.pos", 0.0)
@@ -116,7 +116,7 @@ def main():
             d_leader = l1 - l0
             d_follower = f1 - f0
 
-            # 同时显示从臂其他关节是否也有明显变化 (映射错位检测)
+            # also report whether any other follower joint moved noticeably (misalignment detection)
             others = []
             for k, v in obs1.items():
                 if k.startswith(prefix) and k.endswith(".pos") and k != action_key:

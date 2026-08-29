@@ -1,14 +1,18 @@
-"""HumanaOpen 主臂 (leader) teleoperator.
+"""HumanaOpen leader-arm teleoperator.
 
-主臂: open-arms-mini 结构, 7-DOF + 夹爪, STS3215 C046 (7.4V), 每臂 8 个舵机 (ID 1-8).
+Leader arm: open-arms-mini structure, 7-DOF + gripper, STS3215 C046 (7.4V),
+8 servos per arm (IDs 1-8).
 
-设计要点:
-- 关节命名与从臂 (follower) 完全一致, 双臂类输出 left_arm_*/right_arm_* 前缀,
-  因此遥操时 leader.get_action() 可直接喂给 follower.send_action(), 零转换.
-- 校准: 自然下垂 + 夹爪闭合为零点 (与从臂中位约定一致).
-- 方向翻转/腕部重映射参考官方 lerobot openarm_mini (同源硬件已验证).
+Design notes:
+- Joint naming matches the follower arm exactly; the dual-arm class outputs
+  left_arm_*/right_arm_* prefixes, so during teleoperation
+  leader.get_action() can feed directly into follower.send_action() with zero conversion.
+- Calibration: natural hang + gripper closed is the zero point (consistent with
+  the follower's mid-position convention).
+- Direction flips / wrist remapping reference the official lerobot openarm_mini
+  (same-source hardware, verified).
 
-用法 (双臂):
+Usage (dual-arm):
     from lerobot_robot_humanaopen.leader import BiHumanaOpenLeader, BiHumanaOpenLeaderConfig
     cfg = BiHumanaOpenLeaderConfig(
         id="leader",
@@ -18,7 +22,7 @@
     leader = BiHumanaOpenLeader(cfg)
     leader.connect(calibrate=True)
 
-校准文件:
+Calibration files:
     ~/.cache/huggingface/lerobot/calibration/teleoperators/humanaopen_leader/{id}_left.json
     ~/.cache/huggingface/lerobot/calibration/teleoperators/humanaopen_leader/{id}_right.json
 """
@@ -37,12 +41,14 @@ from lerobot.teleoperators.teleoperator import Teleoperator
 
 logger = logging.getLogger(__name__)
 
-# 全局已连接机器人注册表: HumanaOpen.connect() 时注册, 供 HumanaOpenTeleop 读取
-# 头部/升降初始位置 (record 场景下 teleop 无法直接拿到 robot 引用).
+# Global registry of connected robots: registered by HumanaOpen.connect() so
+# HumanaOpenTeleop can read the head/lift initial positions (during record the
+# teleop has no direct reference to the robot).
 _CONNECTED_ROBOTS: list[Any] = []
 
-# 全局共享 pynput 键盘监听器: 避免多个 Listener 在 Linux/X11 上抢占导致
-# 按键事件错乱 (record 的 init_keyboard_listener 也会启动自己的 Listener).
+# Globally shared pynput keyboard listener: avoids multiple Listeners competing
+# for the keyboard on Linux/X11, which would scramble key events (record's
+# init_keyboard_listener also starts its own Listener).
 _KB_LISTENER = None
 _KB_CALLBACKS: list[Any] = []
 
@@ -93,7 +99,7 @@ def register_robot(robot: Any) -> None:
     """Register a connected robot (called from HumanaOpen.connect)."""
     _CONNECTED_ROBOTS.append(robot)
 
-# 关节命名与从臂一致 (见 humanaopen.py _make_arm_joint_names)
+# Joint naming matches the follower (see humanaopen.py _make_arm_joint_names)
 JOINT_NAMES = [
     "shoulder_pan",
     "shoulder_lift",
@@ -105,72 +111,82 @@ JOINT_NAMES = [
     "gripper",
 ]
 
-# 每侧方向翻转 (读取出时取反), 参考官方 openarm_mini SIDE_MOTORS_TO_FLIP.
-# 注意: 这是"官方主臂 × 官方从臂"这一特定硬件配对的方向签名. 若你的主从臂
-# 装配/舵机安装方向与官方不同, 需按实测逐关节调整 (见 examples/diagnose_teleop.py).
+# Per-side direction flips (inverted on read), referencing the official
+# openarm_mini SIDE_MOTORS_TO_FLIP.
+# Note: this is the direction signature for this specific "official leader x
+# official follower" hardware pairing. If your leader/follower assembly or
+# servo mounting differs from the official one, adjust per joint based on tests
+# (see examples/diagnose_teleop.py).
 DEFAULT_SIDE_MOTORS_TO_FLIP: dict[str, list[str]] = {
     "left": ["shoulder_pan", "shoulder_roll", "elbow_flex", "forearm_rotation", "wrist_flex", "wrist_yaw"],
     "right": ["shoulder_pan", "shoulder_lift", "shoulder_roll", "elbow_flex", "forearm_rotation", "wrist_yaw"],
 }
 
-# 腕部 flex↔yaw 重映射 (对称, 自身即逆映射), 参考官方 JOINT_REMAP.
-# 官方注释: "deliberately swapped... feels more natural given how the human wrist moves".
-# 若你的从臂腕部结构不需要交换, 置空 dict 即可 (按实测调整).
+# Wrist flex<->yaw remapping (symmetric, its own inverse), referencing the
+# official JOINT_REMAP.
+# Official note: "deliberately swapped... feels more natural given how the human wrist moves".
+# If your follower's wrist structure does not need the swap, empty the dict (adjust per testing).
 DEFAULT_JOINT_REMAP = {"wrist_flex": "wrist_yaw", "wrist_yaw": "wrist_flex"}
 
 
 @TeleoperatorConfig.register_subclass("humanaopen_leader")
 @dataclass
 class HumanaOpenLeaderConfig(TeleoperatorConfig):
-    """单臂主臂配置.
+    """Single-arm leader configuration.
 
     calibration_mode:
-        - "full" (默认): 零位 + 逐个关节录真实行程. 动作/观测归一化空间与从臂
-          严格一致, 遥操和录数据共用同一份校准, 无需重校.
-        - "quick": 零位 + 关节全量程 [0, 4095] (官方 openarm_mini 简化方式).
-          适合纯实时遥操; 录数据训练前需重校为 "full".
+        - "full" (default): zero + record real ranges per joint. The
+          action/observation normalization space is strictly consistent with
+          the follower, teleoperation and data recording share the same
+          calibration, no re-calibration needed.
+        - "quick": zero + full joint range [0, 4095] (official openarm_mini
+          simplified approach). Suitable for pure realtime teleoperation;
+          re-calibrate to "full" before recording data for training.
 
     flip_joints:
-        每侧需要方向翻转的关节列表. 默认官方表; 按实测 (diagnose_teleop.py) 调整.
+        List of joints that need direction flips per side. Defaults to the
+        official table; adjust per testing (diagnose_teleop.py).
     joint_remap:
-        关节重映射 dict (源关节 → 目标关节). 默认腕部 flex↔yaw 交换; 不需要则置空.
+        Joint remapping dict (source joint -> target joint). Defaults to the
+        wrist flex<->yaw swap; empty it if not needed.
     """
 
     port: str
     side: str | None = None  # "left" / "right" / None
     use_degrees: bool = True
     calibration_mode: str = "full"
-    flip_joints: dict[str, list[str]] | None = None  # None → 用官方默认表
-    joint_remap: dict[str, str] | None = None  # None → 用官方默认重映射
+    flip_joints: dict[str, list[str]] | None = None  # None -> use official default table
+    joint_remap: dict[str, str] | None = None  # None -> use official default remapping
 
 
 @TeleoperatorConfig.register_subclass("bi_humanaopen_leader")
 @dataclass
 class BiHumanaOpenLeaderConfig(TeleoperatorConfig):
-    """双臂主臂配置.
+    """Dual-arm leader configuration.
 
-    flip_joints / joint_remap: 透传给左右单臂, 见 HumanaOpenLeaderConfig.
+    flip_joints / joint_remap: passed through to each single arm; see
+    HumanaOpenLeaderConfig.
     """
 
     left_arm_port: str
     right_arm_port: str
-    flip_joints: dict[str, list[str]] | None = None  # None → 用官方默认表
-    joint_remap: dict[str, str] | None = None  # None → 用官方默认重映射
+    flip_joints: dict[str, list[str]] | None = None  # None -> use official default table
+    joint_remap: dict[str, str] | None = None  # None -> use official default remapping
 
 
 @TeleoperatorConfig.register_subclass("humanaopen_teleop")
 @dataclass
 class HumanaOpenTeleopConfig(BiHumanaOpenLeaderConfig):
-    """全身遥操器配置 (双臂 + 键盘头部/升降/底盘, 21 DOF).
+    """Full-body teleoperator configuration (dual arms + keyboard head/lift/base, 21 DOF).
 
-    robot: 可选从臂引用, 用于初始化头部/升降当前位置.
+    robot: optional follower reference, used to initialize the current head/lift positions.
     """
 
     robot: Any = None  # set at runtime by the record script
 
 
 class HumanaOpenLeader(Teleoperator):
-    """HumanaOpen 单臂主臂 teleoperator (open-arms-mini, 7-DOF + gripper)."""
+    """HumanaOpen single-arm leader teleoperator (open-arms-mini, 7-DOF + gripper)."""
 
     config_class = HumanaOpenLeaderConfig
     name = "humanaopen_leader"
@@ -224,12 +240,12 @@ class HumanaOpenLeader(Teleoperator):
         return self.bus.is_calibrated
 
     def calibrate(self) -> None:
-        """校准单臂.
+        """Calibrate a single arm.
 
-        - 零位: 自然下垂 + 夹爪闭合
-        - "full" 模式: 逐个关节录真实行程 (与从臂归一化空间一致)
-        - "quick" 模式: 关节全量程 [0, 4095] (官方 openarm_mini 简化)
-        - 夹爪: 闭合/张开两点标定
+        - Zero: natural hang + gripper closed
+        - "full" mode: record real ranges per joint (consistent with follower's normalization space)
+        - "quick" mode: full joint range [0, 4095] (official openarm_mini simplification)
+        - Gripper: closed/open two-point calibration
         """
         if self.calibration:
             user_input = input(
@@ -244,7 +260,7 @@ class HumanaOpenLeader(Teleoperator):
         logger.info(f"\nRunning calibration for {self}")
         self.bus.disable_torque()
 
-        # 参考官方 openarm_mini: 相位设为 12 (角度反馈模式)
+        # Reference official openarm_mini: phase set to 12 (angle feedback mode)
         for motor in self.bus.motors:
             self.bus.write("Phase", motor, 12)
         for motor in self.bus.motors:
@@ -266,8 +282,9 @@ class HumanaOpenLeader(Teleoperator):
 
         max_res = self.bus.model_resolution_table["sts3215"] - 1  # 4095
 
-        # 录真实行程: 所有电机 (含夹爪) 一起逐个走满行程,
-        # 表格显示每个关节的 MIN | POS | MAX — 与从臂校准一致.
+        # Record real ranges: run all motors (including gripper) sequentially
+        # through their full travel; the table shows each joint's MIN | POS | MAX
+        # — consistent with the follower calibration.
         if self.config.calibration_mode == "full":
             print(
                 "\nMove all joints (including gripper) sequentially through their "
@@ -280,9 +297,10 @@ class HumanaOpenLeader(Teleoperator):
                 range_min = int(range_mins.get(motor_name, 0))
                 range_max = int(range_maxes.get(motor_name, max_res))
                 if motor_name == "gripper":
-                    # 闭合端在零位 (2048 附近, set_half_turn_homings 已把零位设到 2048).
-                    # 闭合端靠近 min → 张开端是 max (drive_mode=0);
-                    # 闭合端靠近 max → 张开端是 min (drive_mode=1).
+                    # Closed end is at zero (near 2048; set_half_turn_homings already
+                    # put the zero at 2048).
+                    # Closed end near min -> open end is max (drive_mode=0);
+                    # closed end near max -> open end is min (drive_mode=1).
                     mid = (range_min + range_max) / 2
                     drive_mode = 1 if 2048 > mid else 0
                 else:
@@ -316,9 +334,10 @@ class HumanaOpenLeader(Teleoperator):
             print(f"'{motor}' motor id set to {self.bus.motors[motor].id}")
 
     def get_action(self) -> dict[str, float]:
-        """读取关节位置 → 动作 (方向翻转 + 腕部重映射).
+        """Read joint positions -> action (direction flips + wrist remapping).
 
-        夹爪直接输出 [0,100] 归一化值 (0=闭, 100=开), 与从臂 RANGE_0_100 同构.
+        The gripper outputs its normalized [0,100] value directly (0=closed,
+        100=open), isomorphic with the follower's RANGE_0_100.
         """
         positions = self.bus.sync_read("Present_Position")
         action: dict[str, float] = {}
@@ -359,10 +378,11 @@ class HumanaOpenLeader(Teleoperator):
 
 
 class BiHumanaOpenLeader(Teleoperator):
-    """HumanaOpen 双臂主臂 teleoperator — 组合左右两个单臂.
+    """HumanaOpen dual-arm leader teleoperator — combines left and right single arms.
 
-    输出动作带 left_arm_*/right_arm_* 前缀, 与从臂 HumanaOpen 的 action/observation 命名一致,
-    可直接喂给 follower.send_action().
+    Output actions carry left_arm_*/right_arm_* prefixes, matching the HumanaOpen
+    follower's action/observation naming, so they can feed directly into
+    follower.send_action().
     """
 
     config_class = BiHumanaOpenLeaderConfig
@@ -487,7 +507,7 @@ class HumanaOpenTeleop(BiHumanaOpenLeader):
         self._keys: set[str] = set()
         self._prev_keys: set[str] = set()
         self._listener = None
-        self._kb_active = True  # 键盘是否活跃: override 时设为 False 阻止按键更新
+        self._kb_active = True  # whether the keyboard is active: set to False on override to block key updates
 
     @cached_property
     def action_features(self) -> dict[str, type]:
@@ -502,7 +522,8 @@ class HumanaOpenTeleop(BiHumanaOpenLeader):
         return {**arms, **extras}
 
     def _start_keyboard(self) -> None:
-        # 复用全局共享监听器 (Linux/X11 多个 pynput Listener 会抢占冲突)
+        # Reuse the global shared listener (multiple pynput Listeners on
+        # Linux/X11 would conflict over the keyboard)
         def cb(ch: str, is_pressed: bool) -> None:
             if not self._kb_active:
                 return
@@ -517,7 +538,7 @@ class HumanaOpenTeleop(BiHumanaOpenLeader):
     def connect(self, calibrate: bool = True) -> None:
         super().connect(calibrate)
         self._start_keyboard()
-        # 尝试从 config.robot 或全局注册表读取头部/升降当前位置
+        # Try to read the current head/lift positions from config.robot or the global registry
         robot = self._robot
         if robot is None:
             robot = get_connected_robot()

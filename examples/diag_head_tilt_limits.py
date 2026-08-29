@@ -1,9 +1,9 @@
-"""头部 tilt 极限精测 — 确认机械硬限位 + 定位干涉点.
+"""Head tilt limit fine measurement — confirm mechanical hard limits + locate the interference point.
 
-目的: 解锁舵机限制后, 确认向下 1347 / 向上 2242 是否机械硬限位,
-以及极限附近电流变化 (堵转特征), 判断是否还有机械改造空间.
+Purpose: after unlocking the servo limits, confirm whether down 1347 / up 2242 are mechanical hard limits,
+and check the current change near the limits (stall signature) to judge whether there is still room for mechanical modification.
 
-用法:
+Usage:
     python3 examples/diag_head_tilt_limits.py
 """
 
@@ -24,7 +24,7 @@ name = "head_tilt"
 
 
 def probe(target, wait=0.6):
-    """写目标位置, 等待, 返回 (最终位置, 电流)."""
+    """Write the target position, wait, return (final position, current)."""
     bus.write("Goal_Position", name, target, normalize=False)
     time.sleep(wait)
     pos = int(bus.read("Present_Position", name, normalize=False))
@@ -40,17 +40,17 @@ try:
     bus.write("Torque_Enable", name, 1)
     time.sleep(0.5)
 
-    # 从已知边界外 100 ticks 开始, 每 10 ticks 逼近, 观察电流爬升
+    # Start 100 ticks outside the known boundary, approach in 10-tick steps, watch the current rise
     print("向下极限精测 (从 1247 开始):")
     for raw in range(1247, 1367, 10):
         pos, cur = probe(raw)
         deg = (pos - 2048) * 360 / 4096
         print(f"  target={raw:>4} → pos={pos:>4} ({deg:+.1f}°)  I={cur}mA")
-        if pos < raw - 30:  # 舵机拒绝接近目标 (硬限位)
+        if pos < raw - 30:  # Servo refuses to approach the target (hard limit)
             print(f"  ⛔ 硬限位确认在 pos={pos} 附近")
             break
 
-    # 回到中位
+    # Return to center position
     probe(2048)
     print()
 

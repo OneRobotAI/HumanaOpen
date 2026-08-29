@@ -1,16 +1,16 @@
-"""轮子方向精测 — 单轮驱动，确定每个轮子的物理转向.
+"""Wheel direction precision check — drive one wheel at a time to determine the physical rotation direction of each wheel.
 
-用法:
+Usage:
     python3 examples/diag_wheel_direction.py --remote_ip=192.168.1.100
 
-按键:
-    a  = 只发左轮 +3000 (不碰右轮)
-    d  = 只发右轮 +3000 (不碰左轮)
-    1  = x.vel=+10 (直行测试)
-    2  = theta.vel=+30 (转向测试)
-    q  = 退出
+Keys:
+    a  = send only left wheel +3000 (right wheel untouched)
+    d  = send only right wheel +3000 (left wheel untouched)
+    1  = x.vel=+10 (straight driving test)
+    2  = theta.vel=+30 (turning test)
+    q  = quit
 
-观察每个轮子的实际转动方向，确定装反的轮子和正确符号。
+Observe the actual rotation direction of each wheel to identify mirror-installed wheels and the correct signs.
 """
 
 import sys

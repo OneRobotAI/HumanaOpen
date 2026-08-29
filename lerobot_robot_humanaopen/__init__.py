@@ -1,6 +1,7 @@
 """HumanaOpen — open-source semi-humanoid robot for embodied AI."""
 
 from .humanaopen import HumanaOpen
+from .humanaopen_client import HumanaOpenClient
 from .config_humanaopen import HumanaOpenConfig, HumanaOpenClientConfig
 from .lift_axis import HumanaOpenLiftAxis, LiftAxisConfig
 from .leader import (
@@ -14,6 +15,7 @@ from .leader import (
 
 __all__ = [
     "HumanaOpen",
+    "HumanaOpenClient",
     "HumanaOpenConfig",
     "HumanaOpenClientConfig",
     "HumanaOpenLiftAxis",

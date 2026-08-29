@@ -177,12 +177,21 @@ Single-machine mode (default) uses direct serial; dual-machine adds ZMQ:
 python3 examples/record_data.py ...
 
 # Dual-machine (add --remote_ip to any script)
-python3 examples/record_data.py --remote_ip=192.168.1.100 ...
+python3 examples/record_data.py --remote_ip=192.168.1.100 --robot.cameras='{"head": {...}, "left_wrist": {...}, "right_wrist": {...}}'
 
 python3 examples/eval_data.py --remote_ip=192.168.1.100 ...
 
 python3 examples/teleop_leader_to_follower.py --remote_ip=192.168.1.100 ...
 ```
+
+> **Note (recording)**: for `record_data.py` in dual mode, the `--remote_ip` script also
+> passes the client-side camera list as a **schema** to define the dataset features.
+> The Host must be started with the *same* cameras so it actually streams the images
+> (start it with the camera configs, not `cameras={}`) — otherwise the recorded
+> episodes contain state/action but no video.
+>
+> **Note (eval)**: the feature order of `observation.state` follows `robot.observation_features`
+> (identical to training); `enable-base=true` keeps the `x.vel`/`theta.vel` columns.
 
 ### Network requirements
 

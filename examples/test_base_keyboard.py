@@ -1,24 +1,24 @@
-"""底盘 (差速驱动) 键盘手动控制测试.
+"""Chassis (differential drive) manual keyboard control test.
 
-只控制底盘, 不碰手臂和升降:
-- 不读 get_observation() (无需校准)
-- 不触发升降归零 (home_lift_on_connect=False)
-- send_action 只发 x.vel/theta.vel, 手臂/升降完全不动
+Only controls the chassis, does not touch the arms or lift:
+- Does not read get_observation() (no calibration needed)
+- Does not trigger lift homing (home_lift_on_connect=False)
+- send_action only sends x.vel/theta.vel; arms/lift stay completely still
 
-键位
+Key bindings
 ----
-i/k : 前进 / 后退
-j/l : 左转 / 右转
-n/m : 加速档 / 减速档
-b   : 退出
+i/k : forward / backward
+j/l : turn left / turn right
+n/m : speed up / slow down
+b   : quit
 
-说明:
-- 使用 pynput 库 (桌面环境无需 root), 需有 X11 显示 (DISPLAY 已设置)
-- 替代方案: keyboard 库需要 root 权限
+Notes:
+- Uses the pynput library (no root needed on a desktop environment), requires an X11 display (DISPLAY set)
+- Alternative: the keyboard library needs root privileges
 
-安全:
-- ⚠️ 建议架起机器人 (轮子离地) 测试
-- 落地测试确保周围无障碍物
+Safety:
+- ⚠️ Recommended to test with the robot propped up (wheels off the ground)
+- For floor tests make sure there are no obstacles around
 """
 
 import time
@@ -38,7 +38,7 @@ speed_levels = [
 
 
 class KeyState:
-    """线程安全地记录哪些键当前被按住."""
+    """Thread-safely records which keys are currently held down."""
 
     def __init__(self):
         self._pressed: set[str] = set()
@@ -73,8 +73,8 @@ def main():
         port2="/dev/ttyACM1",
         port3=None,
         cameras={},
-        home_lift_on_connect=False,  # 跳过升降归零
-        # 左轮装反 → 取反使两轮同向 (万向轮卡住曾干扰判断)
+        home_lift_on_connect=False,  # Skip lift homing
+        # Left wheel mounted reversed -> negate so both wheels turn the same way (a stuck caster wheel previously interfered with judgment)
         wheel_dir_signs={"base_left_wheel": -1, "base_right_wheel": 1},
     )
     robot = HumanaOpen(config)

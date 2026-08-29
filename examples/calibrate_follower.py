@@ -1,33 +1,33 @@
-"""从动侧全身交互式校准脚本 (双臂 + 头部 + 轮子 + 升降).
+"""Follower-side full-body interactive calibration script (both arms + head + wheels + lift).
 
-流程 (配合 lerobot 交互提示):
-1. 左臂 + 头部: 摆中位 → 回车; 逐个关节走满行程 → 回车
-2. 右臂: 摆中位 → 回车; 逐个关节走满行程 → 回车
-3. 自动: 轮子全范围 + 升降堵转归零
-4. 保存校准文件
+Procedure (with lerobot interactive prompts):
+1. Left arm + head: set the zero pose -> ENTER; move each joint through full range -> ENTER
+2. Right arm: set the zero pose -> ENTER; move each joint through full range -> ENTER
+3. Automatic: wheels full range + lift stall homing
+4. Save the calibration file
 
-说明:
-- 校准的是从动侧 (follower: ST3215 C018 双臂 + 头部, 轮子, 升降), 校准文件 id="follower"
-- 主动侧 (leader, C046) 不在此脚本范围, 后续遥操时单独校准, 用 id="leader"
-  两个 id 生成不同的校准文件, 互不覆盖:
-    ~/.cache/huggingface/lerobot/calibration/robots/humanaopen/follower.json  (从动侧)
-    ~/.cache/huggingface/lerobot/calibration/robots/humanaopen/leader.json    (主动侧)
-- 摄像头跳过, 不影响校准
-- 中位约定: 重力下垂关节 (shoulder_lift/elbow_flex) 自然下垂=零点;
-  旋转关节 (shoulder_pan/forearm_rotation/wrist_yaw) 中间位; 夹爪半开
+Notes:
+- Calibrates the follower side (follower: ST3215 C018 both arms + head, wheels, lift), calibration file id="follower"
+- The leader side (leader, C046) is out of scope for this script; it is calibrated separately later for teleoperation, with id="leader"
+  The two ids generate separate calibration files that do not overwrite each other:
+    ~/.cache/huggingface/lerobot/calibration/robots/humanaopen/follower.json  (follower side)
+    ~/.cache/huggingface/lerobot/calibration/robots/humanaopen/leader.json    (leader side)
+- Cameras are skipped, does not affect calibration
+- Zero-pose convention: gravity-hanging joints (shoulder_lift/elbow_flex) naturally hanging down = zero;
+  rotation joints (shoulder_pan/forearm_rotation/wrist_yaw) at midpoint; gripper half-open
 
-用法:
+Usage:
     python3 examples/calibrate_follower.py
 """
 
 from lerobot_robot_humanaopen import HumanaOpen, HumanaOpenConfig
 
 config = HumanaOpenConfig(
-    id="follower",          # 从动侧校准文件名 (follower.json); 主动侧后续用 id="leader"
-    port1="/dev/ttyACM0",   # 左臂 + 头
-    port2="/dev/ttyACM1",   # 右臂 + 升降 + 轮子
-    port3=None,             # 2 总线模式
-    cameras={},             # 跳过摄像头
+    id="follower",          # Follower-side calibration file name (follower.json); leader side will later use id="leader"
+    port1="/dev/ttyACM0",   # Left arm + head
+    port2="/dev/ttyACM1",   # Right arm + lift + wheels
+    port3=None,             # 2-bus mode
+    cameras={},             # Skip cameras
 )
 
 print("=" * 55)
@@ -50,7 +50,7 @@ try:
     print("✅ Calibration complete!")
     print("Calibration file:", robot.calibration_fpath)
 
-    # 校准后读取一帧观察, 验证关节位置可读 (归一化)
+    # After calibration read one observation frame to verify joint positions are readable (normalized)
     obs = robot.get_observation()
     pos_keys = [k for k in obs if k.endswith(".pos")]
     print(f"✅ Joint positions readable: {len(pos_keys)} joints")

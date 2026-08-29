@@ -1,10 +1,10 @@
-"""头部 tilt (ID 13) 真实行程干净探测 — 解锁后, 双向慢速 + 电流监控.
+"""Clean head tilt (ID 13) true travel probing — after unlocking, slow bidirectional movement + current monitoring.
 
-背景: 已写 Min=0/Max=4095 解锁舵机限制. 上次探测向下到 1327 后向上测试异常.
-本脚本: 从中间位置向两个方向各独立探测 (每步 30 ticks, 0.3s 等待),
-监控 Present_Current 判断是否堵转, 定位真实机械行程.
+Background: Min=0/Max=4095 have been written to unlock the servo limits. Last time the probe went down to 1327 and the upward test then behaved abnormally.
+This script: probes independently in both directions from the center position (each step 30 ticks, 0.3s wait),
+monitors Present_Current to determine stall, and locates the true mechanical travel.
 
-用法:
+Usage:
     python3 examples/diag_head_tilt_range2.py
 """
 
@@ -45,11 +45,11 @@ try:
     start = int(bus.read("Present_Position", name, normalize=False))
     print(f"起始 raw={start}")
 
-    # 先回到中位 2048
+    # First return to center position 2048
     pos, _ = move_to(2048)
     print(f"中位 raw={pos}")
 
-    # 向下探测 (每次从当前位置 -STEP, 堵转/不动即停)
+    # Probe downward (each step -STEP from the current position, stop on stall/no movement)
     print("\n向下探测:")
     cur = pos
     for i in range(100):
@@ -65,7 +65,7 @@ try:
 
     down_limit = cur
 
-    # 向上探测 (从限位点反向, 确认能回来 + 找上限)
+    # Probe upward (reverse from the limit point, confirm it can return + find the upper limit)
     print("\n向上探测 (从向下限位点):")
     cur = down_limit
     for i in range(120):
@@ -82,7 +82,7 @@ try:
     up_limit = cur
     print(f"\n真实行程: [{down_limit} ({-63.4 if down_limit<1327 else '?'}°) ... {up_limit} ({up_limit-2048})°]")
 
-    # 回中位
+    # Return to center position
     pos, _ = move_to(2048)
     print(f"回中位 raw={pos}")
 

@@ -250,14 +250,16 @@ class HumanaOpen(Robot):
         # ── Lift homing / zero restoration ─────────────────────────────
         self.lift_axis.attach()
         self.lift_axis.configure()
-        # 优先从持久化文件恢复绝对位置 (免归零); 恢复失败才降到底部归零.
-        # home_lift_on_connect=False 时完全跳过 (需自行保证位置正确).
+        # Prefer restoring the absolute position from the persistent file (no
+        # re-homing); only home to the bottom when recovery fails.
+        # Fully skipped when home_lift_on_connect=False (must ensure correct position yourself).
         if not getattr(self, "_lift_homed", False):
             if self.config.home_lift_on_connect and not self.lift_axis.restore_zero():
                 logger.info("Running lift homing (stall-detection) ...")
                 self.lift_axis.home()
-                # 数据采集场景: 归零后升降在底部, 允许操作者手动升到期望高度,
-                # 按 ENTER 确认后才继续 (保证第 0 条数据从期望高度开始).
+                # Data-collection scenario: after homing the lift is at the bottom,
+                # allow the operator to manually raise it to the desired height, and
+                # only continue after pressing ENTER (ensures sample 0 starts at the desired height).
                 if self.config.confirm_lift_after_home:
                     self._confirm_lift_height_with_keyboard()
             self._lift_homed = True
@@ -268,7 +270,8 @@ class HumanaOpen(Robot):
 
         self.configure()
         logger.info(f"{self} connected.")
-        # 注册到全局表, 供 HumanaOpenTeleop 读取头部/升降初始位置 (record 场景)
+        # Register in the global table so HumanaOpenTeleop can read the initial
+        # head/lift positions (record scenario)
         try:
             from .leader import register_robot
             register_robot(self)
@@ -276,11 +279,13 @@ class HumanaOpen(Robot):
             pass
 
     def _confirm_lift_height_with_keyboard(self) -> None:
-        """归零后手动升降确认: 后台线程轮询 u/h 驱动升降, 直到回车.
+        """Manual lift-height confirmation after homing: a background thread polls
+        u/h to drive the lift until ENTER is pressed.
 
-        input() 是阻塞的, 期间没有任何代码调用 get_action/send_action,
-        升降不会动. 此方法在 input() 期间用后台线程轮询全局键盘回调,
-        按住 u/h 直接写 Goal_Velocity 驱动升降, 回车后停止.
+        input() is blocking; during it no code calls get_action/send_action, so the
+        lift would not move. This method uses a background thread to poll the global
+        keyboard callbacks during input(); holding u/h writes Goal_Velocity directly
+        to drive the lift, and stops when ENTER is pressed.
         """
         import threading
 
@@ -303,8 +308,8 @@ class HumanaOpen(Robot):
             while not stop.is_set():
                 with lock:
                     v = vel
-                # 走 apply_action → _apply_safety_limits (soft_max 200mm /
-                # descent_floor 3mm 限位生效); v=0 时写 0 停止电机
+                # Go through apply_action -> _apply_safety_limits (soft_max 200mm /
+                # descent_floor 3mm limits take effect); write 0 when v=0 to stop the motor
                 try:
                     lift.apply_action({f"{name}.vel": v})
                 except Exception:
@@ -326,7 +331,7 @@ class HumanaOpen(Robot):
                 lift._bus.write("Goal_Velocity", name, 0)
             except Exception:
                 pass
-            # 保存用户手动调整后的位置, 下次连接免归零
+            # Save the position after manual adjustment, so the next connection avoids re-homing
             lift.save_zero()
 
     def _restore_calibration(self) -> None:
@@ -460,7 +465,7 @@ class HumanaOpen(Robot):
         pose-to-pose.
         """
         input(f"\nGripper '{name}' calibration\nStep 1: CLOSE the gripper fully\nPress ENTER when closed...")
-        # 等待舵机停稳再读数 (防运动中被读成中间值)
+        # Wait for the servo to settle before reading (avoid reading a mid-motion value)
         closed_pos = self._read_stable(bus, "Present_Position", name)
         input("Step 2: OPEN the gripper fully\nPress ENTER when fully open...")
         open_pos = self._read_stable(bus, "Present_Position", name)
@@ -667,7 +672,7 @@ class HumanaOpen(Robot):
 
         obs: dict[str, Any] = {}
 
-        # 高频读取加重试, 避免偶发串口通信错误导致 Host 崩溃
+        # High-frequency reads with retries, to avoid sporadic serial communication errors crashing the Host
         left_pos = self.bus1.sync_read("Present_Position", self.left_arm_motors, num_retry=3)
         head_pos = self.bus1.sync_read("Present_Position", self.head_motors, num_retry=3)
         right_pos = self.bus2.sync_read("Present_Position", self.right_arm_motors, num_retry=3)

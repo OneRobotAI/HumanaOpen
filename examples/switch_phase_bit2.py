@@ -1,15 +1,15 @@
-"""切换 ST3250 Phase BIT2 并验证速度 — 测试 BIT2=0 提速方案.
+"""Switch ST3250 Phase BIT2 and verify speed — test the BIT2=0 speed-up approach.
 
-背景:
-- BIT2=1 (当前): 1 step/s/raw → raw 1000 = 1000 steps/s (1.94mm/s)
-- BIT2=0 (候选): 50 step/s/raw → raw 20 = 1000 steps/s (同样速度)
-               → 物理上限 5500 steps/s = raw 110 → 10.7mm/s!
+Background:
+- BIT2=1 (current): 1 step/s/raw → raw 1000 = 1000 steps/s (1.94mm/s)
+- BIT2=0 (candidate): 50 step/s/raw → raw 20 = 1000 steps/s (same speed)
+               → physical upper limit 5500 steps/s = raw 110 → 10.7mm/s!
 
-原理: BIT2=0 下同样速度只需 raw÷50 (0~110 区间), 完全避开 >1000 的回绕区.
+Principle: with BIT2=0, the same speed only needs raw÷50 (0~110 range), fully avoiding the >1000 wrap-around region.
 
-⚠️ 这会修改舵机 EPROM 配置 (Phase 寄存器). 切回用 --restore.
+⚠️ This modifies the servo EPROM configuration (Phase register). Switch back with --restore.
 
-用法:
+Usage:
     python3 examples/switch_phase_bit2.py [--restore]
 """
 
@@ -37,7 +37,7 @@ lift = robot.lift_axis
 name = "lift_axis"
 bus = lift._bus
 
-# 当前 Phase
+# current Phase
 phase = int(bus.read("Phase", name, normalize=False))
 print(f"当前 Phase = {phase} (0x{phase:02X}) BIT2={'1' if phase & 0x04 else '0'}")
 
@@ -45,7 +45,7 @@ new_phase = (phase & ~0x04) if not RESTORE else (phase | 0x04)
 action = "清除 BIT2 (→50step/s/raw)" if not RESTORE else "恢复 BIT2 (→1step/s/raw)"
 print(f"执行: {action} → Phase = {new_phase} (0x{new_phase:02X})")
 
-# 修改 Phase: 需要 Torque_Enable=0, Lock=0, 写 Phase, 写 Lock=1
+# modify Phase: need Torque_Enable=0, Lock=0, write Phase, then write Lock=1
 try:
     bus.write("Torque_Enable", name, 0)
     time.sleep(0.2)
@@ -55,7 +55,7 @@ try:
     time.sleep(0.2)
     bus.write("Lock", name, 1)
     time.sleep(0.3)
-    # 重新上电确认? 不需要, 直接读回
+    # power-cycle to confirm? not needed, just read back
     verify = int(bus.read("Phase", name, normalize=False))
     print(f"验证 Phase = {verify} (0x{verify:02X}) BIT2={'1' if verify & 0x04 else '0'}")
 except Exception as e:
@@ -64,7 +64,7 @@ except Exception as e:
     sys.exit(1)
 
 if not RESTORE:
-    # BIT2=0 下测速 (50 step/s/raw)
+    # speed test with BIT2=0 (50 step/s/raw)
     print("\nBIT2=0 测速 (50 step/s/raw):")
     def probe(raw, dur=2):
         try:
@@ -85,7 +85,7 @@ if not RESTORE:
             print(f"  raw={raw}: {str(e)[:40]}")
             time.sleep(0.5)
 
-    # 物理上限 5500 steps/s = raw 110
+    # physical upper limit 5500 steps/s = raw 110
     for raw in [20, 60, 110]:
         probe(raw)
     print("\n若 raw 110 → ~10mm/s 且方向正确 = 提速成功!")

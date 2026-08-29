@@ -1,8 +1,8 @@
-"""从臂夹爪读数诊断 — 直接读原始编码器值, 确认物理运动时读数是否变化.
+"""Follower-arm gripper reading diagnostics — read the raw encoder value directly to confirm whether the reading changes with physical motion.
 
-注意: 连接后先释放夹爪扭矩 (否则从臂夹爪锁死掰不动).
+Note: after connecting, first release the gripper torque (otherwise the follower-arm gripper locks and cannot be pried open).
 
-用法:
+Usage:
     python3 examples/diag_follower_gripper.py [left|right]
 """
 
@@ -26,7 +26,7 @@ robot = HumanaOpen(config)
 
 try:
     robot.connect(calibrate=False)
-    # 左右臂夹爪都释放扭矩 (防止对侧锁死)
+    # Release torque on both arm grippers (to prevent the opposite side from locking)
     for name in ("left_arm_gripper", "right_arm_gripper"):
         bus = robot.bus1 if name.startswith("left") else robot.bus2
         print(f"释放 {name} 扭矩...")

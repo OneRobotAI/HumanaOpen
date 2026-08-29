@@ -1,16 +1,17 @@
-"""头部 tilt (ID 13) 真实行程诊断 — 小步试探, 撞限位即停.
+"""Head tilt (ID 13) real travel range diagnostic — small steps, stop at the mechanical limit.
 
-为什么: 校准文件里 head_tilt range=[1430, 2096] 只有 666 ticks (~58°),
-用户反馈俯仰无法降到最下面. 本脚本绕过校准限制直接驱动 ID 13,
-从当前位置向"向下"方向小步移动, 每次检查位置是否变化 (不变=机械限位),
-确定真实物理行程, 供重新校准或修正限位.
+Why: the calibration file shows head_tilt range=[1430, 2096], only 666 ticks (~58°),
+and the user reports the tilt cannot be lowered to the very bottom. This script bypasses
+the calibration limits and directly drives ID 13, inching from the current position toward
+"down", checking each time whether the position changed (no change = mechanical limit), to
+determine the real physical travel range, for recalibration or correcting the limits.
 
-用法:
+Usage:
     python3 examples/diag_head_tilt_range.py [--step 50] [--max-steps 60]
 
-安全:
-- 小步 (默认 50 ticks ≈ 4.4°) + 位置变化检测, 撞限位自动停
-- 只动头部 tilt, 不碰其他任何电机
+Safety:
+- small steps (default 50 ticks ≈ 4.4°) + position-change detection, auto-stop at the limit
+- only move the head tilt, never touch any other motor
 """
 
 import sys
@@ -28,7 +29,7 @@ if "--step" in sys.argv:
 if "--max-steps" in sys.argv:
     MAX_STEPS = int(sys.argv[sys.argv.index("--max-steps") + 1])
 
-# 只注册头部 tilt (ID 13) — 在 port1 总线上
+# register only the head tilt (ID 13) — on the port1 bus
 bus = FeetechMotorsBus(
     port="/dev/ttyACM0",
     motors={"head_tilt": Motor(13, "sts3215", MotorNormMode.DEGREES)},
@@ -36,12 +37,12 @@ bus = FeetechMotorsBus(
 bus.connect()
 
 try:
-    # 当前位置
+    # current position
     cur = int(bus.read("Present_Position", "head_tilt", normalize=False))
     print(f"起始 raw 位置 = {cur}")
     print(f"校准范围: [1430, 2096] (当前 telop 上限)")
 
-    # 从校准下限开始向"下"试探 (小步进 + 机械限位检测)
+    # probe toward "down" from the calibration lower bound (small steps + mechanical limit detection)
     target = cur
     print(f"\n向'下'试探 (STEP={STEP} ticks/步)...")
     for i in range(MAX_STEPS):
@@ -61,7 +62,7 @@ try:
     print(f"\n向下真实下限 ≈ raw {cur}")
     print(f"  = 归一化 {(cur-2048)*360/4096:+.1f}° (校准文件是 {(1430-2048)*360/4096:+.1f}°)")
 
-    # 回到校准范围中间 (避免留在极限位置)
+    # return to the middle of the calibration range (avoid leaving it at the limit position)
     print(f"\n回到校准范围中间 (raw 1763)...")
     bus.write("Goal_Position", "head_tilt", 1763, normalize=False)
     time.sleep(0.5)

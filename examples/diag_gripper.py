@@ -1,14 +1,14 @@
-"""主臂夹爪读数诊断 — 直接读原始编码器值, 确认物理运动时读数是否变化.
+"""Main-arm gripper reading diagnostics — read the raw encoder value directly to confirm whether the reading changes with physical motion.
 
-注意: 连接后先释放夹爪扭矩 (否则主臂夹爪锁死掰不动).
+Note: after connecting, first release the gripper torque (otherwise the main-arm gripper locks and cannot be pried open).
 
-用法:
+Usage:
     python3 examples/diag_gripper.py [left|right]
 
-流程:
-1. 连接指定主臂
-2. 循环显示夹爪 (ID 8) 的原始编码器值 + 归一化值
-3. 你手动张开/闭合夹爪, 观察读数是否变化
+Procedure:
+1. Connect the specified main arm
+2. Loop and display the gripper (ID 8) raw encoder value + normalized value
+3. Manually open/close the gripper and observe whether the reading changes
 """
 
 import sys
@@ -29,7 +29,7 @@ try:
     leader.connect(calibrate=False)
     arm = leader.left_arm if side == "left" else leader.right_arm
 
-    # 显式释放夹爪扭矩, 才能手动掰动
+    # Explicitly release gripper torque so it can be pried by hand
     print("释放 gripper 扭矩...")
     arm.bus.write("Torque_Enable", "gripper", 0)
     time.sleep(0.3)
@@ -42,7 +42,7 @@ try:
 
     while True:
         raw = arm.bus.read("Present_Position", "gripper", normalize=False)
-        norm = arm.bus.read("Present_Position", "gripper")  # 归一化
+        norm = arm.bus.read("Present_Position", "gripper")  # normalized
         act = arm.get_action().get("gripper.pos", float("nan"))
         print(f"{raw:>10} | {norm:>14.1f} | {act:>10.1f}")
         time.sleep(0.3)

@@ -94,14 +94,18 @@ class HumanaOpenConfig(RobotConfig):
     disable_torque_on_disconnect: bool = True
 
     # ---- Lift homing on connect ---------------------------------------------
-    # connect() 时升降的处理: 优先从持久化文件恢复绝对位置 (免归零, 丝杠自锁
-    # 位置不变即可复现); 恢复失败才降到底部 stall-detection 归零.
+    # Handling of the lift on connect(): prefer restoring the absolute position from
+    # the persistent file (no re-homing; the self-locking leadscrew keeps the
+    # position unchanged so it is reproducible); only home to the bottom via
+    # stall-detection when recovery fails.
     # Set to ``False`` to skip both entirely (only when lift position is known good).
     home_lift_on_connect: bool = True
 
-    # 归零完成后等待手动调整: 若触发自动归零 (升降停在底部 0mm), 归零完成后
-    # 弹提示等待操作者手动把升降升到期望高度, 按 ENTER 才继续.
-    # 用于数据采集等需要从特定高度开始的场景; 纯遥操设 False (启动后随时可调).
+    # Wait for manual adjustment after homing: if automatic homing is triggered
+    # (lift stops at the bottom, 0mm), after homing prompt and wait for the operator
+    # to manually raise the lift to the desired height, pressing ENTER to continue.
+    # For scenarios that need to start from a specific height, e.g. data collection;
+    # set False for pure teleoperation (adjustable anytime after startup).
     confirm_lift_after_home: bool = False
 
     # ---- Enable the differential-drive base (wheels) ------------------------
@@ -135,7 +139,8 @@ class HumanaOpenConfig(RobotConfig):
         }
     )
     # ---- Lift Axis ---------------------------------------------------------
-    # 默认启用零位持久化: home 后保存绝对位置, 后续连接免归零恢复.
+    # Zero persistence enabled by default: save the absolute position after home
+    # so subsequent connections recover without re-homing.
     lift: LiftAxisConfig = field(
         default_factory=lambda: LiftAxisConfig(
             zero_file=os.path.expanduser("~/.cache/humanaopen/lift_zero.json")
@@ -171,7 +176,8 @@ class HumanaOpenHostConfig:
     connection_time_s: int = 3600
     watchdog_timeout_ms: int = 500
     max_loop_freq_hz: int = 30
-    # 图像采集频率: 线程方案下不影响动作延迟, 统一用 30Hz (高画质)
+    # Image capture frequency: under the threaded scheme this does not affect action
+    # latency, so it is fixed at 30Hz (high quality)
     image_fps: int = 30
 
 

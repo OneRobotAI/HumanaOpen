@@ -1,15 +1,15 @@
-"""ST3250 Goal_Velocity 编码判别脚本 — 确认 >1000 反转的固件行为.
+"""ST3250 Goal_Velocity encoding discriminator — confirm the firmware behavior of reversing above >1000.
 
-用法:
+Usage:
     python3 examples/diag_st3250_speed.py
 
-原理:
-    在 BIT2=1 (当前, 1 step/s/raw) 下依次写不同 raw, 观察方向:
-    - 11位有符号截断: 1024→-1024快速反, 2048→0停, 3071→+1023正向
-    - sign-magnitude BIT10: 1024→-0停, 2048→-1024反, 3071→-1023反
-    - 正常sign-magnitude BIT15: 全部正向递增
+Principle:
+    with BIT2=1 (current, 1 step/s/raw) write different raws in sequence and observe the direction:
+    - 11-bit signed truncation: 1024→-1024 fast reverse, 2048→0 stops, 3071→+1023 forward
+    - sign-magnitude BIT10: 1024→-0 stops, 2048→-1024 reverse, 3071→-1023 reverse
+    - normal sign-magnitude BIT15: all forward and increasing
 
-    两点即可判别: raw=1024 和 raw=2048
+    two points are enough to discriminate: raw=1024 and raw=2048
 """
 
 import sys

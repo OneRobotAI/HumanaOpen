@@ -1,16 +1,16 @@
-"""升降 + 头部回归诊断 — 一次性定位两个问题.
+"""Lift + head tilt regression diagnostic — pinpoint two issues in one run.
 
-问题1: 升降上限位消失 + 降不到底
-问题2: 头部下降无最低限位
+Issue 1: lift upper limit lost + cannot descend all the way
+Issue 2: head tilt has no lower min limit when descending
 
-诊断项:
-A. 校准加载: bus1/bus2 的 calibration 实际内容 (head_tilt 范围是否 1367)
-B. 舵机 EPROM: ID13 (头部) / ID9 (升降) 的 Min/Max_Position_Limit
-C. 升降配置: lift.cfg 实际值 (v_max/kp_vel/home_down_speed 是否新值)
-D. 升降高度: get_height_mm() 读数 + 多圈跟踪状态
-E. 实测: send_action 头部 -100 → 舵机实际位置
+Diagnostic items:
+A. Calibration loading: actual calibration contents of bus1/bus2 (is head_tilt range 1367)
+B. Servo EPROM: Min/Max_Position_Limit of ID13 (head tilt) / ID9 (lift)
+C. Lift config: actual lift.cfg values (are v_max/kp_vel/home_down_speed the new values)
+D. Lift height: get_height_mm() reading + multiturn tracking state
+E. Live test: send_action head_tilt -100 → actual servo position
 
-用法:
+Usage:
     python3 examples/diag_regression.py
 """
 
@@ -76,7 +76,7 @@ try:
     obs = robot.get_observation()
     print(f"  当前 head_tilt.pos = {obs.get('head_tilt.pos', 'N/A')}")
     print(f"  当前 head_pan.pos  = {obs.get('head_pan.pos', 'N/A')}")
-    # 只发 -50 (校准正常时 -50 ↔ raw ~1794, 绝对安全范围)
+    # send only -50 (when calibration is sane, -50 ↔ raw ~1794, absolutely safe range)
     action = {k: obs[k] for k in obs if k.endswith(".pos")}
     action["head_tilt.pos"] = -50.0
     action["x.vel"] = 0.0

@@ -77,23 +77,25 @@ class LiftAxisConfig:
     descent_floor_mm: float = 3.0
 
     # Homing
-    # BIT2=0 (Phase=8): 单位 = 50 step/s per raw unit.
-    #   home_down_speed 10  = 500 step/s  (与旧 BIT2=1 的 500 等价, 安全低速)
+    # BIT2=0 (Phase=8): unit = 50 step/s per raw unit.
+    #   home_down_speed 10  = 500 step/s  (equivalent to the old BIT2=1 500, safe low speed)
     home_down_speed: int = 10
     home_stall_current_ma: int = 200
     home_backoff_deg: float = 5.0
 
     # Velocity-loop P controller
-    # BIT2=0: kp_vel 10 = 旧 500 等价 (10×50=500 step/s per mm error)
+    # BIT2=0: kp_vel 10 = equivalent to old 500 (10×50=500 step/s per mm error)
     kp_vel: float = 10.0
-    v_max: int = 110  # BIT2=0 物理上限 110 raw = 5500 step/s = 10.7 mm/s
+    v_max: int = 110  # BIT2=0 physical upper limit 110 raw = 5500 step/s = 10.7 mm/s
     on_target_mm: float = 1.0
 
     dir_sign: int = 1
 
-    # 持久化零位: home() 后把绝对位置存到该文件, 下次连接免归零恢复.
-    # 丝杠自锁, 断电后机械位置不变 → 编码器读数可复现, 恢复绝对位置即可.
-    # None = 禁用持久化 (每次连接都重新归零).
+    # Persist zero position: after home() the absolute position is stored in this
+    # file so the next connection can recover without re-homing.
+    # The leadscrew is self-locking, so the mechanical position is unchanged after
+    # power-off -> encoder reading is reproducible; restoring the absolute position suffices.
+    # None = disable persistence (re-home on every connection).
     zero_file: str | None = None
 
     def __post_init__(self):
@@ -131,7 +133,7 @@ class HumanaOpenLiftAxis:
         self._extended_ticks: float = 0.0
         self._z0_deg: float = 0.0
         self._configured = False
-        # 上次 home 时的绝对位置 (供持久化恢复)
+        # absolute position at the last home (for persistence recovery)
         self._abs_tick_at_home: float | None = None
 
     # ------------------------------------------------------------------
@@ -167,11 +169,11 @@ class HumanaOpenLiftAxis:
         self._configured = True
 
     # ------------------------------------------------------------------
-    # Zero persistence (免归零恢复绝对位置)
+    # Zero persistence (recover absolute position without re-homing)
     # ------------------------------------------------------------------
 
     def save_zero(self) -> None:
-        """把当前多圈跟踪状态持久化到文件 (供下次连接恢复)."""
+        """Persist the current multi-turn tracking state to a file (for recovery on next connection)."""
         if not self.enabled or not self.cfg.zero_file:
             return
         import json
@@ -190,11 +192,13 @@ class HumanaOpenLiftAxis:
             pass
 
     def restore_zero(self) -> bool:
-        """尝试从文件恢复绝对位置, 免归零.
+        """Try to restore the absolute position from the file, avoiding re-homing.
 
-        前提: 丝杠自锁, 断电后机械位置不变 → 编码器读数可复现.
-        若当前编码器读数与文件记录的 last_tick 一致 (±容差), 则恢复
-        多圈跟踪状态并返回 True; 否则返回 False (调用方应重新归零).
+        Precondition: the leadscrew is self-locking, so the mechanical position is
+        unchanged after power-off -> encoder reading is reproducible.
+        If the current encoder reading matches the recorded last_tick (within
+        tolerance), restore the multi-turn tracking state and return True;
+        otherwise return False (the caller should re-home).
         """
         if not self.enabled or not self.cfg.zero_file:
             return False
@@ -215,7 +219,7 @@ class HumanaOpenLiftAxis:
             return False
 
         last = float(state.get("last_tick", -1))
-        tol = 30  # ±30 ticks ≈ ±0.06mm, 容纳断电重启后编码器微小漂移
+        tol = 30  # ±30 ticks ≈ ±0.06mm, tolerates small encoder drift after power-cycled restart
         if abs(cur - last) > tol:
             return False
 
@@ -234,9 +238,10 @@ class HumanaOpenLiftAxis:
         cur = float(self._bus.read("Present_Position", self.cfg.name, normalize=False))
         delta = cur - self._last_tick
         half = self._ticks_per_rev * 0.5
-        # 当采样间隔内位移可能超过半圈时 (跨 0 边界导致 delta 符号反转),
-        # 用 Present_Velocity 的符号决定真实环绕方向 (速度方向 = 真实运动方向).
-        # 仅模糊区才读, 避免无谓总线开销。
+        # When the displacement within a sampling interval may exceed half a turn
+        # (crossing the 0 boundary inverts the delta sign), use Present_Velocity's
+        # sign to determine the true wrap direction (velocity direction = real motion direction).
+        # Only read in the ambiguous zone to avoid needless bus overhead.
         vel = 0.0
         if abs(delta) > half * 0.75:
             try:
@@ -293,7 +298,7 @@ class HumanaOpenLiftAxis:
         last_tick = int(self._bus.read("Present_Position", name, normalize=False))
 
         try:
-            for _ in range(6000):  # ~300 s at 50 ms (低速归零需要更长超时)
+            for _ in range(6000):  # ~300 s at 50 ms (low-speed homing needs a longer timeout)
                 time.sleep(0.05)
                 self._update_extended_ticks()
                 now_tick = self._last_tick
@@ -418,7 +423,7 @@ class HumanaOpenLiftAxis:
                 v = int(self._apply_safety_limits(v, cur_mm))
             except Exception:
                 pass
-            # 正速度 = 上升 (与 P 控制器路径一致; dir_sign 语义见 docstring)
+            # Positive velocity = up (consistent with the P-controller path; dir_sign semantics in docstring)
             self._bus.write("Goal_Velocity", name, v)
 
     def _apply_safety_limits(self, v_cmd: float, cur_mm: float) -> float:

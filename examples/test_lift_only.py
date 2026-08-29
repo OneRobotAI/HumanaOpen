@@ -1,9 +1,9 @@
-"""只测试升降轴 — 直接操作 bus2 上的升降电机, 不碰右臂/轮子/手臂.
+"""Test only the lift axis — operate the lift motor on bus2 directly, without touching the right arm/wheels/arms.
 
-流程:
-1. 创建 bus, 只注册升降电机 (id=9, sts3250)
-2. 归零: 向下走到底堵转即停
-3. 升 50mm → 停 → 降回 0
+Procedure:
+1. Create the bus, registering only the lift motor (id=9, sts3250)
+2. Home: drive down to the bottom until stall, then stop
+3. Raise 50mm → stop → lower back to 0
 """
 
 import time
@@ -13,7 +13,7 @@ from lerobot.motors import Motor, MotorNormMode
 
 from lerobot_robot_humanaopen.lift_axis import LiftAxisConfig, HumanaOpenLiftAxis
 
-# 只注册升降电机 — 右臂/轮子完全不碰
+# Register only the lift motor — right arm/wheels are not touched at all
 bus = FeetechMotorsBus(
     port="/dev/ttyACM1",
     motors={"lift_axis": Motor(9, "sts3250", MotorNormMode.DEGREES)},

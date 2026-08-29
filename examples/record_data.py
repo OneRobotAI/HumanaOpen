@@ -113,7 +113,7 @@ def show_command(args) -> None:
     """Print the equivalent lerobot-record CLI command for reference."""
     cams_json = args.__dict__.get("robot.cameras", DEFAULT_CAMERAS_JSON)
     cameras = json.loads(cams_json)
-    # 每个摄像头独立一行, 参数完整 (可读性优先)
+    # Each camera on its own line, full parameters (readability first)
     cam_lines = []
     for i, (name, spec) in enumerate(cameras.items()):
         sep = " \\" if i < len(cameras) - 1 else ""
@@ -154,64 +154,10 @@ def show_command(args) -> None:
 
 
 def _parse_port(s: str | None) -> str | None:
-    """argparse 把 'None' 当字符串; 这里转回真正的 None (2-bus 模式)."""
+    """argparse turns 'None' into a string; convert it back to a real None (2-bus mode)."""
     if s is None or str(s).strip().lower() == "none" or str(s).strip() == "":
         return None
     return str(s)
-
-
-class ClientRobot:
-    """Minimal Robot-like wrapper over HumanaOpenClient for ZMQ mode.
-
-    Implements the interface needed by lerobot record():
-    connect, disconnect, get_observation, send_action,
-    observation_features, action_features, is_connected, is_calibrated.
-    """
-
-    def __init__(self, config):
-        from lerobot_robot_humanaopen.humanaopen_client import HumanaOpenClient
-        self._client = HumanaOpenClient(config)
-        self._obs_keys = []
-        self._act_keys = []
-
-    def connect(self, calibrate=True):
-        self._client.connect()
-        obs = self._client.get_observation()
-        self._obs_keys = list(obs.keys())
-        self._act_keys = [k for k in self._obs_keys if k.endswith(".pos")]
-        if "lift_axis.height_mm" not in self._act_keys:
-            self._act_keys.append("lift_axis.height_mm")
-
-    def disconnect(self):
-        self._client.disconnect()
-
-    def get_observation(self):
-        return self._client.get_observation()
-
-    def send_action(self, action):
-        self._client.send_action(action)
-
-    @property
-    def observation_features(self):
-        return {k: float for k in self._obs_keys}
-
-    @property
-    def action_features(self):
-        return {k: float for k in self._act_keys}
-
-    @property
-    def is_connected(self):
-        return self._client.is_connected
-
-    @property
-    def is_calibrated(self):
-        return True
-
-    def calibrate(self):
-        pass
-
-    def configure(self):
-        pass
 
 
 def main():
@@ -227,7 +173,7 @@ def main():
     if d.get("no_hub") is not None:
         d["dataset.push_to_hub"] = "false"
 
-    # port3='None' 字符串 → 真正的 None (2-bus 模式)
+    # port3='None' string -> real None (2-bus mode)
     d["robot.port3"] = _parse_port(d["robot.port3"])
     d["dataset.root"] = _parse_port(d["dataset.root"])
 
@@ -262,21 +208,16 @@ def main():
     )
 
     if is_dual:
-        # ── ZMQ mode: monkey-patch make_robot_from_config ─────────
+        # ── ZMQ dual-machine mode: HumanaOpenClient is a registered lerobot Robot,
+        # so lerobot's own make_robot_from_config() constructs it — no monkey-patch.
+        # The camera dict is passed as *schema* (names + shapes): the Host owns the
+        # physical cameras and streams the images over ZMQ.
         from lerobot_robot_humanaopen.humanaopen_client import HumanaOpenClientConfig
-        import lerobot.robots.utils as robot_utils
-        _orig_make = robot_utils.make_robot_from_config
-
-        def _make_robot(config):
-            if config.type == "humanaopen_client":
-                return ClientRobot(config)
-            return _orig_make(config)
-        robot_utils.make_robot_from_config = _make_robot
-
         robot_config = HumanaOpenClientConfig(
             remote_ip=d["remote_ip"],
             port_zmq_cmd=d["port_zmq_cmd"],
             port_zmq_observations=d["port_zmq_obs"],
+            cameras=cameras,
         )
     else:
         robot_config = HumanaOpenConfig(

@@ -95,10 +95,10 @@ def _build_policy_obs(obs, policy, cameras, device, robot, task=""):
             t = torch.from_numpy(np.ascontiguousarray(img.transpose(2, 0, 1))).float().unsqueeze(0) / 255.0
             batch[f"observation.images.{cam_name}"] = t.to(device)
 
-    state_keys = sorted([
-        k for k in robot.observation_features
-        if not k.startswith("observation.") and k not in cameras
-    ])
+    # State keys in the SAME order as robot.observation_features: that is the order
+    # create_initial_features() used when the dataset was recorded, so the policy
+    # sees a column layout identical to training.
+    state_keys = [k for k in robot.observation_features if k not in cameras]
     batch["observation.state"] = torch.tensor(
         [[obs[k] for k in state_keys]], dtype=torch.float32
     ).to(device)
@@ -183,20 +183,15 @@ def main():
     # Connect robot
     print("Connecting robot...")
     if d["remote_ip"]:
-        # ZMQ dual-machine mode
-        from lerobot_robot_humanaopen.humanaopen_client import HumanaOpenClientConfig
-        import lerobot.robots.utils as robot_utils
-        _orig = robot_utils.make_robot_from_config
-        def _make_robot(config):
-            if config.type == "humanaopen_client":
-                return ClientRobot(config)
-            return _orig(config)
-        robot_utils.make_robot_from_config = _make_robot
-        robot = HumanaOpenClientConfig(
+        # ZMQ dual-machine mode: connect to the Host; it owns the physical
+        # follower + cameras, we drive it through the ZMQ Robot adapter.
+        from lerobot_robot_humanaopen.humanaopen_client import HumanaOpenClient, HumanaOpenClientConfig
+        robot = HumanaOpenClient(HumanaOpenClientConfig(
             remote_ip=d["remote_ip"],
             port_zmq_cmd=d["port_zmq_cmd"],
             port_zmq_observations=d["port_zmq_obs"],
-        )
+            cameras=cameras,
+        ))
         print(f"  ZMQ mode → Host {d['remote_ip']}")
     else:
         # Direct serial mode
@@ -301,7 +296,7 @@ def main():
         except Exception:
             pass
         quit_listener.stop()
-        # 掉使能前确认，防止手臂突然下垂
+        # Confirm before releasing torque, so the arms do not drop suddenly
         input("\nPress ENTER to release torque and disconnect...")
         robot.disconnect()
         print("Done — torque released, arms free to move")

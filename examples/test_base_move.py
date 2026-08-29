@@ -1,40 +1,40 @@
-"""底盘 (差速驱动) 移动测试脚本.
+"""Base (differential drive) movement test script.
 
-测 4 个基本动作:
-1. 前进: 两轮同向正转
-2. 后退: 两轮同向反转
-3. 左转: 左轮反转 + 右轮正转
-4. 右转: 左轮正转 + 右轮反转
+Tests 4 basic motions:
+1. Forward: both wheels rotate forward at the same speed
+2. Backward: both wheels rotate backward at the same speed
+3. Turn left: left wheel reverses + right wheel drives forward
+4. Turn right: left wheel drives forward + right wheel reverses
 
-说明:
-- 用 HumanaOpen 类, 走真实 send_action 差速解算链路 (x.vel/theta.vel → 轮子 raw)
-- 轮速反馈直接读 bus2 的 Present_Velocity (不需要校准)
-- 不读 get_observation() (它会读手臂位置, 未校准时会报错)
-- Ctrl+C 紧急停止
+Notes:
+- Uses the HumanaOpen class and goes through the real send_action differential-solve chain (x.vel/theta.vel → raw wheel values)
+- Wheel-speed feedback reads Present_Velocity directly from bus2 (no calibration needed)
+- Does not call get_observation() (it reads arm positions and errors out when uncalibrated)
+- Ctrl+C for emergency stop
 
-安全:
-- ⚠️ 强烈建议把机器人架起来 (轮子离地) 再测!
-- 若落地测试, 确保前方/周围无障碍物、有足够空间
+Safety:
+- ⚠️ Strongly recommended to prop the robot up (wheels off the ground) before testing!
+- If testing on the ground, make sure there are no obstacles in front/around and enough space
 """
 
 import time
 
 from lerobot_robot_humanaopen import HumanaOpen, HumanaOpenConfig
 
-# 2 总线模式: 左臂+头 / 右臂+升降+轮子
+# 2-bus mode: left arm + head / right arm + lift + wheels
 config = HumanaOpenConfig(
     port1="/dev/ttyACM0",
     port2="/dev/ttyACM1",
     port3=None,
     cameras={},
-    home_lift_on_connect=False,  # 测底盘, 跳过升降归零
+    home_lift_on_connect=False,  # testing the base; skip lift homing
 )
 
 robot = HumanaOpen(config)
 
 
 def read_wheel_raw() -> dict[str, int]:
-    """直接读 bus2 的轮子速度 raw 值 (绕过 get_observation 的校准依赖)."""
+    """Read the raw wheel-speed values directly from bus2 (bypassing get_observation's calibration dependency)."""
     if robot.bus3 is not None:
         bus = robot.bus3
     else:
@@ -63,7 +63,7 @@ try:
     robot.connect(calibrate=False)
     print("    连接完成\n")
 
-    # 低速起步, 确认方向正确后再加码
+    # start at low speed; ramp up only after confirming the directions are correct
     test_move("前进", {"x.vel": 0.1, "theta.vel": 0.0})
     test_move("后退", {"x.vel": -0.1, "theta.vel": 0.0})
     test_move("左转", {"x.vel": 0.0, "theta.vel": 30.0})

@@ -1,16 +1,16 @@
-"""BIT2=0 完整测速 — 先归零到底, 再逐步测 raw=20/60/110.
+"""BIT2=0 full speed test — first home to the bottom, then probe raw=20/60/110 step by step.
 
-前提: 舵机 Phase 已切换为 BIT2=0 (50 step/s/raw), 见 switch_phase_bit2.py.
+Prerequisite: the servo Phase has been switched to BIT2=0 (50 step/s/raw), see switch_phase_bit2.py.
 
-流程:
-1. home(): 下行至机械底部 (堵转检测), 归零
-2. 从底部向上测速 (安全, 不会撞顶):
-   raw=20  → 3s (期望 ~1.9mm/s)
-   raw=60  → 3s (期望 ~5.7mm/s)
-   raw=110 → 3s (期望 ~10.7mm/s)
-3. 每样本间短暂停, 累计多圈编码器 (逐样本 Δ 累积, 避免单次环绕误判)
+Procedure:
+1. home(): go down to the mechanical bottom (stall detection), zero the position
+2. Measure speed upward from the bottom (safe, cannot hit the top):
+   raw=20  -> 3s (expected ~1.9mm/s)
+   raw=60  -> 3s (expected ~5.7mm/s)
+   raw=110 -> 3s (expected ~10.7mm/s)
+3. Short pause between samples; accumulate the multi-turn encoder (per-sample delta accumulation, avoids misjudging a single wrap)
 
-⚠️ 测试后电机停在中间高度, 可继续用或手动归零.
+⚠️ After the test the motor stops at mid height; it can be reused or homed manually.
 """
 
 import sys
@@ -35,16 +35,16 @@ lift = robot.lift_axis
 name = "lift_axis"
 bus = lift._bus
 
-# BIT2=0 单位下, 强制安全 home 参数 (防止再次暴冲)
-lift.cfg.home_down_speed = 10   # 10×50 = 500 step/s, 与旧 BIT2=1 的 500 等价
-lift.cfg.v_max = 110            # 110×50 = 5500 step/s = 物理上限
+# In BIT2=0 units, force safe home parameters (prevents another sudden surge)
+lift.cfg.home_down_speed = 10   # 10x50 = 500 step/s, equivalent to the old 500 in BIT2=1
+lift.cfg.v_max = 110            # 110x50 = 5500 step/s = physical upper limit
 
 phase = int(bus.read("Phase", name, normalize=False))
 print(f"Phase = {phase} (0x{phase:02X}) BIT2={'1' if phase & 0x04 else '0'}")
 if phase & 0x04:
     print("⚠️  BIT2=1! 请先运行 switch_phase_bit2.py 切换")
 
-# 1. 归零到底
+# 1. Home to the bottom
 print("\n[1] 归零到底 (home)...")
 try:
     lift.home()
@@ -55,9 +55,9 @@ except Exception as e:
     lift._last_tick = float(bus.read("Present_Position", name, normalize=False))
     lift._z0_deg = 0.0
 
-# 2. 逐样本 Δ 累积测速 (正确处理多圈环绕)
+# 2. Per-sample delta accumulation speed test (correctly handles multi-turn wraps)
 def probe(raw, dur=3.0):
-    # 重置跟踪
+    # Reset tracking
     lift._extended_ticks = 0.0
     lift._last_tick = float(bus.read("Present_Position", name, normalize=False))
     lift._z0_deg = 0.0
@@ -73,7 +73,7 @@ def probe(raw, dur=3.0):
             time.sleep(0.1)
             cur = int(bus.read("Present_Position", name, normalize=False))
             d = cur - last
-            # 多圈环绕修正 (可多次)
+            # Multi-turn wrap correction (can happen multiple times)
             half = 2048
             for _ in range(8):
                 if d > half:
@@ -94,13 +94,13 @@ def probe(raw, dur=3.0):
     dt = time.time() - t0
     dist = h1 - h0
     print(f"  raw={raw:>4}: {dt:4.1f}s 走了 {dist:6.1f} mm = {dist/dt:5.2f} mm/s  (Δticks={lift._extended_ticks:.0f})")
-    time.sleep(1.0)  # 停稳
+    time.sleep(1.0)  # Let it settle
 
 print("\n[2] BIT2=0 测速 (从底部向上):")
 for raw in [20, 60, 110]:
     probe(raw)
 
-# 3. 回到底部
+# 3. Return to the bottom
 print("\n[3] 回到底部...")
 try:
     lift.home()

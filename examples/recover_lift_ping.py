@@ -1,7 +1,7 @@
-"""ST3250 恢复后诊断 — 只读, 不移动电机.
+"""ST3250 post-recovery diagnostics — read only, does not move the motor.
 
-用途: 堵转/故障保护后, 确认舵机通信已恢复.
-只读 Present_Position / Present_Velocity / Present_Current / Temperature.
+Purpose: after a stall/fault-protection event, confirm that servo communication has recovered.
+Reads only Present_Position / Present_Velocity / Present_Current / Temperature.
 """
 
 import sys

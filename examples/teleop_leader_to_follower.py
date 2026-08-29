@@ -1,33 +1,33 @@
-"""全身遥操: 主臂 (leader) 控双臂 + 键盘控头部/底盘/升降.
+"""Full-body teleoperation: the leader arm controls both arms; the keyboard controls head/base/lift.
 
-控制分配:
-- 主臂: 双臂 (left_arm_*/right_arm_*) 实时跟随
-- 键盘 (pynput, 按住移动松开停):
-    头部:   w/s = 点头 (上下), a/d = 摇头 (左右)
-    底盘:   i/k = 前进/后退, j/l = 左转/右转, n/m = 加速/减速 (3 档)
-    升降:   u/h = 升/降 (钳位在 3~200mm)
-    b      = 退出
+Control assignment:
+- Leader arm: both arms (left_arm_*/right_arm_*) follow in real time
+- Keyboard (pynput, hold to move, release to stop):
+    Head:   w/s = nod (up/down), a/d = shake (left/right)
+    Base:   i/k = forward/backward, j/l = turn left/right, n/m = speed up/down (3 levels)
+    Lift:   u/h = up/down (clamped to 3~200mm)
+    b      = quit
 
-摄像头 (参数控制):
-    默认加载 3 个: head + left_wrist + right_wrist
-    --no-cameras               跳过所有摄像头 (纯遥操)
-    --cameras=head,left_wrist  只加载指定摄像头 (逗号分隔)
-    --head-camera /dev/video0  覆盖 head 设备号 (同理 --left-wrist-camera/--right-wrist-camera)
-    --chest-camera /dev/video6 额外加载胸口摄像头 (最多 4 个)
+Cameras (parameter-controlled):
+    3 loaded by default: head + left_wrist + right_wrist
+    --no-cameras               skip all cameras (pure teleoperation)
+    --cameras=head,left_wrist  load only the specified cameras (comma-separated)
+    --head-camera /dev/video0  override the head device (similarly --left-wrist-camera/--right-wrist-camera)
+    --chest-camera /dev/video6 additionally load the chest camera (up to 4 total)
 
-说明:
-- 从臂头部/底盘/升降通过键盘控制, 其余时间保持当前姿态
-- 主臂读数方向与从臂天然一致 (diagnose_teleop 实测), 禁用官方翻转表
+Notes:
+- The follower head/base/lift are keyboard-controlled and otherwise hold their current pose
+- Leader readings are naturally consistent with the follower direction (verified with diagnose_teleop), so the official flip table stays disabled
 
-用法:
+Usage:
     python3 examples/teleop_leader_to_follower.py
     python3 examples/teleop_leader_to_follower.py --no-cameras
     python3 examples/teleop_leader_to_follower.py --chest-camera /dev/video6
 
-安全:
-- ⚠️ 从臂全身会动, 确保周围无障碍物
-- 底盘移动前建议架起机器人
-- Ctrl+C 停止
+Safety:
+- ⚠️ The follower's whole body moves; make sure there are no obstacles around
+- It is recommended to prop the robot up before moving the base
+- Ctrl+C to stop
 """
 
 import argparse
@@ -43,39 +43,39 @@ from lerobot_robot_humanaopen.leader import BiHumanaOpenLeader, BiHumanaOpenLead
 
 FPS = 30
 
-# 键盘控制速率 (单位/秒)
-HEAD_PAN_SPEED = 20.0     # 头部 pan (归一化单位/s)
-HEAD_TILT_SPEED = 20.0    # 头部 tilt
-BASE_LINEAR_SPEED = 0.2   # 底盘线速度 m/s (基础档, ×档位倍率)
-BASE_ANGULAR_SPEED = 30.0  # 底盘角速度 deg/s (基础档, ×档位倍率)
-BASE_SPEED_LEVELS = [0.3, 0.6, 1.0]  # 底盘速度档位倍率 (n/m 切换)
-LIFT_SPEED_MM = 15.0      # 升降 mm/s
-LIFT_MIN_MM = 3.0         # 升降软下限 (descent_floor 硬保护 3mm)
-LIFT_MAX_MM = 200.0       # 升降软上限 (200mm, 用户指定)
+# Keyboard control rates (units/second)
+HEAD_PAN_SPEED = 20.0     # head pan (normalized units/s)
+HEAD_TILT_SPEED = 20.0    # head tilt
+BASE_LINEAR_SPEED = 0.2   # base linear speed m/s (base level, × level multiplier)
+BASE_ANGULAR_SPEED = 30.0  # base angular speed deg/s (base level, × level multiplier)
+BASE_SPEED_LEVELS = [0.3, 0.6, 1.0]  # base speed level multipliers (toggled with n/m)
+LIFT_SPEED_MM = 15.0      # lift mm/s
+LIFT_MIN_MM = 3.0         # lift soft lower limit (descent_floor hard-protects at 3mm)
+LIFT_MAX_MM = 200.0       # lift soft upper limit (200mm, user-specified)
 
 CAMERA_FPS = 30
 CAMERA_W, CAMERA_H = 640, 480
-CAMERA_FOURCC = "MJPG"  # 压缩格式, 带宽小, 多数摄像头可跑满 30fps (YUYV 裸流只有 25)
+CAMERA_FOURCC = "MJPG"  # compressed format, low bandwidth; most cameras sustain 30fps (YUYV raw stream is only 25)
 
-# 默认 3 摄像头设备号 (插好后用 lerobot-find-cameras 确认, 可用参数覆盖)
+# default device numbers for the 3 cameras (confirm with lerobot-find-cameras after plugging in; overridable via arguments)
 DEFAULT_CAM_DEVICES = {
     "head": "/dev/video0",
     "left_wrist": "/dev/video2",
     "right_wrist": "/dev/video4",
 }
 
-# 每个摄像头的 fps 设置 — 请根据实际硬件能力修改
-# 用 v4l2-ctl -d /dev/videoN --list-formats-ext 查看支持的分辨率和帧率
-# 默认值基于当前硬件实测: video4 在 640x480 MJPG 下最大 25fps, 其余 30fps
+# per-camera fps settings - adjust to your actual hardware capabilities
+# use v4l2-ctl -d /dev/videoN --list-formats-ext to inspect supported resolutions and frame rates
+# defaults measured on current hardware: video4 tops out at 25fps in 640x480 MJPG, the rest at 30fps
 CAMERA_FPS_MAP = {"head": 30, "left_wrist": 30, "right_wrist": 30, "chest": 30}
 
 
 def build_cameras(args) -> dict[str, OpenCVCameraConfig]:
-    """按参数构建摄像头 dict. --no-cameras 或 --cameras 为空 → 返回空 dict."""
+    """Build the camera dict from arguments. --no-cameras or an empty --cameras → returns an empty dict."""
     if args.no_cameras or not args.cameras:
         return {}
     cams = {}
-    # 若显式传了某摄像头设备号, 即使不在 --cameras 列表也自动加入
+    # if a camera device number was passed explicitly, add it even if it is not in the --cameras list
     names = [n.strip() for n in args.cameras.split(",") if n.strip()]
     for n in ("head", "left_wrist", "right_wrist", "chest"):
         if getattr(args, f"{n}_camera") and n not in names:
@@ -97,7 +97,7 @@ def build_cameras(args) -> dict[str, OpenCVCameraConfig]:
 
 
 class KeyState:
-    """线程安全地记录哪些键当前被按住."""
+    """Thread-safely track which keys are currently held down."""
 
     def __init__(self):
         self._pressed: set[str] = set()
@@ -223,7 +223,7 @@ def main():
     try:
         print("[1] Connecting follower...")
         follower.connect(calibrate=True)
-        # connect 内已处理: 优先恢复持久化位置 (免归零), 失败才自动归零
+        # connect handles this internally: prefer restoring the persisted position (no re-zeroing); only auto-home on failure
         print(f"    Follower connected (cameras: {list(cams.keys()) or 'none'}, lift {follower.lift_axis.get_height_mm():.1f}mm)")
 
         print("[2] Connecting leader...")
@@ -232,7 +232,7 @@ def main():
 
         obs = follower.get_observation()
 
-        # rerun 实时可视化 (摄像头画面 + 关节状态), 可选
+        # optional rerun live visualization (camera feeds + joint states)
         if args.display:
             try:
                 from lerobot.utils.visualization_utils import init_rerun, log_rerun_data
@@ -253,7 +253,7 @@ def main():
         print("=" * 60)
         print()
 
-        # 初始化头部位置 + 从校准文件读取头部限位 (校准时录的 MIN/MAX)
+        # initialize head positions + read head limits from the calibration file (MIN/MAX recorded at calibration time)
         head_pan = obs.get("head_pan.pos", 0.0)
         head_tilt = obs.get("head_tilt.pos", 0.0)
         try:
@@ -264,24 +264,24 @@ def main():
             head_tilt_lim = (cal["head_tilt"].range_min, cal["head_tilt"].range_max)
         except (KeyError, TypeError, AttributeError):
             head_pan_lim = head_tilt_lim = (0, 4096)
-        # 归一化空间: use_degrees=False → RANGE_M100_100, 限位就是 ±100
-        # (obs 值域 [-100,100] 线性映射到校准 range 两端, 见 motors_bus._normalize)
+        # normalized space: use_degrees=False → RANGE_M100_100, so limits are ±100
+        # (the obs range [-100,100] maps linearly onto the calibration range endpoints, see motors_bus._normalize)
         head_pan_min, head_pan_max = -100.0, 100.0
         head_tilt_min, head_tilt_max = -100.0, 100.0
         print(f"  Head limits: pan range {head_pan_lim}, tilt range {head_tilt_lim} (normalized ±100)")
         lift_h = obs.get("lift_axis.height_mm", 0.0)
-        _last_lift_dir = 0  # 0=无, 1=上次按u, -1=上次按h
-        speed_idx = 1  # 底盘速度档位 (1 = 基础)
-        _last_lift_print = 0.0  # 升降状态显示节流
-        _last_display = 0.0  # rerun 日志节流
-        _rerun = args.display  # rerun 是否启用
+        _last_lift_dir = 0  # 0=none, 1=last pressed u, -1=last pressed h
+        speed_idx = 1  # base speed level (1 = base)
+        _last_lift_print = 0.0  # throttles the lift-status display
+        _last_display = 0.0  # throttles rerun logging
+        _rerun = args.display  # whether rerun is enabled
 
         while True:
-            # 主臂读数 → 双臂动作
+            # leader readings → both-arm action
             action = leader.get_action()
 
-            # 键盘 → 头部 (WASD 标准语义: w/s=点头, a/d=摇头)
-            # head_pan(ID12)=摇头, head_tilt(ID13)=点头 (物理已按此烧录)
+            # keyboard → head (standard WASD semantics: w/s=nod, a/d=shake)
+            # head_pan(ID12)=shake, head_tilt(ID13)=nod (physically flashed this way)
             if keys.is_down("w"):
                 head_tilt -= HEAD_TILT_SPEED / FPS
             if keys.is_down("s"):
@@ -295,7 +295,7 @@ def main():
             action["head_pan.pos"] = head_pan
             action["head_tilt.pos"] = head_tilt
 
-            # 键盘 → 底盘 (速度档位: 按一下 n/m 切换一档, 边沿触发)
+            # keyboard → base (speed levels: each n/m press switches one level, edge-triggered)
             if keys.pressed_once("n"):
                 speed_idx = min(speed_idx + 1, len(BASE_SPEED_LEVELS) - 1)
                 print(f"  [Speed level {speed_idx+1}/{len(BASE_SPEED_LEVELS)}: {BASE_SPEED_LEVELS[speed_idx]}x]")
@@ -315,16 +315,16 @@ def main():
             action["x.vel"] = x
             action["theta.vel"] = theta
 
-            # 键盘 → 升降: 按住 u/h 直接控制速度 (松开即停)
-            # 双机模式用 vel 控制; 单机模式也统一用 vel (避免 P 控制器目标追赶漂移)
+            # keyboard → lift: hold u/h to control speed directly (release to stop)
+            # dual-machine mode uses vel control; single-machine mode also uses vel uniformly (avoids P-controller target-chasing drift)
             v = 0
             if keys.is_down("u"):
-                v = 60  # 上升速度 (BIT2=0: 60×50=3000 step/s ≈ 5.9mm/s)
+                v = 60  # lift speed (BIT2=0: 60×50=3000 step/s ≈ 5.9mm/s)
             elif keys.is_down("h"):
-                v = -60  # 下降速度
+                v = -60  # lower speed
             action["lift_axis.vel"] = v
 
-            # 实时显示升降状态 (每0.5秒刷一次)
+            # show live lift status (refreshed every 0.5s)
             if time.time() - _last_lift_print > 0.5:
                 _last_lift_print = time.time()
                 _actual_h = follower.lift_axis.get_height_mm()
@@ -333,7 +333,7 @@ def main():
 
             follower.send_action(action)
 
-            # rerun 日志 (5Hz, 避免拖慢 30FPS 控制循环)
+            # rerun logging (5Hz, to avoid slowing the 30FPS control loop)
             if _rerun and time.time() - _last_display > 0.2:
                 _last_display = time.time()
                 try:
@@ -351,7 +351,7 @@ def main():
         print("\n⛔ Teleoperation stopped...")
 
     finally:
-        # 保存升降绝对位置 (下次连接免归零)
+        # save the lift absolute position (no re-zeroing needed on next connect)
         try:
             follower.lift_axis.save_zero()
         except Exception:
