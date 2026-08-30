@@ -347,6 +347,68 @@ def main():
                 )
                 _fstate = sorted(k for k in _fobs if k not in _fimgs)
                 print(f"  📋 Foxglove sees: images={_fimgs or 'NONE'} state_keys={len(_fstate)}")
+
+                # Generate a ready-made layout (3 image panels + obs/action plots) so the
+                # user does NOT have to manually add panels: Foxglove only auto-shows the
+                # first image topic in its default layout. One-time "Layouts -> Import
+                # from file -> humanoopen_foxglove.layout.json" then it repeats.
+                # Writes next to the script (uses HEAD/LEFT/chest keys once known).
+                try:
+                    import foxglove.layouts as _fl
+
+                    _img_titles = {
+                        "head": "Head",
+                        "left_wrist": "Left Wrist",
+                        "right_wrist": "Right Wrist",
+                        "chest": "Chest",
+                    }
+                    _imgs = sorted(
+                        k for k in _fimgs if k in _img_titles
+                    ) or _fimgs[:3]
+                    _items = [
+                        _fl.SplitItem(
+                            proportion=1,
+                            content=_fl.ImagePanel(
+                                config=_fl.ImageConfig(
+                                    image_mode=_fl.ImageModeConfig(
+                                        image_topic=f"/observation/images/{k}"
+                                    )
+                                ),
+                                title=_img_titles.get(k, k),
+                            ),
+                        )
+                        for k in _imgs
+                    ]
+                    _layout = _fl.Layout(
+                        content=_fl.SplitContainer(
+                            direction="column",
+                            items=[
+                                _fl.SplitItem(proportion=3, content=_fl.SplitContainer(
+                                    direction="row", items=_items
+                                )),
+                                _fl.SplitItem(proportion=1, content=_fl.PlotPanel(
+                                    config=_fl.PlotConfig(paths=[_fl.PlotSeries(
+                                        value="/observation.state.scalars[:].value", label="observation")]),
+                                    title="Observation",
+                                )),
+                                _fl.SplitItem(proportion=1, content=_fl.PlotPanel(
+                                    config=_fl.PlotConfig(paths=[_fl.PlotSeries(
+                                        value="/action.state.scalars[:].value", label="action")]),
+                                    title="Action",
+                                )),
+                            ],
+                        )
+                    )
+                    _lay_path = os.path.join(os.path.dirname(__file__), "humanoopen_foxglove.layout.json")
+                    with open(_lay_path, "w") as _f:
+                        _f.write(_layout.to_json())
+                    print(
+                        f"  📐 Ready-made layout written: {_lay_path}\n"
+                        f"     In Foxglove: Layouts -> Import from file -> pick it "
+                        f"(one-time; shows all {len(_imgs)} images + obs/action plots)"
+                    )
+                except Exception as _e:
+                    print(f"  ⚠️ Layout generation skipped: {str(_e)[:60]}")
             except Exception as e:
                 print(f"  ⚠️ Foxglove startup failed: {str(e)[:80]}")
 
