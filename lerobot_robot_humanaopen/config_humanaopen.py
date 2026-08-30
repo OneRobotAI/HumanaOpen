@@ -215,5 +215,6 @@ class HumanaOpenClientConfig(RobotConfig):
     )
     cameras: dict[str, CameraConfig] = field(default_factory=dict)
 
-    polling_timeout_ms: int = 15
+    # How long HumanaOpenClient.connect() waits for the Host to stream its
+    # first observation before failing (Poller handshake).
     connect_timeout_s: int = 5
