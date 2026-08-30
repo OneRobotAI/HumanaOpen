@@ -334,10 +334,25 @@ def main():
                     _rerun_bin = shutil.which("rerun")
                     _g = args.web_grpc_port  # gRPC endpoint the SDK connects to
                     _wp = args.web_port
-                    # Sanity: if the ports are already in use, a previous
-                    # serve-web process is likely still alive — the new one
-                    # would crash with "Address already in use" and show no
-                    # data. Fail loudly instead of silently.
+                    # Auto-clean stale serve-web leftovers from previous runs:
+                    # if teleop exited abnormally (kill -9 / crash), the
+                    # earlier serve-web orphan still owns the ports and the new
+                    # one would crash with "Address already in use" (no data).
+                    import subprocess as _sp
+
+                    try:
+                        # Pattern only matches the rerun viewer binary itself
+                        # (path contains rerun_cli/rerun), never this script or
+                        # unrelated processes.
+                        _sp.run(
+                            ["pkill", "-f", r"rerun_cli/rerun.*--serve-web"],
+                            capture_output=True, timeout=3,
+                        )
+                        time.sleep(0.3)
+                    except Exception:
+                        pass
+                    # Sanity: only fail if the ports are STILL busy after the
+                    # pkill (e.g. a non-rerun process owns them).
                     _s = __import__("socket").socket()
                     _grpc_busy = _s.connect_ex(("127.0.0.1", _g)) == 0
                     _s.close()
@@ -346,9 +361,8 @@ def main():
                     _s2.close()
                     if _grpc_busy or _web_busy:
                         raise RuntimeError(
-                            f"Port {_g} (gRPC) or {_wp} (web) already in use — a previous "
-                            f"rerun --serve-web is still running. Kill it first: "
-                            f"pkill -f 'rerun.*serve-web'"
+                            f"Port {_g} (gRPC) or {_wp} (web) still in use after pkill — "
+                            f"another process owns it. Check: ss -tlnp | grep -E '{_g}|{_wp}'"
                         )
                     _web = subprocess.Popen(
                         [
