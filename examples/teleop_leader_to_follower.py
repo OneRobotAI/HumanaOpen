@@ -543,7 +543,7 @@ def main():
                     _v = subprocess.Popen(
                         [_rerun_bin, "--port", str(_g)],
                         stdout=subprocess.DEVNULL,
-                        stderr=subprocess.DEVNULL,
+                        stderr=open("/tmp/humanaopen_rerun_viewer.log", "w"),
                         start_new_session=True,
                     )
                     _web_servers.append(_v)
@@ -554,7 +554,7 @@ def main():
                             break
                         time.sleep(0.2)
                     _sock.close()
-                    print("  👁 Rerun native viewer started (wait, then data flows)")
+                    print("  👁 Rerun native viewer started (stderr: /tmp/humanaopen_rerun_viewer.log)")
                     init_rerun(
                         session_name="humanaopen_teleop",
                         ip="127.0.0.1",
