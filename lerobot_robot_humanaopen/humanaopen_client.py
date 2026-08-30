@@ -9,12 +9,18 @@ dual-machine mode without any monkey-patching.
 The feature surfaces (``observation_features`` / ``action_features``) mirror
 ``HumanaOpen`` exactly (same key names and order), so datasets recorded over
 ZMQ are schema-identical to single-machine ones.
+
+Transport (modeled on lerobot AlohaMini client):
+- obs: PULL socket (host PUSH+SNDHWM=1), multipart
+      [0] JSON state (`_image_encoding`, `_images`)
+      [1..] alternating camera-name / JPEG-bytes frames
+- cmd: PUSH socket, JSON single-frame (CONFLATE-safe)
 """
 
 from __future__ import annotations
 
+import json
 import logging
-import struct
 import threading
 import time
 from functools import cached_property
@@ -31,59 +37,48 @@ from .humanaopen import _state_keys
 logger = logging.getLogger(__name__)
 
 
-def _deserialize_obs(data: bytes) -> dict[str, Any]:
-    """Unpack observation dict (mirror of host's _serialize_obs)."""
-    obs: dict[str, Any] = {}
-    pos = 0
-    magic, n_floats, n_images = struct.unpack_from("<III", data, pos)
-    pos += 12
-    if magic != 0x4F4253:
-        raise ValueError(f"Bad magic: {magic:#x}")
+def _parse_observation_multipart(message_parts: list[bytes], camera_names: set[str]) -> dict[str, Any]:
+    """Parse a multipart observation: JSON state head + cam/JPEG frame pairs.
 
-    for _ in range(n_floats):
-        klen = struct.unpack_from("<I", data, pos)[0]
-        pos += 4
-        key = data[pos : pos + klen].decode()
-        pos += klen
-        val = struct.unpack_from("<f", data, pos)[0]
-        pos += 4
-        obs[key] = val
+    The JSON head (part 0) holds the float state plus the ``_images`` name
+    list.  Frames follow as alternating [cam_name, jpeg_bytes] frames.
+    """
+    if not message_parts:
+        return {}
 
-    for _ in range(n_images):
-        klen = struct.unpack_from("<I", data, pos)[0]
-        pos += 4
-        key = data[pos : pos + klen].decode()
-        pos += klen
-        H, W, C = struct.unpack_from("<III", data, pos)
-        pos += 12
-        fmt = data[pos]
-        pos += 1
-        payload_len = struct.unpack_from("<I", data, pos)[0]
-        pos += 4
-        payload = data[pos : pos + payload_len]
-        pos += payload_len
-        if fmt == 1:  # JPEG-encoded
-            import cv2
+    try:
+        state = json.loads(message_parts[0].decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as e:
+        logger.error("Error decoding observation JSON: %s", e)
+        return {}
 
-            img = cv2.imdecode(np.frombuffer(payload, dtype=np.uint8), cv2.IMREAD_COLOR)  # BGR
-            obs[key] = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        else:  # fmt 0 = raw
-            obs[key] = np.frombuffer(payload, dtype=np.uint8).reshape(H, W, C)
+    obs: dict[str, Any] = {k: v for k, v in state.items() if not k.startswith("_")}
+
+    if len(message_parts) > 1:
+        import cv2
+
+        if (len(message_parts) - 1) % 2 != 0:
+            logger.warning("Invalid multipart observation: expected camera/JPEG pairs.")
+        for index in range(1, len(message_parts) - 1, 2):
+            try:
+                cam_name = message_parts[index].decode("utf-8")
+            except UnicodeDecodeError:
+                logger.warning("Invalid camera name in multipart observation.")
+                continue
+            if cam_name not in camera_names:
+                continue
+            frame = cv2.imdecode(np.frombuffer(message_parts[index + 1], np.uint8), cv2.IMREAD_COLOR)
+            if frame is None:
+                logger.warning("cv2.imdecode returned None for camera %s.", cam_name)
+                continue
+            obs[cam_name] = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
     return obs
 
 
-def _serialize_cmd(action: dict[str, Any]) -> bytes:
-    """Pack action dict (mirror of host's _deserialize_cmd)."""
-    buf = bytearray()
-    floats = {k: v for k, v in action.items() if isinstance(v, (int, float, np.floating))}
-    buf.extend(struct.pack("<II", 0x4F4253, len(floats)))
-    for k, v in floats.items():
-        k_bytes = k.encode()
-        buf.extend(struct.pack("<I", len(k_bytes)))
-        buf.extend(k_bytes)
-        buf.extend(struct.pack("<f", float(v)))
-    return bytes(buf)
+def _serialize_cmd(action: dict[str, Any]) -> str:
+    """Pack an action dict as a JSON string (host side uses json.loads)."""
+    return json.dumps({k: float(v) for k, v in action.items() if isinstance(v, (int, float, np.floating))})
 
 
 class HumanaOpenClient(Robot):
@@ -152,19 +147,25 @@ class HumanaOpenClient(Robot):
     def connect(self, calibrate: bool = True) -> None:
         self._ctx = zmq.Context()
 
-        # Subscribe to observations
-        self._sub = self._ctx.socket(zmq.SUB)
-        self._sub.setsockopt_string(zmq.SUBSCRIBE, "obs")
-        # NOTE: ZMQ_CONFLATE is NOT used here — it asserts/crashes on multipart
-        # messages (libzmq fq.cpp:80, issue #3373) and our obs are 2-frame
-        # multipart. "Keep only the newest" is implemented by draining the
-        # socket in get_observation() instead.
+        # Receive observations — PULL (host PUSH with SNDHWM=1 keeps only one
+        # pending frame; we additionally drain below).
+        self._sub = self._ctx.socket(zmq.PULL)
+        self._sub.setsockopt(zmq.RCVHWM, 1)
         self._sub.connect(f"tcp://{self.config.remote_ip}:{self.config.port_zmq_observations}")
-        self._sub.RCVTIMEO = self.config.polling_timeout_ms
 
-        # Publish action commands
-        self._pub = self._ctx.socket(zmq.PUB)
+        # Send action commands — PUSH to host PULL (JSON single-frame).
+        self._pub = self._ctx.socket(zmq.PUSH)
         self._pub.connect(f"tcp://{self.config.remote_ip}:{self.config.port_zmq_cmd}")
+
+        # Verify the connection: wait until the host actually streams an
+        # observation, otherwise fail fast instead of faking success.
+        poller = zmq.Poller()
+        poller.register(self._sub, zmq.POLLIN)
+        if dict(poller.poll(self.config.connect_timeout_s * 1000)).get(self._sub) != zmq.POLLIN:
+            raise RuntimeError(
+                f"Timeout waiting for HumanaOpen Host at {self.config.remote_ip} to connect "
+                f"(obs port {self.config.port_zmq_observations}). Is HumanaOpenHost running?"
+            )
 
         logger.info("Client connected to %s", self.config.remote_ip)
 
@@ -198,8 +199,8 @@ class HumanaOpenClient(Robot):
     def get_observation(self) -> dict[str, Any]:
         """Return the latest observation from the robot host.
 
-        Drains the socket in non-blocking mode so only the freshest queued
-        observation is kept — the multipart-safe replacement for ZMQ_CONFLATE.
+        Drains the PULL socket in non-blocking mode so only the freshest
+        queued observation is kept (host PUSH keeps SNDHWM=1 anyway).
         Images arrive on a subset of frames (host image_fps_divider), so a
         frame carrying no image keeps the previously received one: joint/
         action state is always freshest, image stream stays at its own rate.
@@ -207,11 +208,12 @@ class HumanaOpenClient(Robot):
         if not self.is_connected:
             raise RuntimeError("Client is not connected")
 
+        camera_names = set(self._cameras_ft.keys())
         pending = self._sub.poll(0)
         while pending:
             try:
-                _, obs_data = self._sub.recv_multipart(flags=zmq.NOBLOCK)
-                obs = _deserialize_obs(obs_data)
+                message_parts = self._sub.recv_multipart(flags=zmq.NOBLOCK)
+                obs = _parse_observation_multipart(message_parts, camera_names)
                 # Persist image frames separately: they arrive less often than
                 # joint state (host divider), so retain them across calls.
                 for k, v in obs.items():
@@ -232,10 +234,10 @@ class HumanaOpenClient(Robot):
         return dict(self._last_obs)
 
     def send_action(self, action: dict[str, Any]) -> dict[str, Any]:
-        """Send an action command to the robot host."""
+        """Send an action command to the robot host (JSON single-frame)."""
         if not self.is_connected:
             raise RuntimeError("Client is not connected")
-        self._pub.send_multipart([b"cmd", _serialize_cmd(action)])
+        self._pub.send_string(_serialize_cmd(action))
         return action
 
     @property

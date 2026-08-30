@@ -2,12 +2,20 @@
 
 Connects to the real hardware and forwards observations / receives
 action commands from a remote ``HumanaOpenClient`` over ZMQ.
+
+Transport (modeled on lerobot AlohaMini host):
+- cmd: PULL socket, JSON single-frame, CONFLATE-safe
+- obs: PUSH socket with SNDHWM=1, multipart message:
+      [0] JSON state (floats) with `_image_encoding` + `_images` metadata
+      [1..] alternating camera-name / JPEG-bytes frames
+  Sending is NOBLOCK: if the client is slower, the previous pending
+  observation is dropped so the wire always carries the newest frame.
 """
 
 from __future__ import annotations
 
+import json
 import logging
-import struct
 import time
 import traceback
 from typing import Any
@@ -26,78 +34,54 @@ from .humanaopen import HumanaOpen
 logger = logging.getLogger(__name__)
 
 
-def _serialize_obs(obs: dict[str, Any], jpeg_quality: int = 85) -> bytes:
-    """Pack an observation dict into a flat byte buffer.
+def _jsonable(value: Any) -> Any:
+    """Convert numpy scalars to JSON-native values without touching plain values."""
+    if hasattr(value, "item"):
+        try:
+            return value.item()
+        except ValueError:
+            pass
+    return value
 
-    Layout (little-endian):
-      [4 bytes]  magic           0x4F4253
-      [4 bytes]  n_floats         number of float32 values
-      [4 bytes]  n_images         number of images
-      For each float:
-        [4 bytes] key_len + key_utf8 + [4 bytes] float32 value
-      For each image:
-        [4 bytes] key_len + key_utf8
-        [4 bytes] H, [4 bytes] W, [4 bytes] C
-        [1 byte]  fmt              1=JPEG, 0=raw
-        [4 bytes] payload_len      length of the encoded frame data
-        [payload_len bytes] image data (JPEG bytes if fmt=1, else raw H*W*C uint8)
+
+def build_observation_multipart(
+    obs: dict[str, Any], camera_keys, jpeg_quality: int = 70
+) -> list[bytes]:
+    """Encode state as JSON and camera images as JPEG binary multipart frames.
+
+    Layout: [json(state), cam_key, jpeg_bytes, cam_key, jpeg_bytes, ...]
+    The JSON head carries ``_image_encoding`` and ``_images`` so the client
+    knows the number/names of images that follow (multipart-safe).
     """
-    floats = {k: v for k, v in obs.items() if isinstance(v, (int, float, np.floating))}
-    images = {k: v for k, v in obs.items() if isinstance(v, np.ndarray) and v.ndim == 3}
+    state_observation = {
+        _jsonable(key): _jsonable(value) for key, value in obs.items() if key not in camera_keys
+    }
+    state_observation["_image_encoding"] = "jpeg"
 
-    buf = bytearray()
-    buf.extend(struct.pack("<III", 0x4F4253, len(floats), len(images)))
+    parts: list[bytes] = [json.dumps(state_observation).encode("utf-8")]
+    image_names: list[str] = []
+    for cam_key in camera_keys:
+        frame = obs.get(cam_key)
+        if frame is None or not isinstance(frame, np.ndarray) or frame.ndim != 3:
+            continue
+        if cv2 is None:
+            logger.warning("cv2 unavailable — skipping camera %s", cam_key)
+            continue
+        # observation frames are RGB; cv2.imencode expects BGR.
+        ret, buffer = cv2.imencode(
+            ".jpg",
+            cv2.cvtColor(frame, cv2.COLOR_RGB2BGR),
+            [int(cv2.IMWRITE_JPEG_QUALITY), jpeg_quality],
+        )
+        if not ret:
+            logger.warning("Failed to JPEG encode camera frame %s.", cam_key)
+            continue
+        image_names.append(cam_key)
+        parts.extend([cam_key.encode("utf-8"), buffer.tobytes()])
 
-    for k, v in floats.items():
-        k_bytes = k.encode()
-        buf.extend(struct.pack("<I", len(k_bytes)))
-        buf.extend(k_bytes)
-        buf.extend(struct.pack("<f", float(v)))
-
-    for k, v in images.items():
-        k_bytes = k.encode()
-        buf.extend(struct.pack("<I", len(k_bytes)))
-        buf.extend(k_bytes)
-        H, W, C = v.shape
-        buf.extend(struct.pack("<III", H, W, C))
-        if jpeg_quality > 0 and cv2 is not None:
-            # cv2.imencode expects BGR; HumanaOpen observation frames are RGB.
-            ok, enc = cv2.imencode(
-                ".jpg",
-                cv2.cvtColor(v, cv2.COLOR_RGB2BGR),
-                [int(cv2.IMWRITE_JPEG_QUALITY), jpeg_quality],
-            )
-            payload = enc.tobytes() if ok else b""
-            fmt = 1  # JPEG
-        else:
-            payload = v.astype(np.uint8).tobytes()
-            fmt = 0  # raw
-        buf.extend(struct.pack("<BI", fmt, len(payload)))
-        buf.extend(payload)
-
-    return bytes(buf)
-
-
-def _deserialize_cmd(data: bytes) -> dict[str, Any]:
-    """Unpack an action dict from bytes (mirror of above)."""
-    action: dict[str, Any] = {}
-    pos = 0
-    # Client _serialize_cmd uses "<II" (magic, n_floats) — not "<III"
-    magic, n_floats = struct.unpack_from("<II", data, pos)
-    pos += 8
-    if magic != 0x4F4253:
-        raise ValueError(f"Bad magic: {magic:#x}")
-
-    for _ in range(n_floats):
-        klen = struct.unpack_from("<I", data, pos)[0]
-        pos += 4
-        key = data[pos : pos + klen].decode()
-        pos += klen
-        val = struct.unpack_from("<f", data, pos)[0]
-        pos += 4
-        action[key] = val
-
-    return action
+    state_observation["_images"] = image_names
+    parts[0] = json.dumps(state_observation).encode("utf-8")
+    return parts
 
 
 class HumanaOpenHost:
@@ -129,13 +113,16 @@ class HumanaOpenHost:
         ctx = zmq.Context()
         self._ctx = ctx
 
-        # Publisher socket — observations (streaming, topic="obs")
-        pub = ctx.socket(zmq.PUB)
+        # Observation socket — PUSH, single pending frame: if the client is slow
+        # the oldest observation is dropped so the wire always carries the
+        # newest. (CONFLATE would be ideal but is unsafe with multipart frames.)
+        pub = ctx.socket(zmq.PUSH)
+        pub.setsockopt(zmq.SNDHWM, 1)
         pub.bind(f"tcp://*:{self.host_cfg.port_zmq_observations}")
 
-        # Subscriber socket — action commands (topic="cmd")
-        sub = ctx.socket(zmq.SUB)
-        sub.setsockopt_string(zmq.SUBSCRIBE, "cmd")
+        # Command socket — PULL, JSON single-frame (CONFLATE-safe)
+        sub = ctx.socket(zmq.PULL)
+        sub.setsockopt(zmq.CONFLATE, 1)
         sub.bind(f"tcp://*:{self.host_cfg.port_zmq_cmd}")
         sub.RCVTIMEO = self.host_cfg.watchdog_timeout_ms
 
@@ -198,20 +185,29 @@ class HumanaOpenHost:
                     continue
 
                 # Attach the latest image cache only every few control frames:
-                # images are large (even JPEG ~100KB), and sending them on every
-                # frame saturates the link and delays the action channel.
+                # images are large (even JPEG ~30KB each), and sending them on
+                # every frame saturates the link and delays the action channel.
                 # Image frames therefore run at max_loop_freq_hz/image_fps_divider.
                 if frame_count % self.host_cfg.image_fps_divider == 0:
                     with cam_lock:
                         obs.update(cam_cache)
 
-                pub.send_multipart([b"obs", _serialize_obs(obs, self.host_cfg.jpeg_quality)])
+                # Send the newest observation; drop instead of blocking if the
+                # client is slower than us (SNDHWM=1 keeps only one pending).
+                parts = build_observation_multipart(obs, robot.cameras.keys(), self.host_cfg.jpeg_quality)
+                try:
+                    pub.send_multipart(parts, flags=zmq.NOBLOCK)
+                except zmq.Again:
+                    logger.info("Dropping observation — no client connected.")
 
                 # ── Receive command (non-blocking, with timeout) ────────
                 try:
-                    _, cmd_data = sub.recv_multipart()
-                    action = _deserialize_cmd(cmd_data)
+                    cmd_str = sub.recv_string()
+                    action = dict(json.loads(cmd_str))
                 except zmq.Again:
+                    action = {}
+                except (ValueError, TypeError) as e:
+                    logger.warning("Bad command message: %s", e)
                     action = {}
 
                 if action:
