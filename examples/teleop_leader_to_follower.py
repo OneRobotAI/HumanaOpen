@@ -314,10 +314,33 @@ def main():
                 )
 
                 init_foxglove(port=args.foxglove_port)
-                print(
-                    f"  🦊 Foxglove viewer: connect Foxglove Studio to ws://127.0.0.1:{args.foxglove_port}"
-                    f"  (topics: /observation/state, /action/state, /observation/images/*)"
+                # The server exposes the OFFICIAL viewer link: app.foxglove.dev with
+                # ds=foxglove-websocket (NOT rosbridge). Opening it pre-configures the
+                # correct connection type + ws URL — this is what the SDK documents.
+                import foxglove as _fg
+
+                _app = getattr(
+                    getattr(_fg.log_foxglove_data, "server", None), "app_url", None
                 )
+                if _app is not None:
+                    _u = _app()
+                    print(f"  🦊 Foxglove viewer — open in browser:\n     {_u}")
+                    try:
+                        import webbrowser
+
+                        webbrowser.open(_u)
+                    except Exception:
+                        pass
+                    print(
+                        "      (in Foxglove Studio: connection type must be "
+                        "'Foxglove WebSocket', not Rosbridge; topics: "
+                        "/observation/state, /action/state, /observation/images/*)"
+                    )
+                else:
+                    print(
+                        f"  🦊 Foxglove viewer: connect Foxglove Studio (type=Foxglove "
+                        f"WebSocket) to ws://127.0.0.1:{args.foxglove_port}"
+                    )
             except Exception as e:
                 print(f"  ⚠️ Foxglove startup failed: {str(e)[:80]}")
 
