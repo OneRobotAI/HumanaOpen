@@ -31,10 +31,13 @@ Safety:
 """
 
 import argparse
+import os
+import sys
 import threading
 import time
 
 import numpy as np
+import rerun
 from pynput import keyboard
 
 from lerobot.cameras.opencv.configuration_opencv import OpenCVCameraConfig
@@ -284,6 +287,29 @@ def main():
         if args.display:
             try:
                 from lerobot.utils.visualization_utils import init_rerun, log_rerun_data
+
+                # rr.spawn() needs a `rerun` executable in PATH; if the shell
+                # didn't activate the conda env (or put it elsewhere), spawn
+                # fails silently and only a viewer-less gRPC server starts
+                # (rerun shows nothing + "Sender blocked" warnings). Make sure
+                # the command is discoverable before calling init_rerun.
+                import shutil
+
+                if shutil.which("rerun") is None:
+                    _candidates = [
+                        # (a) this conda env's bin (when running via env python)
+                        os.path.dirname(sys.executable),
+                        # (b) bundled rerun_cli executable inside rerun_sdk
+                        os.path.join(os.path.dirname(rerun.__file__), "..", "rerun_cli"),
+                    ]
+                    for _c in _candidates:
+                        _p = os.path.abspath(_c)
+                        if os.path.isdir(_p) and any(
+                            f in os.listdir(_p) for f in ("rerun", "rerun.exe")
+                        ):
+                            os.environ["PATH"] = _p + os.pathsep + os.environ.get("PATH", "")
+                            print(f"  📌 Added {_p} to PATH for rerun viewer")
+                            break
                 init_rerun(session_name="humanaopen_teleop")
                 # compress_images=True: 921KB raw image -> ~25KB JPEG into viewer; without it
                 # 3 cams at 15Hz = ~41MB/s into the viewer process, which lags => display delay
@@ -413,8 +439,7 @@ def main():
             pass
         if args.display:
             try:
-                import rerun as rr
-                rr.rerun_shutdown()
+                rerun.rerun_shutdown()
             except Exception:
                 pass
         try:
