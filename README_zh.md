@@ -111,7 +111,8 @@ HumanaOpenHost(HumanaOpenConfig(
     cameras={
         'head':         OpenCVCameraConfig(index_or_path='/dev/video0', fps=30, width=640, height=480, fourcc='MJPG'),  # 按板子上 lerobot-find-cameras 的输出改成实际设备号
         'left_wrist':   OpenCVCameraConfig(index_or_path='/dev/video2', fps=30, width=640, height=480, fourcc='MJPG'),  # 按板子上 lerobot-find-cameras 的输出改成实际设备号
-        'right_wrist':  OpenCVCameraConfig(index_or_path='/dev/video4', fps=30, width=640, height=480, fourcc='MJPG'),  # 按板子上 lerobot-find-cameras 的输出改成实际设备号
+        'right_wrist':  OpenCVCameraConfig(index_or_path='/dev/video4', fps=30, width=640, height=480, fourcc='MJPG'),
+                # 'chest': OpenCVCameraConfig(index_or_path='/dev/video6', fps=30, width=640, height=480, fourcc='MJPG'),  # 第4路相机 — 去掉注释即启用
     },
     wheel_dir_signs={'base_left_wheel': -1, 'base_right_wheel': 1}
 )).run()
@@ -160,7 +161,8 @@ HumanaOpenHost(HumanaOpenConfig(
     cameras={
         'head':         OpenCVCameraConfig(index_or_path='/dev/video0', fps=30, width=640, height=480, fourcc='MJPG'),  # 按板子上 lerobot-find-cameras 的输出改成实际设备号
         'left_wrist':   OpenCVCameraConfig(index_or_path='/dev/video2', fps=30, width=640, height=480, fourcc='MJPG'),  # 按板子上 lerobot-find-cameras 的输出改成实际设备号
-        'right_wrist':  OpenCVCameraConfig(index_or_path='/dev/video4', fps=30, width=640, height=480, fourcc='MJPG'),  # 按板子上 lerobot-find-cameras 的输出改成实际设备号
+        'right_wrist':  OpenCVCameraConfig(index_or_path='/dev/video4', fps=30, width=640, height=480, fourcc='MJPG'),
+                # 'chest': OpenCVCameraConfig(index_or_path='/dev/video6', fps=30, width=640, height=480, fourcc='MJPG'),  # 第4路相机 — 去掉注释即启用
     },
     wheel_dir_signs={'base_left_wheel': -1, 'base_right_wheel': 1}
 )).run()
@@ -192,7 +194,8 @@ HumanaOpenHost(HumanaOpenConfig(
     cameras={
         'head':         OpenCVCameraConfig(index_or_path='/dev/video0', fps=30, width=640, height=480, fourcc='MJPG'),  # 按板子上 lerobot-find-cameras 的输出改成实际设备号
         'left_wrist':   OpenCVCameraConfig(index_or_path='/dev/video2', fps=30, width=640, height=480, fourcc='MJPG'),  # 按板子上 lerobot-find-cameras 的输出改成实际设备号
-        'right_wrist':  OpenCVCameraConfig(index_or_path='/dev/video4', fps=30, width=640, height=480, fourcc='MJPG'),  # 按板子上 lerobot-find-cameras 的输出改成实际设备号
+        'right_wrist':  OpenCVCameraConfig(index_or_path='/dev/video4', fps=30, width=640, height=480, fourcc='MJPG'),
+                # 'chest': OpenCVCameraConfig(index_or_path='/dev/video6', fps=30, width=640, height=480, fourcc='MJPG'),  # 第4路相机 — 去掉注释即启用
     },
     wheel_dir_signs={'base_left_wheel': -1, 'base_right_wheel': 1}
 )).run()

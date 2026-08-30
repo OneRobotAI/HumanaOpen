@@ -111,7 +111,8 @@ HumanaOpenHost(HumanaOpenConfig(
     cameras={
         'head':         OpenCVCameraConfig(index_or_path='/dev/video0', fps=30, width=640, height=480, fourcc='MJPG'),  # ajustez /dev/videoN selon la sortie de lerobot-find-cameras
         'left_wrist':   OpenCVCameraConfig(index_or_path='/dev/video2', fps=30, width=640, height=480, fourcc='MJPG'),  # ajustez /dev/videoN selon la sortie de lerobot-find-cameras
-        'right_wrist':  OpenCVCameraConfig(index_or_path='/dev/video4', fps=30, width=640, height=480, fourcc='MJPG'),  # ajustez /dev/videoN selon la sortie de lerobot-find-cameras
+        'right_wrist':  OpenCVCameraConfig(index_or_path='/dev/video4', fps=30, width=640, height=480, fourcc='MJPG'),
+                # 'chest': OpenCVCameraConfig(index_or_path='/dev/video6', fps=30, width=640, height=480, fourcc='MJPG'),  # 4e camera — décommenter pour activer
     },
     wheel_dir_signs={'base_left_wheel': -1, 'base_right_wheel': 1}
 )).run()
@@ -146,7 +147,8 @@ HumanaOpenHost(HumanaOpenConfig(
     cameras={
         'head':         OpenCVCameraConfig(index_or_path='/dev/video0', fps=30, width=640, height=480, fourcc='MJPG'),  # ajustez /dev/videoN selon la sortie de lerobot-find-cameras
         'left_wrist':   OpenCVCameraConfig(index_or_path='/dev/video2', fps=30, width=640, height=480, fourcc='MJPG'),  # ajustez /dev/videoN selon la sortie de lerobot-find-cameras
-        'right_wrist':  OpenCVCameraConfig(index_or_path='/dev/video4', fps=30, width=640, height=480, fourcc='MJPG'),  # ajustez /dev/videoN selon la sortie de lerobot-find-cameras
+        'right_wrist':  OpenCVCameraConfig(index_or_path='/dev/video4', fps=30, width=640, height=480, fourcc='MJPG'),
+                # 'chest': OpenCVCameraConfig(index_or_path='/dev/video6', fps=30, width=640, height=480, fourcc='MJPG'),  # 4e camera — décommenter pour activer
     },
     wheel_dir_signs={'base_left_wheel': -1, 'base_right_wheel': 1}
 )).run()
@@ -175,7 +177,8 @@ HumanaOpenHost(HumanaOpenConfig(
     cameras={
         'head':         OpenCVCameraConfig(index_or_path='/dev/video0', fps=30, width=640, height=480, fourcc='MJPG'),  # ajustez /dev/videoN selon la sortie de lerobot-find-cameras
         'left_wrist':   OpenCVCameraConfig(index_or_path='/dev/video2', fps=30, width=640, height=480, fourcc='MJPG'),  # ajustez /dev/videoN selon la sortie de lerobot-find-cameras
-        'right_wrist':  OpenCVCameraConfig(index_or_path='/dev/video4', fps=30, width=640, height=480, fourcc='MJPG'),  # ajustez /dev/videoN selon la sortie de lerobot-find-cameras
+        'right_wrist':  OpenCVCameraConfig(index_or_path='/dev/video4', fps=30, width=640, height=480, fourcc='MJPG'),
+                # 'chest': OpenCVCameraConfig(index_or_path='/dev/video6', fps=30, width=640, height=480, fourcc='MJPG'),  # 4e camera — décommenter pour activer
     },
     wheel_dir_signs={'base_left_wheel': -1, 'base_right_wheel': 1}
 )).run()
