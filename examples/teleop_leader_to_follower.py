@@ -147,6 +147,7 @@ class KeyState:
 
 
 def main():
+    _web_servers: list = []  # running rerun --serve-web subprocesses (--display-web mode)
     parser = argparse.ArgumentParser(description="HumanaOpen full-body teleoperation (leader arm + keyboard)")
     parser.add_argument("--remote_ip", default=None, help="Host IP for ZMQ (omit for direct serial)")
     parser.add_argument("--port_zmq_cmd", type=int, default=5555)
@@ -164,6 +165,16 @@ def main():
             help=f"{name} camera device (default {DEFAULT_CAM_DEVICES.get(name, 'undefined')})",
         )
     parser.add_argument("--display", action="store_true", help="use rerun to display camera feeds and joint states in real time")
+    parser.add_argument(
+        "--display-web",
+        action="store_true",
+        help="display via rerun WEB viewer (browser) instead of the native window. "
+        "Bypasses the NVIDIA/wgpu black-screen present bug: rerun --serve-web hosts "
+        "gRPC + a web server, lerobot init_rerun connects over gRPC, and the browser "
+        "renders with WebGL. Requires a browser and rerun CLI (bundled).",
+    )
+    parser.add_argument("--web-port", type=int, default=9090, help="port for --display-web browser URL (default 9090)")
+    parser.add_argument("--web-grpc-port", type=int, default=9876, help="gRPC backend port for --display-web (default 9876)")
     args = parser.parse_args()
 
     cams = build_cameras(args)
@@ -284,7 +295,8 @@ def main():
         obs = follower.get_observation()
 
         # optional rerun live visualization (camera feeds + joint states)
-        if args.display:
+        _display_web = args.display_web and not args.display  # --display takes precedence
+        if args.display or _display_web:
             try:
                 from lerobot.utils.visualization_utils import init_rerun, log_rerun_data
 
@@ -310,11 +322,43 @@ def main():
                             os.environ["PATH"] = _p + os.pathsep + os.environ.get("PATH", "")
                             print(f"  📌 Added {_p} to PATH for rerun viewer")
                             break
-                init_rerun(session_name="humanaopen_teleop")
+
+                # WEB viewer mode: rerun --serve-web hosts a gRPC proxy + HTTP web
+                # viewer; the browser renders with WebGL. This bypasses the native
+                # wgpu present bug seen on NVIDIA Blackwell + 580 drivers (window
+                # opens but stays black and unresponsive). init_rerun(ip, port)
+                # connects the SDK to that gRPC proxy instead of rr.spawn.
+                import subprocess
+
+                if _display_web:
+                    _rerun_bin = shutil.which("rerun")
+                    _g = args.web_grpc_port  # gRPC endpoint the SDK connects to
+                    _web = subprocess.Popen(
+                        [
+                            _rerun_bin,
+                            "--serve-web",
+                            "--port", str(_g),
+                            "--web-viewer-port", str(args.web_port),
+                        ],
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.DEVNULL,
+                        start_new_session=True,
+                    )
+                    _web_servers.append(_web)
+                    print(
+                        f"  🌐 Rerun WEB viewer: http://127.0.0.1:{args.web_port}  "
+                        f"(gRPC on {_g}; open the URL in a browser)"
+                    )
+                    init_rerun(
+                        session_name="humanaopen_teleop",
+                        ip="127.0.0.1",
+                        port=_g,
+                    )
+                else:
+                    init_rerun(session_name="humanaopen_teleop")
                 # compress_images=True: 921KB raw image -> ~25KB JPEG into viewer; without it
                 # 3 cams at 15Hz = ~41MB/s into the viewer process, which lags => display delay
                 log_rerun_data(observation=_strip_images(obs), compress_images=True)
-                print("  👁 Rerun visualization started (view in rerun viewer)")
             except Exception as e:
                 print(f"  ⚠️ Rerun startup failed (ignored): {str(e)[:60]}")
 
@@ -437,9 +481,14 @@ def main():
             follower.lift_axis.save_zero()
         except Exception:
             pass
-        if args.display:
+        if args.display or args.display_web:
             try:
                 rerun.rerun_shutdown()
+            except Exception:
+                pass
+        for _w in _web_servers:
+            try:
+                _w.terminate()
             except Exception:
                 pass
         try:
