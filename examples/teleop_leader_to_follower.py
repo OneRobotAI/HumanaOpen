@@ -345,10 +345,20 @@ def main():
                         start_new_session=True,
                     )
                     _web_servers.append(_web)
-                    print(
-                        f"  🌐 Rerun WEB viewer: http://127.0.0.1:{args.web_port}  "
-                        f"(gRPC on {_g}; open the URL in a browser)"
+                    # The web UI only shows data when the URL carries the gRPC
+                    # endpoint via the `?url=` param (URL-encoded); the bare
+                    # http://127.0.0.1:PORT page is just the welcome screen.
+                    _url = (
+                        f"http://127.0.0.1:{args.web_port}"
+                        f"?url=rerun%2Bhttp%3A%2F%2Flocalhost%3A{_g}%2Fproxy"
                     )
+                    print(f"  🌐 Rerun WEB viewer (open in browser):\n     {_url}")
+                    try:  # best-effort auto-open; user may open it manually
+                        import webbrowser
+
+                        webbrowser.open(_url)
+                    except Exception:
+                        pass
                     init_rerun(
                         session_name="humanaopen_teleop",
                         ip="127.0.0.1",
