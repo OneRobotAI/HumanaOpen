@@ -166,6 +166,15 @@ def main():
         )
     parser.add_argument("--display", action="store_true", help="use rerun to display camera feeds and joint states in real time")
     parser.add_argument(
+        "--display-foxglove",
+        action="store_true",
+        help="[RECOMMENDED] display via lerobot's official foxglove backend: starts an "
+        "in-process WebSocket server (ws://127.0.0.1:8765); view in the Foxglove app "
+        "(or foxglove studio web). Avoids rerun's native wgpu/NVIDIA black-screen bug "
+        "and needs no viewer subprocess (no orphan/port issues).",
+    )
+    parser.add_argument("--foxglove-port", type=int, default=8765, help="port for --display-foxglove (default 8765)")
+    parser.add_argument(
         "--display-web",
         action="store_true",
         help="display via rerun WEB viewer (browser) instead of the native window. "
@@ -293,6 +302,24 @@ def main():
         print("    Leader connected")
 
         obs = follower.get_observation()
+
+        # optional live visualization — foxglove (official lerobot backend, in-process
+        # WebSocket server; render in the Foxglove app, no native wgpu, no subprocesses)
+        if args.display_foxglove:
+            try:
+                from lerobot.utils.visualization_utils import (
+                    init_foxglove,
+                    log_foxglove_data,
+                    shutdown_foxglove,
+                )
+
+                init_foxglove(port=args.foxglove_port)
+                print(
+                    f"  🦊 Foxglove viewer: connect Foxglove Studio to ws://127.0.0.1:{args.foxglove_port}"
+                    f"  (topics: /observation/state, /action/state, /observation/images/*)"
+                )
+            except Exception as e:
+                print(f"  ⚠️ Foxglove startup failed: {str(e)[:80]}")
 
         # optional rerun live visualization (camera feeds + joint states)
         _display_web = args.display_web and not args.display  # --display takes precedence
@@ -447,6 +474,7 @@ def main():
         _last_lift_print = 0.0  # throttles the lift-status display
         _last_display = 0.0  # throttles rerun logging
         _rerun = args.display  # whether rerun is enabled
+        _foxglove = args.display_foxglove  # whether foxglove is enabled
 
         while True:
             # leader readings → both-arm action
@@ -505,6 +533,18 @@ def main():
 
             follower.send_action(action)
 
+            # foxglove logging: official lerobot backend, in-process WebSocket —
+            # light enough to log every loop iteration at control rate.
+            if _foxglove:
+                try:
+                    log_foxglove_data(
+                        observation=_strip_images(follower.get_observation()),
+                        action=action,
+                        compress_images=True,
+                    )
+                except Exception:
+                    pass
+
             # rerun logging: LeKiwi logs every frame at 30Hz; we throttle to 15Hz so the
             # visualization stays smooth without competing with the 30FPS control loop.
             if _rerun and time.time() - _last_display > 1.0 / 15:
@@ -536,6 +576,13 @@ def main():
         if args.display or args.display_web:
             try:
                 rerun.rerun_shutdown()
+            except Exception:
+                pass
+        if args.display_foxglove:
+            try:
+                from lerobot.utils.visualization_utils import shutdown_foxglove
+
+                shutdown_foxglove()  # in-process server: stops with the script, no orphan
             except Exception:
                 pass
         for _w in _web_servers:
