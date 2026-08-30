@@ -338,6 +338,15 @@ def main():
                         f"  🦊 Foxglove viewer: connect Foxglove Studio (type=Foxglove "
                         f"WebSocket) to ws://127.0.0.1:{args.foxglove_port}"
                     )
+                # One-shot diagnostic: which image/state keys actually reach Foxglove
+                # (if wrist is missing here, the Host/schema is the problem, not Foxglove)
+                _fobs = follower.get_observation()
+                _fimgs = sorted(
+                    k for k, v in _fobs.items()
+                    if isinstance(v, np.ndarray) and v.ndim == 3
+                )
+                _fstate = sorted(k for k in _fobs if k not in _fimgs)
+                print(f"  📋 Foxglove sees: images={_fimgs or 'NONE'} state_keys={len(_fstate)}")
             except Exception as e:
                 print(f"  ⚠️ Foxglove startup failed: {str(e)[:80]}")
 
@@ -553,17 +562,21 @@ def main():
 
             follower.send_action(action)
 
-            # foxglove logging: official lerobot backend, in-process WebSocket —
-            # light enough to log every loop iteration at control rate.
-            if _foxglove:
+            # foxglove logging — throttled to 15Hz like rerun: logging every 30Hz
+            # control tick re-encodes the CLIENT-CACHED frames each time (host only
+            # streams new images at 10Hz), which added latency. Errors are logged
+            # (not swallowed): a mid-loop image failure would otherwise silently
+            # skip the /observation/state emit that follows it.
+            if _foxglove and time.time() - _last_display > 1.0 / 15:
+                _last_display = time.time()
                 try:
                     log_foxglove_data(
                         observation=_strip_images(follower.get_observation()),
                         action=action,
                         compress_images=True,
                     )
-                except Exception:
-                    pass
+                except Exception as e:
+                    print(f"  ⚠️ Foxglove log error: {str(e)[:80]}")
 
             # rerun logging: LeKiwi logs every frame at 30Hz; we throttle to 15Hz so the
             # visualization stays smooth without competing with the 30FPS control loop.
