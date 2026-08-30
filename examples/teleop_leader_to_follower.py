@@ -195,9 +195,13 @@ def main():
                   f"in dual-machine mode — set up cameras on the Host side instead.{extra}")
         # ── ZMQ dual-machine mode ────────────────────────────
         from lerobot_robot_humanaopen.humanaopen_client import HumanaOpenClient, HumanaOpenClientConfig
+        # cams is passed as the *schema* (names + shapes): the client needs it to
+        # know which camera frames to accept from the multipart obs stream (the
+        # Host owns the physical cameras and sends the actual JPEG frames).
         _client_cfg = HumanaOpenClientConfig(
             remote_ip=args.remote_ip, port_zmq_cmd=args.port_zmq_cmd,
             port_zmq_observations=args.port_zmq_obs,
+            cameras=cams,
         )
         _client = HumanaOpenClient(_client_cfg)
 
