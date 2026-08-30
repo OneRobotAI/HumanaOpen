@@ -333,12 +333,29 @@ def main():
                 if _display_web:
                     _rerun_bin = shutil.which("rerun")
                     _g = args.web_grpc_port  # gRPC endpoint the SDK connects to
+                    _wp = args.web_port
+                    # Sanity: if the ports are already in use, a previous
+                    # serve-web process is likely still alive — the new one
+                    # would crash with "Address already in use" and show no
+                    # data. Fail loudly instead of silently.
+                    _s = __import__("socket").socket()
+                    _grpc_busy = _s.connect_ex(("127.0.0.1", _g)) == 0
+                    _s.close()
+                    _s2 = __import__("socket").socket()
+                    _web_busy = _s2.connect_ex(("127.0.0.1", _wp)) == 0
+                    _s2.close()
+                    if _grpc_busy or _web_busy:
+                        raise RuntimeError(
+                            f"Port {_g} (gRPC) or {_wp} (web) already in use — a previous "
+                            f"rerun --serve-web is still running. Kill it first: "
+                            f"pkill -f 'rerun.*serve-web'"
+                        )
                     _web = subprocess.Popen(
                         [
                             _rerun_bin,
                             "--serve-web",
                             "--port", str(_g),
-                            "--web-viewer-port", str(args.web_port),
+                            "--web-viewer-port", str(_wp),
                         ],
                         stdout=subprocess.DEVNULL,
                         stderr=subprocess.DEVNULL,
