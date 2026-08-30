@@ -525,7 +525,41 @@ def main():
                         port=_g,
                     )
                 else:
-                    init_rerun(session_name="humanaopen_teleop")
+                    # NATIVE rerun viewer (--display). We do NOT rely on
+                    # rr.spawn(): on this stack it can block before the SDK
+                    # connects (window opens, no data). Instead start the
+                    # viewer binary ourselves, wait for its gRPC port, then
+                    # init_rerun(ip, port) — same proven path as --display-web.
+                    _rerun_bin = shutil.which("rerun")
+                    _g = 9876
+                    try:
+                        subprocess.run(
+                            ["pkill", "-f", r"rerun_cli/rerun --port"],
+                            capture_output=True, timeout=3,
+                        )
+                        time.sleep(0.3)
+                    except Exception:
+                        pass
+                    _v = subprocess.Popen(
+                        [_rerun_bin, "--port", str(_g)],
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.DEVNULL,
+                        start_new_session=True,
+                    )
+                    _web_servers.append(_v)
+                    _sock = __import__("socket").socket()
+                    _deadline = time.time() + 10
+                    while time.time() < _deadline:
+                        if _sock.connect_ex(("127.0.0.1", _g)) == 0:
+                            break
+                        time.sleep(0.2)
+                    _sock.close()
+                    print("  👁 Rerun native viewer started (wait, then data flows)")
+                    init_rerun(
+                        session_name="humanaopen_teleop",
+                        ip="127.0.0.1",
+                        port=_g,
+                    )
                 # compress_images=True: 921KB raw image -> ~25KB JPEG into viewer; without it
                 # 3 cams at 15Hz = ~41MB/s into the viewer process, which lags => display delay
                 log_rerun_data(observation=_strip_images(obs), compress_images=True)
