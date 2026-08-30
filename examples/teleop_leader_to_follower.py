@@ -562,7 +562,18 @@ def main():
                     )
                 # compress_images=True: 921KB raw image -> ~25KB JPEG into viewer; without it
                 # 3 cams at 15Hz = ~41MB/s into the viewer process, which lags => display delay
-                log_rerun_data(observation=_strip_images(obs), compress_images=True)
+                # First log also Sends the blueprint: it must include image views, so wait
+                # until an observation carrying camera frames arrives (client image cache
+                # may be empty right after connect; handler then rebuilds fields).
+                _fobs = follower.get_observation()
+                for _ in range(50):
+                    if _fobs and any(
+                        isinstance(v, np.ndarray) and v.ndim == 3 for v in _fobs.values()
+                    ):
+                        break
+                    time.sleep(0.2)
+                    _fobs = follower.get_observation()
+                log_rerun_data(observation=_strip_images(_fobs), compress_images=True)
             except Exception as e:
                 print(f"  ⚠️ Rerun startup failed (ignored): {str(e)[:60]}")
 
