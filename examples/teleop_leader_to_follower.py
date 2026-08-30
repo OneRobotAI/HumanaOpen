@@ -317,11 +317,8 @@ def main():
                 # The server exposes the OFFICIAL viewer link: app.foxglove.dev with
                 # ds=foxglove-websocket (NOT rosbridge). Opening it pre-configures the
                 # correct connection type + ws URL — this is what the SDK documents.
-                import foxglove as _fg
-
-                _app = getattr(
-                    getattr(_fg.log_foxglove_data, "server", None), "app_url", None
-                )
+                # Note: lerobot stores the WebSocketServer on log_foxglove_data.server.
+                _app = getattr(getattr(log_foxglove_data, "server", None), "app_url", None)
                 if _app is not None:
                     _u = _app()
                     print(f"  🦊 Foxglove viewer — open in browser:\n     {_u}")
