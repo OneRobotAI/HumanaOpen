@@ -345,6 +345,17 @@ def main():
                         start_new_session=True,
                     )
                     _web_servers.append(_web)
+                    # Wait for the gRPC port to actually accept connections:
+                    # connect_grpc() does NOT retry — if it runs before the
+                    # serve-web process finishes binding, the SDK stays
+                    # disconnected and the web UI shows no data forever.
+                    _sock = __import__("socket").socket()
+                    _deadline = time.time() + 10
+                    while time.time() < _deadline:
+                        if _sock.connect_ex(("127.0.0.1", _g)) == 0:
+                            break
+                        time.sleep(0.2)
+                    _sock.close()
                     # The web UI only shows data when the URL carries the gRPC
                     # endpoint via the `?url=` param (URL-encoded); the bare
                     # http://127.0.0.1:PORT page is just the welcome screen.
