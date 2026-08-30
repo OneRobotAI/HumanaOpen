@@ -182,9 +182,10 @@ class HumanaOpenHostConfig:
     # control latency low even with 3 cameras (~100KB/frame JPEG payloads).
     image_fps_divider: int = 3
     # JPEG quality for image frames sent over ZMQ (0-100). Zero disables JPEG and
-    # sends raw frames (huge: 640x480x3 ~= 920KB each). 70 keeps 5 cameras
-    # within ~100Mbps while staying visually clean (AlohaMini tuned value).
-    jpeg_quality: int = 70
+    # sends raw frames (huge: 640x480x3 ~= 920KB each). 85 balances visual
+    # quality and bandwidth for 3 cameras: real-scene frames are ~20-25KB each,
+    # so even 30Hz x 3 cameras stays well under 100Mbps.
+    jpeg_quality: int = 85
 
 
 @RobotConfig.register_subclass("humanaopen_client")
