@@ -376,8 +376,9 @@ def main():
 
             follower.send_action(action)
 
-            # rerun logging (5Hz, to avoid slowing the 30FPS control loop)
-            if _rerun and time.time() - _last_display > 0.2:
+            # rerun logging: LeKiwi logs every frame at 30Hz; we throttle to 15Hz so the
+            # visualization stays smooth without competing with the 30FPS control loop.
+            if _rerun and time.time() - _last_display > 1.0 / 15:
                 _last_display = time.time()
                 try:
                     log_rerun_data(observation=_strip_images(follower.get_observation()), action=action)
