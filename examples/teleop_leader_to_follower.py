@@ -285,7 +285,9 @@ def main():
             try:
                 from lerobot.utils.visualization_utils import init_rerun, log_rerun_data
                 init_rerun(session_name="humanaopen_teleop")
-                log_rerun_data(observation=_strip_images(obs))
+                # compress_images=True: 921KB raw image -> ~25KB JPEG into viewer; without it
+                # 3 cams at 15Hz = ~41MB/s into the viewer process, which lags => display delay
+                log_rerun_data(observation=_strip_images(obs), compress_images=True)
                 print("  👁 Rerun visualization started (view in rerun viewer)")
             except Exception as e:
                 print(f"  ⚠️ Rerun startup failed (ignored): {str(e)[:60]}")
@@ -386,7 +388,11 @@ def main():
             if _rerun and time.time() - _last_display > 1.0 / 15:
                 _last_display = time.time()
                 try:
-                    log_rerun_data(observation=_strip_images(follower.get_observation()), action=action)
+                    log_rerun_data(
+                        observation=_strip_images(follower.get_observation()),
+                        action=action,
+                        compress_images=True,
+                    )
                 except Exception:
                     pass
 
