@@ -608,15 +608,52 @@ def main():
         _last_lift_dir = 0  # 0=none, 1=last pressed u, -1=last pressed h
         speed_idx = 1  # base speed level (1 = base)
         _last_lift_print = 0.0  # throttles the lift-status display
-        _last_display = 0.0  # throttles rerun logging
         _rerun = args.display  # whether rerun is enabled
         _foxglove = args.display_foxglove  # whether foxglove is enabled
-        # Track the last image array objects we handed to the viewer(s). Images
-        # arrive at host image_fps_divider rate (e.g. 10Hz) while we log at 15Hz:
-        # between new frames the client returns the SAME cached arrays, which we
-        # must NOT re-encode/re-send. Keyed by image key -> id(array). We log the
-        # streamed observation only when at least one image object changed.
-        _last_img_ids: dict = {}
+
+        # ── Display decoupling ─────────────────────────────────────────
+        # foxglove/rerun logging is MOVED OFF the control loop: log_foxglove_data
+        # serializes up to 2.7MB/frame synchronously, which blocked the 30Hz
+        # control loop (loop timer after the display branch NEVER fired while
+        # --display-foxglove was on). Consumption then fell below the host's
+        # 30Hz production, the PUSH queue delivered stale obs, and image
+        # latency climbed to seconds. A daemon thread logs at 15Hz from the
+        # latest observation the control loop produced; the loop itself stays
+        # pure: get_action -> send_action -> get_observation.
+        import threading as _threading
+        _disp_lock = _threading.Lock()
+        _disp_state: dict = {"obs": {}, "action": {}}
+        _disp_stop = _threading.Event()
+
+        def _display_thread() -> None:
+            _disp_last_img_ids: dict = {}
+            while not _disp_stop.is_set():
+                _disp_t0 = time.perf_counter()
+                with _disp_lock:
+                    _o = dict(_disp_state["obs"])
+                    _a = dict(_disp_state["action"])
+                try:
+                    if _foxglove:
+                        log_foxglove_data(
+                            observation=_strip_images(_fresh_obs(_o, _disp_last_img_ids)),
+                            action=_a,
+                            compress_images=True,
+                        )
+                    if _rerun:
+                        log_rerun_data(
+                            observation=_strip_images(_fresh_obs(_o, _disp_last_img_ids)),
+                            action=_a,
+                            compress_images=True,
+                        )
+                except Exception as e:
+                    print(f"  ⚠️ Display log error: {str(e)[:80]}")
+                # 15Hz display cadence, independent of the control loop rate.
+                time.sleep(max(1.0 / 15 - (time.perf_counter() - _disp_t0), 0.0))
+
+        if _foxglove or _rerun:
+            _disp_thread_obj = _threading.Thread(target=_display_thread, daemon=True)
+            _disp_thread_obj.start()
+
 
         def _fresh_obs(obs: dict, last_ids: dict) -> dict:
             """Return obs stripped of images that did not change since last call.
@@ -718,34 +755,12 @@ def main():
                 latest_obs = {}
                 print(f"  ⚠️ get_observation error: {str(e)[:80]}")
 
-            # foxglove logging — throttled to 15Hz like rerun: logging every 30Hz
-            # control tick re-encodes the CLIENT-CACHED frames each time (host only
-            # streams new images at 10Hz), which added latency. Errors are logged
-            # (not swallowed): a mid-loop image failure would otherwise silently
-            # skip the /observation/state emit that follows it.
-            if _foxglove and time.time() - _last_display > 1.0 / 15:
-                _last_display = time.time()
-                try:
-                    log_foxglove_data(
-                        observation=_strip_images(_fresh_obs(latest_obs, _last_img_ids)),
-                        action=action,
-                        compress_images=True,
-                    )
-                except Exception as e:
-                    print(f"  ⚠️ Foxglove log error: {str(e)[:80]}")
-
-            # rerun logging: LeKiwi logs every frame at 30Hz; we throttle to 15Hz so the
-            # visualization stays smooth without competing with the 30FPS control loop.
-            if _rerun and time.time() - _last_display > 1.0 / 15:
-                _last_display = time.time()
-                try:
-                    log_rerun_data(
-                        observation=_strip_images(_fresh_obs(latest_obs, _last_img_ids)),
-                        action=action,
-                        compress_images=True,
-                    )
-                except Exception:
-                    pass
+            # Hand the freshest obs+action to the display thread (cheap dict
+            # swap under a lock — the display loop does the actual logging).
+            if _foxglove or _rerun:
+                with _disp_lock:
+                    _disp_state["obs"] = latest_obs
+                    _disp_state["action"] = action
 
             if keys.is_down("b"):
                 print("\nQuitting...")
