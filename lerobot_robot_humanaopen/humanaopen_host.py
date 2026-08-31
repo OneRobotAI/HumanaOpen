@@ -172,9 +172,13 @@ class HumanaOpenHost:
             """
             nonlocal cam_capture_ts
             cam_interval = loop_dt * self.host_cfg.image_fps_divider
+            _diag_t0 = time.perf_counter()
+            _diag_frames = 0
             while not stop_cam.is_set():
+                t_loop = time.perf_counter()
                 frames: dict[str, Any] = {}
                 for cam_key, cam in robot.cameras.items():
+                    t_read0 = time.perf_counter()
                     try:
                         frame = cam.async_read(timeout_ms=max(200, int(cam_interval * 1000)))
                         if frame is not None and getattr(frame, "ndim", 0) == 3:
@@ -182,11 +186,18 @@ class HumanaOpenHost:
                     except Exception as e:
                         # Log the failure once per camera; keep whatever the
                         # camera delivered last time (cache is not cleared).
-                        logger.warning("camera '%s' read failed: %s", cam_key, e)
+                        logger.debug("camera '%s' read failed: %s", cam_key, e)
+                    _read_ms = (time.perf_counter() - t_read0) * 1000
+                    if _read_ms > 150:
+                        logger.warning(
+                            "camera '%s' async_read took %.0fms (frames so far: %d)",
+                            cam_key, _read_ms, len(frames),
+                        )
                 if frames:
                     encoded: dict[str, bytes] = {}
                     if cv2 is not None:
                         for cam_key, frame in frames.items():
+                            t_enc0 = time.perf_counter()
                             try:
                                 ret, buffer = cv2.imencode(
                                     ".jpg",
@@ -197,12 +208,27 @@ class HumanaOpenHost:
                                     encoded[cam_key] = buffer.tobytes()
                             except Exception as e:
                                 logger.warning("camera '%s' encode failed: %s", cam_key, e)
+                            _enc_ms = (time.perf_counter() - t_enc0) * 1000
+                            if _enc_ms > 100:
+                                logger.warning(
+                                    "camera '%s' imencode took %.0fms", cam_key, _enc_ms
+                                )
                     with cam_lock:
                         if encoded:
                             cam_cache.update(encoded)
                             cam_capture_ts = time.time()
                         elif not cam_cache:
                             logger.warning("no camera delivered any frame yet")
+                _diag_frames += 1
+                _loop_ms = (time.perf_counter() - t_loop) * 1000
+                if _diag_frames % 15 == 0:
+                    _rate = _diag_frames / max(time.perf_counter() - _diag_t0, 1e-9)
+                    _diag_t0 = time.perf_counter()
+                    _diag_frames = 0
+                    logger.warning(
+                        "cam thread: last loop %.0fms, avg %.1f loops/s, cams in frame: %s",
+                        _loop_ms, _rate, sorted(frames.keys()),
+                    )
                 time.sleep(cam_interval)
 
         cam_thread = threading.Thread(target=_camera_thread, daemon=True)
