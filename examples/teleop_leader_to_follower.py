@@ -647,6 +647,7 @@ def main():
 
 
         while True:
+            _loop_t0 = time.perf_counter()
             # leader readings → both-arm action
             action = leader.get_action()
 
@@ -749,6 +750,23 @@ def main():
             if keys.is_down("b"):
                 print("\nQuitting...")
                 break
+
+            # Loop-rate diagnostic: shows the ACTUAL teleop loop frequency and
+            # where the time goes. If it falls below the host's 30Hz production,
+            # the ZMQ obs queue backs up and image latency grows (drop-new keep-old).
+            _loop_dt = time.perf_counter() - _loop_t0
+            _loop_max = max(getattr(follower, "_diag_loop_ms", 0.0), _loop_dt * 1000)
+            if _loop_dt > 0:
+                setattr(follower, "_diag_loop_ms", _loop_dt * 1000)
+            _diag_acc = getattr(follower, "_diag_acc", 0.0) + _loop_dt
+            setattr(follower, "_diag_acc", _diag_acc)
+            _diag_n = getattr(follower, "_diag_n", 0) + 1
+            setattr(follower, "_diag_n", _diag_n)
+            if _diag_acc >= 5.0:
+                setattr(follower, "_diag_acc", 0.0)
+                _n = getattr(follower, "_diag_n", 1)
+                setattr(follower, "_diag_n", 0)
+                print(f"  ⏱️ loop: {_n/_diag_acc:.1f}Hz (target {FPS}), worst single loop {max(_loop_max, _loop_dt*1000):.0f}ms")
 
             time.sleep(1 / FPS)
 
