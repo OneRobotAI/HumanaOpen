@@ -525,41 +525,14 @@ def main():
                         port=_g,
                     )
                 else:
-                    # NATIVE rerun viewer (--display). We do NOT rely on
-                    # rr.spawn(): on this stack it can block before the SDK
-                    # connects (window opens, no data). Instead start the
-                    # viewer binary ourselves, wait for its gRPC port, then
-                    # init_rerun(ip, port) — same proven path as --display-web.
-                    _rerun_bin = shutil.which("rerun")
-                    _g = 9876
-                    try:
-                        subprocess.run(
-                            ["pkill", "-f", r"rerun_cli/rerun --port"],
-                            capture_output=True, timeout=3,
-                        )
-                        time.sleep(0.3)
-                    except Exception:
-                        pass
-                    _v = subprocess.Popen(
-                        [_rerun_bin, "--port", str(_g)],
-                        stdout=subprocess.DEVNULL,
-                        stderr=open("/tmp/humanaopen_rerun_viewer.log", "w"),
-                        start_new_session=True,
-                    )
-                    _web_servers.append(_v)
-                    _sock = __import__("socket").socket()
-                    _deadline = time.time() + 10
-                    while time.time() < _deadline:
-                        if _sock.connect_ex(("127.0.0.1", _g)) == 0:
-                            break
-                        time.sleep(0.2)
-                    _sock.close()
-                    print("  👁 Rerun native viewer started (stderr: /tmp/humanaopen_rerun_viewer.log)")
-                    init_rerun(
-                        session_name="humanaopen_teleop",
-                        ip="127.0.0.1",
-                        port=_g,
-                    )
+                    # NATIVE rerun viewer (--display). Use the same simple,
+                    # proven path as data collection (lerobot record): call
+                    # init_rerun() with no ip/port, which internally does
+                    # rr.spawn() and opens the viewer window automatically.
+                    # (The earlier hand-rolled "start viewer binary + gRPC"
+                    # path showed no data here; record's rr.spawn() works, so
+                    # match it.)
+                    init_rerun(session_name="humanaopen_teleop")
                 # compress_images=True: 921KB raw image -> ~25KB JPEG into viewer; without it
                 # 3 cams at 15Hz = ~41MB/s into the viewer process, which lags => display delay
                 # First log also Sends the blueprint: it must include image views, so wait
