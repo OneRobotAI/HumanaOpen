@@ -435,6 +435,42 @@ Same as above, but replace the `--robot.cameras` JSON to include chest:
 
 > **Note**: camera names must be consistent across record / train / rollout.
 
+### Dual-machine (ZMQ): Host on the robot, record on your PC
+
+When the follower runs on the robot (with its own cameras) and the leader arms
+are plugged into your PC, record over ZMQ. **Start the Host first**, then run
+`record_data.py` on the PC:
+
+```bash
+# 1) On the robot (Jetson) — start the Host, then leave it running
+#    (HumanaOpenHost(...).run() with port1/port2 + the 3 cameras).
+
+# 2) On your PC — record (follower via ZMQ, leader via local serial ttyACM0/1)
+python3 examples/record_data.py \
+    --remote_ip=192.168.1.9 \
+    --robot.cameras='{"head": {"type": "opencv", "index_or_path": "/dev/video0", "width": 640, "height": 480, "fps": 30, "fourcc": "MJPG"}, "left_wrist": {"type": "opencv", "index_or_path": "/dev/video2", "width": 640, "height": 480, "fps": 30, "fourcc": "MJPG"}, "right_wrist": {"type": "opencv", "index_or_path": "/dev/video4", "width": 640, "height": 480, "fps": 30, "fourcc": "MJPG"}}' \
+    --teleop.left_arm_port=/dev/ttyACM0 \
+    --teleop.right_arm_port=/dev/ttyACM1 \
+    --teleop.flip_joints='{"left": [], "right": []}' \
+    --teleop.joint_remap='{}' \
+    --dataset.repo_id=your-name/humanaopen_demo \
+    --dataset.single_task="describe your task" \
+    --dataset.num_episodes=2 \
+    --dataset.episode_time_s=15 \
+    --dataset.reset_time_s=10 \
+    --dataset.fps=30 \
+    --dataset.push_to_hub=true \
+    --display-foxglove
+```
+
+- `--remote_ip` switches to dual-machine mode: the follower connects to the Host
+  over ZMQ (follower `port1/port2`, `--robot.type/id/port3` are **not** needed),
+  while the leader arms use the PC's local serial ports.
+- `--robot.cameras` is passed as a *schema* (names + resolutions); the Host owns
+  the physical cameras and streams the images over ZMQ.
+- `--display-foxglove` (optional) streams cameras + state to the Foxglove app on
+  the PC (connect Studio to `ws://127.0.0.1:8765`).
+
 ### Controls during recording
 
 | Control | Keys |

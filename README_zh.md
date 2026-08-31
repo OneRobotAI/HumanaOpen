@@ -430,6 +430,38 @@ python3 examples/record_data.py \
 > **注意**：摄像头名称必须在采集/训练/推理之间保持一致。
 **所有摄像头：30fps MJPG。**
 
+### 双机模式（ZMQ）：机器人端跑 Host，PC 端采集
+
+当 follower 在机器人上运行（自带摄像头）、主臂插在 PC 上时，通过 ZMQ 采集。
+**先启动 Host**，然后在 PC 上运行 `record_data.py`：
+
+```bash
+# 1) 机器人端（Jetson）— 先启动 Host 并保持运行
+#    （HumanaOpenHost(...).run()，带 port1/port2 + 3 个摄像头）
+
+# 2) PC 端 — 采集（follower 走 ZMQ，主臂走本机串口 ttyACM0/1）
+python3 examples/record_data.py \
+    --remote_ip=192.168.1.9 \
+    --robot.cameras='{"head": {"type": "opencv", "index_or_path": "/dev/video0", "width": 640, "height": 480, "fps": 30, "fourcc": "MJPG"}, "left_wrist": {"type": "opencv", "index_or_path": "/dev/video2", "width": 640, "height": 480, "fps": 30, "fourcc": "MJPG"}, "right_wrist": {"type": "opencv", "index_or_path": "/dev/video4", "width": 640, "height": 480, "fps": 30, "fourcc": "MJPG"}}' \
+    --teleop.left_arm_port=/dev/ttyACM0 \
+    --teleop.right_arm_port=/dev/ttyACM1 \
+    --teleop.flip_joints='{"left": [], "right": []}' \
+    --teleop.joint_remap='{}' \
+    --dataset.repo_id=your-name/humanaopen_demo \
+    --dataset.single_task="describe your task" \
+    --dataset.num_episodes=2 \
+    --dataset.episode_time_s=15 \
+    --dataset.reset_time_s=10 \
+    --dataset.fps=30 \
+    --dataset.push_to_hub=true \
+    --display-foxglove
+```
+
+- `--remote_ip` 切换为双机模式：follower 通过 ZMQ 连 Host（**不需要** `--robot.type/id/port1-3`），
+  主臂用 PC 本机串口。
+- `--robot.cameras` 作为 *schema*（名称+分辨率）传入；真实相机由 Host 持有并通过 ZMQ 传图。
+- `--display-foxglove`（可选）在 PC 上把摄像头+状态流到 Foxglove 应用（连接 Studio 到 `ws://127.0.0.1:8765`）。
+
 ### 录制时的控制
 
 | 控制 | 按键 |

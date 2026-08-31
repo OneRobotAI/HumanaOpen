@@ -418,6 +418,42 @@ Identique à ci-dessus, mais remplacer le JSON `--robot.cameras` pour inclure ch
 
 > **Note** : les noms de caméras doivent être cohérents entre enregistrement / entraînement / déploiement.
 
+### Double machine (ZMQ) : Host sur le robot, enregistrement sur le PC
+
+Quand le follower tourne sur le robot (avec ses propres caméras) et que les bras
+leaders sont branchés sur le PC, enregistrez via ZMQ. **Démarrez le Host d'abord**,
+puis lancez `record_data.py` sur le PC :
+
+```bash
+# 1) Sur le robot (Jetson) — démarrez le Host et laissez-le tourner
+#    (HumanaOpenHost(...).run() avec port1/port2 + les 3 caméras).
+
+# 2) Sur votre PC — enregistrez (follower via ZMQ, leader via le ttyACM0/1 local)
+python3 examples/record_data.py \
+    --remote_ip=192.168.1.9 \
+    --robot.cameras='{"head": {"type": "opencv", "index_or_path": "/dev/video0", "width": 640, "height": 480, "fps": 30, "fourcc": "MJPG"}, "left_wrist": {"type": "opencv", "index_or_path": "/dev/video2", "width": 640, "height": 480, "fps": 30, "fourcc": "MJPG"}, "right_wrist": {"type": "opencv", "index_or_path": "/dev/video4", "width": 640, "height": 480, "fps": 30, "fourcc": "MJPG"}}' \
+    --teleop.left_arm_port=/dev/ttyACM0 \
+    --teleop.right_arm_port=/dev/ttyACM1 \
+    --teleop.flip_joints='{"left": [], "right": []}' \
+    --teleop.joint_remap='{}' \
+    --dataset.repo_id=votre-nom/humanaopen_demo \
+    --dataset.single_task="décrire votre tâche" \
+    --dataset.num_episodes=2 \
+    --dataset.episode_time_s=15 \
+    --dataset.reset_time_s=10 \
+    --dataset.fps=30 \
+    --dataset.push_to_hub=true \
+    --display-foxglove
+```
+
+- `--remote_ip` passe en mode double machine : le follower se connecte au Host via
+  ZMQ (les `--robot.type/id/port1-3` ne sont **pas** nécessaires), les bras leaders
+  utilisent les ports série locaux du PC.
+- `--robot.cameras` est passé comme *schéma* (noms + résolutions) ; le Host possède
+  les caméras physiques et diffuse les images via ZMQ.
+- `--display-foxglove` (optionnel) diffuse caméras + état à l'application Foxglove
+  sur le PC (connectez Studio à `ws://127.0.0.1:8765`).
+
 ### Contrôles pendant l'enregistrement
 
 | Contrôle | Touches |

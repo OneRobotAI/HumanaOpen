@@ -413,6 +413,40 @@ python3 examples/record_data.py \
 
 > **주의**: 카메라 이름은 수집/학습/배포 간 일치해야 합니다.
 
+### 듀얼 머신 (ZMQ): 로봇에서 Host, PC에서 녹화
+
+follower가 로봇(자체 카메라)에서 실행되고 리더 암이 PC에 연결된 경우 ZMQ로
+녹화합니다. **Host를 먼저 시작**한 후 PC에서 `record_data.py`를 실행하세요:
+
+```bash
+# 1) 로봇(Jetson)에서 — Host를 시작하고 계속 실행
+#    (HumanaOpenHost(...).run(), port1/port2 + 3개 카메라)
+
+# 2) PC에서 — 녹화 (follower는 ZMQ, 리더는 로컬 ttyACM0/1 직렬)
+python3 examples/record_data.py \
+    --remote_ip=192.168.1.9 \
+    --robot.cameras='{"head": {"type": "opencv", "index_or_path": "/dev/video0", "width": 640, "height": 480, "fps": 30, "fourcc": "MJPG"}, "left_wrist": {"type": "opencv", "index_or_path": "/dev/video2", "width": 640, "height": 480, "fps": 30, "fourcc": "MJPG"}, "right_wrist": {"type": "opencv", "index_or_path": "/dev/video4", "width": 640, "height": 480, "fps": 30, "fourcc": "MJPG"}}' \
+    --teleop.left_arm_port=/dev/ttyACM0 \
+    --teleop.right_arm_port=/dev/ttyACM1 \
+    --teleop.flip_joints='{"left": [], "right": []}' \
+    --teleop.joint_remap='{}' \
+    --dataset.repo_id=your-name/humanaopen_demo \
+    --dataset.single_task="작업을 설명하세요" \
+    --dataset.num_episodes=2 \
+    --dataset.episode_time_s=15 \
+    --dataset.reset_time_s=10 \
+    --dataset.fps=30 \
+    --dataset.push_to_hub=true \
+    --display-foxglove
+```
+
+- `--remote_ip`는 듀얼 머신 모드로 전환: follower는 ZMQ로 Host에 연결
+  (`--robot.type/id/port1-3`는 **불필요**), 리더 암은 PC 로컬 직렬 포트 사용.
+- `--robot.cameras`는 *schema*(이름+해상도)로 전달; 실제 카메라는 Host가 소유하고
+  ZMQ로 이미지를 스트리밍.
+- `--display-foxglove`(선택)는 PC에서 카메라+상태를 Foxglove 앱으로 스트리밍
+  (Studio를 `ws://127.0.0.1:8765`에 연결).
+
 ### 녹화 중 컨트롤
 
 | 제어 | 키 |
