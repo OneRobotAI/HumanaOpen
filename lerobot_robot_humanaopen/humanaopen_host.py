@@ -172,10 +172,7 @@ class HumanaOpenHost:
             """
             nonlocal cam_capture_ts
             cam_interval = loop_dt * self.host_cfg.image_fps_divider
-            _diag_t0 = time.perf_counter()
-            _diag_frames = 0
             while not stop_cam.is_set():
-                t_loop = time.perf_counter()
                 frames: dict[str, Any] = {}
                 for cam_key, cam in robot.cameras.items():
                     t_read0 = time.perf_counter()
@@ -219,16 +216,6 @@ class HumanaOpenHost:
                             cam_capture_ts = time.time()
                         elif not cam_cache:
                             logger.warning("no camera delivered any frame yet")
-                _diag_frames += 1
-                _loop_ms = (time.perf_counter() - t_loop) * 1000
-                if _diag_frames % 15 == 0:
-                    _rate = _diag_frames / max(time.perf_counter() - _diag_t0, 1e-9)
-                    _diag_t0 = time.perf_counter()
-                    _diag_frames = 0
-                    logger.warning(
-                        "cam thread: last loop %.0fms, avg %.1f loops/s, cams in frame: %s",
-                        _loop_ms, _rate, sorted(frames.keys()),
-                    )
                 time.sleep(cam_interval)
 
         cam_thread = threading.Thread(target=_camera_thread, daemon=True)

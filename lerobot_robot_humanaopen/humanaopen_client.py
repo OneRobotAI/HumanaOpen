@@ -237,7 +237,7 @@ class HumanaOpenClient(Robot):
             pending = self._sub.poll(0)
 
         if last_parts is not None:
-            obs, cam_ts, t_send = _parse_observation_multipart(last_parts, camera_names)
+            obs, _, _ = _parse_observation_multipart(last_parts, camera_names)
             # Persist image frames separately: they arrive less often than
             # joint state (host divider), so retain them across calls.
             for k, v in obs.items():
@@ -246,14 +246,6 @@ class HumanaOpenClient(Robot):
                         self._img_cache[k] = v
             self._last_obs = obs
             self._last_obs_time = time.time()
-            # Latency diagnostic: network transit time (t_send -> here) plus
-            # host-side camera age (cam_ts -> t_send), printed throttled.
-            now = time.time()
-            net_ms = int((now - t_send) * 1000) if t_send > 0 else 0
-            cam_age_ms = int((t_send - cam_ts) * 1000) if t_send > 0 and cam_ts > 0 else 0
-            if t_send > 0 and now - getattr(self, "_last_lat_print", 0.0) > 2.0:
-                self._last_lat_print = now
-                print(f"  ⏱️ net={net_ms}ms  cam_age={cam_age_ms}ms  total={net_ms+cam_age_ms}ms")
 
         # Re-attach the most recent images to the freshest joint frame.
         with self._img_lock:
