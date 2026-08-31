@@ -270,6 +270,30 @@ def main():
         display_mode=d["display_mode"],
         display_port=d["display_port"],
     )
+
+    # Auto-open the Foxglove web viewer before record() starts streaming, the
+    # same way teleop does. init_foxglove is idempotent (returns early if the
+    # server already exists), so this does not conflict with record()'s own
+    # init_visualization("foxglove").
+    if d["display"] and d["display_mode"] == "foxglove":
+        try:
+            from lerobot.utils.visualization_utils import init_foxglove, log_foxglove_data
+            _port = d["display_port"] or 8765
+            init_foxglove(host="127.0.0.1", port=_port)
+            _app = getattr(getattr(log_foxglove_data, "server", None), "app_url", None)
+            if _app is not None:
+                _u = _app()
+                print(f"  🦊 Foxglove viewer — open in browser:\n     {_u}")
+                try:
+                    import webbrowser
+                    webbrowser.open(_u)
+                except Exception:
+                    pass
+            else:
+                print(f"  🦊 Foxglove viewer: connect Studio to ws://127.0.0.1:{_port}")
+        except Exception as e:
+            print(f"  ⚠️ Foxglove auto-open failed (connect Studio to ws://127.0.0.1:{d['display_port'] or 8765} manually): {e}")
+
     try:
         record(cfg)
     finally:

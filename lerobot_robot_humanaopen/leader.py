@@ -508,6 +508,7 @@ class HumanaOpenTeleop(BiHumanaOpenLeader):
         self._prev_keys: set[str] = set()
         self._listener = None
         self._kb_active = True  # whether the keyboard is active: set to False on override to block key updates
+        self._state_loaded = False  # whether head/lift initial state has been read from the robot
 
     @cached_property
     def action_features(self) -> dict[str, type]:
@@ -538,7 +539,24 @@ class HumanaOpenTeleop(BiHumanaOpenLeader):
     def connect(self, calibrate: bool = True) -> None:
         super().connect(calibrate)
         self._start_keyboard()
-        # Try to read the current head/lift positions from config.robot or the global registry
+        # NOTE: we do NOT read the head/lift initial state here — in the
+        # record() flow the teleop connects BEFORE the robot (lerobot_record
+        # calls teleop.connect() then robot.connect()), so the robot is not
+        # registered yet and get_connected_robot() returns None. Reading the
+        # state lazily on the first get_action() (after the robot is up) keeps
+        # the head/lift at their current positions instead of zeroing them.
+        self._load_robot_state()
+
+    def _load_robot_state(self) -> None:
+        """Read the current head/lift positions from the robot (once).
+
+        Called from connect() and lazily from get_action(): in the record()
+        flow the teleop connects before the robot, so by first get_action()
+        the robot is registered and get_connected_robot() returns it. This
+        lets head/lift hold their current positions instead of starting at 0.
+        """
+        if self._state_loaded:
+            return
         robot = self._robot
         if robot is None:
             robot = get_connected_robot()
@@ -548,6 +566,7 @@ class HumanaOpenTeleop(BiHumanaOpenLeader):
                 self._head_pan = obs.get("head_pan.pos", 0.0)
                 self._head_tilt = obs.get("head_tilt.pos", 0.0)
                 self._lift_h = obs.get("lift_axis.height_mm", self.LIFT_MIN_MM)
+                self._state_loaded = True
             except Exception:
                 pass
 
@@ -577,14 +596,11 @@ class HumanaOpenTeleop(BiHumanaOpenLeader):
         self._head_pan = max(-100.0, min(100.0, self._head_pan))
         self._head_tilt = max(-100.0, min(100.0, self._head_tilt))
 
-        # lift (u/h)
-        if "u" in self._keys:
-            self._lift_h += self.LIFT_SPEED_MM / self.FPS
-        if "h" in self._keys:
-            self._lift_h -= self.LIFT_SPEED_MM / self.FPS
-        self._lift_h = max(self.LIFT_MIN_MM, min(self.LIFT_MAX_MM, self._lift_h))
-
     def get_action(self) -> dict[str, float]:
+        # Lazily load the initial head/lift positions now that the robot is up
+        # (record() connects the teleop before the robot, so connect() can't).
+        self._load_robot_state()
+
         action = super().get_action()  # 16 arm joints
 
         self._update_keyboard_state()
@@ -607,7 +623,16 @@ class HumanaOpenTeleop(BiHumanaOpenLeader):
         action["x.vel"] = x
         action["theta.vel"] = theta
 
-        # lift height target
+        # lift: height target (mm) — REQUIRED for data collection, because the
+        # dataset's action_feature for lift is `lift_axis.height_mm`. The target
+        # is initialized from the robot's current height (lazy-load), so on key
+        # release the target stays at the current position and the P-controller
+        # holds it (reaches target -> v_cmd 0). No key held -> target unchanged.
+        if "u" in self._keys:
+            self._lift_h += self.LIFT_SPEED_MM / self.FPS
+        elif "h" in self._keys:
+            self._lift_h -= self.LIFT_SPEED_MM / self.FPS
+        self._lift_h = max(self.LIFT_MIN_MM, min(self.LIFT_MAX_MM, self._lift_h))
         action["lift_axis.height_mm"] = self._lift_h
 
         self._prev_keys = set(self._keys)
