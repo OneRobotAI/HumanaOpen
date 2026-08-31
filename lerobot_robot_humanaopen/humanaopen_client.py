@@ -182,6 +182,15 @@ class HumanaOpenClient(Robot):
 
         logger.info("Client connected to %s", self.config.remote_ip)
 
+        # Register in the global table so HumanaOpenTeleop can read the initial
+        # head/lift positions in the record scenario (same as HumanaOpen). Lazy
+        # load in the teleop depends on get_connected_robot() returning this.
+        try:
+            from .leader import register_robot
+            register_robot(self)
+        except Exception:
+            pass
+
     def disconnect(self) -> None:
         if self._sub:
             self._sub.close()
