@@ -532,6 +532,22 @@ def main():
                     # (The earlier hand-rolled "start viewer binary + gRPC"
                     # path showed no data here; record's rr.spawn() works, so
                     # match it.)
+                    #
+                    # A stale rerun viewer from a previous abnormal exit (kill
+                    # -9 / crash) can make rr.spawn() block or connect to a dead
+                    # process -> the new window appears "stuck"/blank. Clear any
+                    # leftover rerun viewer binary before spawning (matches the
+                    # --display-web cleanup). The pattern targets only the rerun
+                    # viewer binary (path contains rerun), never this script.
+                    import subprocess as _sp2
+                    try:
+                        _sp2.run(
+                            ["pkill", "-f", r"rerun(_cli)?/rerun"],
+                            capture_output=True, timeout=3,
+                        )
+                        time.sleep(0.3)
+                    except Exception:
+                        pass
                     init_rerun(session_name="humanaopen_teleop")
                 # compress_images=True: 921KB raw image -> ~25KB JPEG into viewer; without it
                 # 3 cams at 15Hz = ~41MB/s into the viewer process, which lags => display delay
