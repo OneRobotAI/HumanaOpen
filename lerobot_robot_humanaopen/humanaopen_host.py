@@ -52,6 +52,9 @@ def build_observation_multipart(
     Layout: [json(state), cam_key, jpeg_bytes, cam_key, jpeg_bytes, ...]
     The JSON head carries ``_image_encoding`` and ``_images`` so the client
     knows the number/names of images that follow (multipart-safe).
+
+    Images are normally pre-encoded by the camera thread (``bytes`` values in
+    ``obs``); an ``ndarray`` fallback encodes synchronously here.
     """
     state_observation = {
         _jsonable(key): _jsonable(value) for key, value in obs.items() if key not in camera_keys
@@ -62,22 +65,30 @@ def build_observation_multipart(
     image_names: list[str] = []
     for cam_key in camera_keys:
         frame = obs.get(cam_key)
-        if frame is None or not isinstance(frame, np.ndarray) or frame.ndim != 3:
+        if frame is None:
             continue
-        if cv2 is None:
-            logger.warning("cv2 unavailable — skipping camera %s", cam_key)
-            continue
-        # observation frames are RGB; cv2.imencode expects BGR.
-        ret, buffer = cv2.imencode(
-            ".jpg",
-            cv2.cvtColor(frame, cv2.COLOR_RGB2BGR),
-            [int(cv2.IMWRITE_JPEG_QUALITY), jpeg_quality],
-        )
-        if not ret:
-            logger.warning("Failed to JPEG encode camera frame %s.", cam_key)
+        if isinstance(frame, bytes):
+            # Pre-encoded by the camera thread (async path) — use as-is.
+            jpeg_bytes = frame
+        elif isinstance(frame, np.ndarray) and frame.ndim == 3:
+            # Fallback: encode synchronously here.
+            if cv2 is None:
+                logger.warning("cv2 unavailable — skipping camera %s", cam_key)
+                continue
+            # observation frames are RGB; cv2.imencode expects BGR.
+            ret, buffer = cv2.imencode(
+                ".jpg",
+                cv2.cvtColor(frame, cv2.COLOR_RGB2BGR),
+                [int(cv2.IMWRITE_JPEG_QUALITY), jpeg_quality],
+            )
+            if not ret:
+                logger.warning("Failed to JPEG encode camera frame %s.", cam_key)
+                continue
+            jpeg_bytes = buffer.tobytes()
+        else:
             continue
         image_names.append(cam_key)
-        parts.extend([cam_key.encode("utf-8"), buffer.tobytes()])
+        parts.extend([cam_key.encode("utf-8"), jpeg_bytes])
 
     state_observation["_images"] = image_names
     parts[0] = json.dumps(state_observation).encode("utf-8")
@@ -142,13 +153,18 @@ class HumanaOpenHost:
         stop_cam = threading.Event()
 
         def _camera_thread():
-            """Continuously capture images into the cache in the background.
+            """Continuously capture + JPEG-encode images in the background.
 
             Each camera is read independently so that a single failing camera
             cannot blank the others. On a transient read error the previous
             good frame is kept (no clear()), so the obs stream keeps images.
             Capture rate = main loop Hz / image_fps_divider (default 30/3 = 10Hz),
             matching how often the main loop attaches the cache to obs.
+
+            Frames are JPEG-encoded HERE, not in the 30Hz control loop: imencode
+            is expensive (10-20ms per 640x480 frame), and doing it synchronously
+            starved the image pipeline on low-power hosts, making streamed views
+            lag seconds behind reality.
             """
             cam_interval = loop_dt * self.host_cfg.image_fps_divider
             while not stop_cam.is_set():
@@ -163,10 +179,24 @@ class HumanaOpenHost:
                         # camera delivered last time (cache is not cleared).
                         logger.warning("camera '%s' read failed: %s", cam_key, e)
                 if frames:
+                    encoded: dict[str, bytes] = {}
+                    if cv2 is not None:
+                        for cam_key, frame in frames.items():
+                            try:
+                                ret, buffer = cv2.imencode(
+                                    ".jpg",
+                                    cv2.cvtColor(frame, cv2.COLOR_RGB2BGR),
+                                    [int(cv2.IMWRITE_JPEG_QUALITY), self.host_cfg.jpeg_quality],
+                                )
+                                if ret:
+                                    encoded[cam_key] = buffer.tobytes()
+                            except Exception as e:
+                                logger.warning("camera '%s' encode failed: %s", cam_key, e)
                     with cam_lock:
-                        cam_cache.update(frames)
-                elif not cam_cache:
-                    logger.warning("no camera delivered any frame yet")
+                        if encoded:
+                            cam_cache.update(encoded)
+                        elif not cam_cache:
+                            logger.warning("no camera delivered any frame yet")
                 time.sleep(cam_interval)
 
         cam_thread = threading.Thread(target=_camera_thread, daemon=True)
