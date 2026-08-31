@@ -272,8 +272,10 @@ class HumanaOpenHost:
                     # Stamps for client-side latency measurement (capture -> recv).
                     obs["_cam_ts"] = cam_capture_ts if cam_capture_ts else time.time()
 
-                # Send the newest observation; drop instead of blocking if the
-                # client is slower than us (SNDHWM=1 keeps only one pending).
+                # _t_send: wall-clock the instant just before ZMQ send, so the
+                # client can measure pure network latency (t_recv - _t_send)
+                # independent of camera encode time and host/client clock drift.
+                obs["_t_send"] = time.time()
                 parts = build_observation_multipart(obs, robot.cameras.keys(), self.host_cfg.jpeg_quality)
                 try:
                     pub.send_multipart(parts, flags=zmq.NOBLOCK)
