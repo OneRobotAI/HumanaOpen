@@ -154,7 +154,11 @@ class HumanaOpenClient(Robot):
         self._sub.connect(f"tcp://{self.config.remote_ip}:{self.config.port_zmq_observations}")
 
         # Send action commands — PUSH to host PULL (JSON single-frame).
+        # CONFLATE=1 keeps only the newest command in-flight (same as lerobot
+        # AlohaMini): a stale backlog must never make the operator's latest
+        # action wait behind already-obsolete ones.
         self._pub = self._ctx.socket(zmq.PUSH)
+        self._pub.setsockopt(zmq.CONFLATE, 1)
         self._pub.connect(f"tcp://{self.config.remote_ip}:{self.config.port_zmq_cmd}")
 
         # Verify the connection: wait until the host actually streams an

@@ -177,6 +177,22 @@ class HumanaOpenHost:
             while time.monotonic() < deadline:
                 t0 = time.perf_counter()
 
+                # ── Receive + execute command FIRST (like lerobot LeKiwi/AlohaMini
+                # hosts): the action channel must NOT wait behind observation/image
+                # work. Non-blocking + CONFLATE keeps only the newest command, so a
+                # slow obs/build below never delays the operator's action.
+                try:
+                    cmd_str = sub.recv_string(zmq.NOBLOCK)
+                    action = dict(json.loads(cmd_str))
+                except zmq.Again:
+                    action = {}
+                except (ValueError, TypeError) as e:
+                    logger.warning("Bad command message: %s", e)
+                    action = {}
+
+                if action:
+                    robot.send_action(action)
+
                 # High frequency: read joint state (no cameras, millisecond-level)
                 try:
                     obs = robot.get_observation_no_cameras()
@@ -200,19 +216,6 @@ class HumanaOpenHost:
                 except zmq.Again:
                     logger.info("Dropping observation — no client connected.")
 
-                # ── Receive command (non-blocking, with timeout) ────────
-                try:
-                    cmd_str = sub.recv_string()
-                    action = dict(json.loads(cmd_str))
-                except zmq.Again:
-                    action = {}
-                except (ValueError, TypeError) as e:
-                    logger.warning("Bad command message: %s", e)
-                    action = {}
-
-                if action:
-                    robot.send_action(action)
-
                 frame_count += 1
                 if frame_count % 150 == 0:  # every ~5s at 30Hz
                     print(f"  Host running... frame {frame_count}")
@@ -229,6 +232,14 @@ class HumanaOpenHost:
         finally:
             stop_cam.set()
             cam_thread.join(timeout=1.0)
+            # Persist the lift position on ANY host exit (Ctrl+C / timeout / crash):
+            # the PC-side save_zero is a no-op in dual-machine mode, so the Host is
+            # the only place that can remember the last lift height — otherwise
+            # every restart re-homes to zero.
+            try:
+                robot.lift_axis.save_zero()
+            except Exception:
+                pass
             robot.disconnect()
             pub.close()
             sub.close()
