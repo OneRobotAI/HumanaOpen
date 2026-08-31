@@ -529,25 +529,13 @@ def main():
                     # proven path as data collection (lerobot record): call
                     # init_rerun() with no ip/port, which internally does
                     # rr.spawn() and opens the viewer window automatically.
-                    # (The earlier hand-rolled "start viewer binary + gRPC"
-                    # path showed no data here; record's rr.spawn() works, so
-                    # match it.)
-                    #
-                    # A stale rerun viewer from a previous abnormal exit (kill
-                    # -9 / crash) can make rr.spawn() block or connect to a dead
-                    # process -> the new window appears "stuck"/blank. Clear any
-                    # leftover rerun viewer binary before spawning (matches the
-                    # --display-web cleanup). The pattern targets only the rerun
-                    # viewer binary (path contains rerun), never this script.
-                    import subprocess as _sp2
-                    try:
-                        _sp2.run(
-                            ["pkill", "-f", r"rerun(_cli)?/rerun"],
-                            capture_output=True, timeout=3,
-                        )
-                        time.sleep(0.3)
-                    except Exception:
-                        pass
+                    # Do NOT pkill rerun here: rr.spawn() launches its detached
+                    # viewer whose argv matches `rerun_cli/rerun`, so a pkill on
+                    # that pattern can race/kill the freshly spawned viewer right
+                    # after its window opens but before the gRPC data channel is
+                    # established -> blank window + 're_grpc_client::write:
+                    # transport error' (exactly what record avoids by spawning
+                    # cleanly with no pkill).
                     init_rerun(session_name="humanaopen_teleop")
                 # compress_images=True: 921KB raw image -> ~25KB JPEG into viewer; without it
                 # 3 cams at 15Hz = ~41MB/s into the viewer process, which lags => display delay
