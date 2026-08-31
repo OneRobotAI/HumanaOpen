@@ -703,6 +703,20 @@ def main():
 
             follower.send_action(action)
 
+            # Consume the newest observation EVERY loop (not only inside the
+            # display branches): the host PUSH+SNDHWM=1 drops NEW frames when its
+            # 1-slot queue is full, keeping the oldest one — so if we consume at
+            # 15Hz while the host produces at 30Hz, the queue is always full and
+            # we always receive a stale frame (latency grows unbounded). Matching
+            # consumption to the host rate (AlohaMini pattern) keeps the queue
+            # empty and every observation fresh. No message queued -> returns the
+            # cached observation at ~zero cost (no decode happens).
+            try:
+                latest_obs = follower.get_observation()
+            except Exception as e:
+                latest_obs = {}
+                print(f"  ⚠️ get_observation error: {str(e)[:80]}")
+
             # foxglove logging — throttled to 15Hz like rerun: logging every 30Hz
             # control tick re-encodes the CLIENT-CACHED frames each time (host only
             # streams new images at 10Hz), which added latency. Errors are logged
@@ -712,7 +726,7 @@ def main():
                 _last_display = time.time()
                 try:
                     log_foxglove_data(
-                        observation=_strip_images(_fresh_obs(follower.get_observation(), _last_img_ids)),
+                        observation=_strip_images(_fresh_obs(latest_obs, _last_img_ids)),
                         action=action,
                         compress_images=False,
                     )
@@ -725,7 +739,7 @@ def main():
                 _last_display = time.time()
                 try:
                     log_rerun_data(
-                        observation=_strip_images(_fresh_obs(follower.get_observation(), _last_img_ids)),
+                        observation=_strip_images(_fresh_obs(latest_obs, _last_img_ids)),
                         action=action,
                         compress_images=True,
                     )
