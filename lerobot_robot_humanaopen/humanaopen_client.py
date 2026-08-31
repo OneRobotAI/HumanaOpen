@@ -219,29 +219,36 @@ class HumanaOpenClient(Robot):
             raise RuntimeError("Client is not connected")
 
         camera_names = set(self._cameras_ft.keys())
+        # Drain to the NEWEST observation without decoding stale frames: each
+        # decode is 3x imdecode, so decoding every backlogged message would
+        # compound latency (decode slower -> more backlog -> even slower).
+        # Store only the last message, decode it once after the drain
+        # (same pattern as lerobot AlohaMini client).
+        last_parts: list[bytes] | None = None
         pending = self._sub.poll(0)
-        now = time.time()
         while pending:
             try:
-                message_parts = self._sub.recv_multipart(flags=zmq.NOBLOCK)
-                obs, cam_ts = _parse_observation_multipart(message_parts, camera_names)
-                # Persist image frames separately: they arrive less often than
-                # joint state (host divider), so retain them across calls.
-                for k, v in obs.items():
-                    if isinstance(v, np.ndarray) and v.ndim == 3:
-                        with self._img_lock:
-                            self._img_cache[k] = v
-                self._last_obs = obs
-                self._last_obs_time = time.time()
-                # Latency diagnostic: host-capture -> here, printed throttled.
-                if cam_ts > 0:
-                    lat_ms = int((time.time() - cam_ts) * 1000)
-                    if lat_ms > 50 and time.time() - getattr(self, "_last_lat_print", 0.0) > 2.0:
-                        self._last_lat_print = time.time()
-                        print(f"  ⏱️ obs latency: {lat_ms}ms (host capture -> PC recv)")
+                last_parts = self._sub.recv_multipart(flags=zmq.NOBLOCK)
             except zmq.Again:
                 break
             pending = self._sub.poll(0)
+
+        if last_parts is not None:
+            obs, cam_ts = _parse_observation_multipart(last_parts, camera_names)
+            # Persist image frames separately: they arrive less often than
+            # joint state (host divider), so retain them across calls.
+            for k, v in obs.items():
+                if isinstance(v, np.ndarray) and v.ndim == 3:
+                    with self._img_lock:
+                        self._img_cache[k] = v
+            self._last_obs = obs
+            self._last_obs_time = time.time()
+            # Latency diagnostic: host-capture -> here, printed throttled.
+            if cam_ts > 0:
+                lat_ms = int((time.time() - cam_ts) * 1000)
+                if lat_ms > 50 and time.time() - getattr(self, "_last_lat_print", 0.0) > 2.0:
+                    self._last_lat_print = time.time()
+                    print(f"  ⏱️ obs latency: {lat_ms}ms (host capture -> PC recv)")
 
         # Re-attach the most recent images to the freshest joint frame.
         with self._img_lock:
