@@ -608,22 +608,49 @@ def main():
         _last_lift_dir = 0  # 0=none, 1=last pressed u, -1=last pressed h
         speed_idx = 1  # base speed level (1 = base)
         _last_lift_print = 0.0  # throttles the lift-status display
+        _last_hb = 0.0  # 1Hz absolute-time heartbeat (stall diagnosis)
         _rerun = args.display  # whether rerun is enabled
         _foxglove = args.display_foxglove  # whether foxglove is enabled
 
         # ── Display decoupling ─────────────────────────────────────────
         # foxglove/rerun logging is MOVED OFF the control loop: log_foxglove_data
-        # serializes up to 2.7MB/frame synchronously, which blocked the 30Hz
-        # control loop (loop timer after the display branch NEVER fired while
-        # --display-foxglove was on). Consumption then fell below the host's
-        # 30Hz production, the PUSH queue delivered stale obs, and image
-        # latency climbed to seconds. A daemon thread logs at 15Hz from the
-        # latest observation the control loop produced; the loop itself stays
-        # pure: get_action -> send_action -> get_observation.
+        # serializes images synchronously, which stalled the 30Hz control loop.
+        # Consumption then fell below the host's 30Hz production, the PUSH queue
+        # delivered stale obs, and image latency climbed to seconds. A daemon
+        # thread logs at 15Hz from the latest observation the control loop
+        # produces; the loop itself stays pure:
+        # get_action -> send_action -> get_observation.
         import threading as _threading
         _disp_lock = _threading.Lock()
         _disp_state: dict = {"obs": {}, "action": {}}
         _disp_stop = _threading.Event()
+
+        def _fresh_obs(obs: dict, last_ids: dict) -> dict:
+            """Return obs stripped of images that did not change since last call.
+
+            Keeps only state + image keys whose array OBJECT changed (id()). Returns
+            the full obs as-is on the first call, thereafter drops unchanged images
+            so the viewer backend does not re-encode/re-send stale frames at its own
+            log rate (images arrive at host divider rate, e.g. 10Hz)."""
+            if not last_ids:
+                for k, v in obs.items():
+                    if isinstance(v, np.ndarray) and v.ndim == 3:
+                        last_ids[k] = id(v)
+                return obs
+            changed = False
+            for k, v in obs.items():
+                if isinstance(v, np.ndarray) and v.ndim == 3:
+                    if last_ids.get(k) != id(v):
+                        last_ids[k] = id(v)
+                        changed = True
+            if changed:
+                return obs
+            # No new image: return obs without images (state-only)
+            return {
+                k: v
+                for k, v in obs.items()
+                if not (isinstance(v, np.ndarray) and v.ndim == 3)
+            }
 
         def _display_thread() -> None:
             _disp_last_img_ids: dict = {}
@@ -655,36 +682,16 @@ def main():
             _disp_thread_obj.start()
 
 
-        def _fresh_obs(obs: dict, last_ids: dict) -> dict:
-            """Return obs stripped of images that did not change since last call.
-
-            Keeps only state + image keys whose array OBJECT changed (id()). Returns
-            the full obs as-is on the first call, thereafter drops unchanged images
-            so the viewer backend does not re-encode/re-send stale frames at its own
-            log rate (images arrive at host divider rate, e.g. 10Hz)."""
-            if not last_ids:
-                for k, v in obs.items():
-                    if isinstance(v, np.ndarray) and v.ndim == 3:
-                        last_ids[k] = id(v)
-                return obs
-            changed = False
-            for k, v in obs.items():
-                if isinstance(v, np.ndarray) and v.ndim == 3:
-                    if last_ids.get(k) != id(v):
-                        last_ids[k] = id(v)
-                        changed = True
-            if changed:
-                return obs
-            # No new image: return obs without images (state-only)
-            return {
-                k: v
-                for k, v in obs.items()
-                if not (isinstance(v, np.ndarray) and v.ndim == 3)
-            }
-
-
         while True:
             _loop_t0 = time.perf_counter()
+            # ── Absolute-time heartbeat ────────────────────────────────
+            # Prints once per second. If the gap between heartbeats is >1s,
+            # the control loop is stuck INSIDE an iteration (get_action /
+            # send_action / get_observation / display-swap all happen after
+            # this line) — pinpoints the stall independent of foxglove.
+            if time.time() - _last_hb > 1.0:
+                _last_hb = time.time()
+                print(f"  ⏱️ t={time.time():.1f} loop-heartbeat")
             # leader readings → both-arm action
             action = leader.get_action()
 
@@ -789,6 +796,14 @@ def main():
         print("\n⛔ Teleoperation stopped...")
 
     finally:
+        # stop the display thread BEFORE tearing down foxglove/rerun, otherwise
+        # the daemon keeps calling log_* after shutdown and crashes at exit
+        if _foxglove or _rerun:
+            try:
+                _disp_stop.set()
+                _disp_thread_obj.join(timeout=1.0)
+            except Exception:
+                pass
         # save the lift absolute position (no re-zeroing needed on next connect)
         try:
             follower.lift_axis.save_zero()
