@@ -290,12 +290,36 @@ python3 examples/teleop_leader_to_follower.py
 # 4번째 chest 카메라 추가
 python3 examples/teleop_leader_to_follower.py --chest-camera /dev/video6
 
-# Rerun 실시간 카메라 뷰
-python3 examples/teleop_leader_to_follower.py --chest-camera /dev/video6 --display
+# 듀얼 머신: 로봇에서 Host, PC에서 teleop
+python3 examples/teleop_leader_to_follower.py --remote_ip=192.168.1.100 --chest-camera /dev/video6
 
 # 카메라 없이 텔레옵만
 python3 examples/teleop_leader_to_follower.py --no-cameras
 ```
+
+#### 실시간 디스플레이 모드
+
+`teleop_leader_to_follower.py`는 두 가지 시각화 백엔드를 지원합니다.
+이미지는 제어 루프에서 한 번 디코딩된 후 백그라운드 디스플레이 스레드로 전달되어
+**30Hz 제어 루프가 차단되지 않습니다**.
+
+| 플래그 | 백엔드 | 설명 |
+|--------|--------|------|
+| `--display` | [Rerun](https://rerun.io) 네이티브 뷰어 | gRPC; `rrspawn` 데스크톱, `--serve-web` 대안 |
+| `--display-foxglove` | [Foxglove Studio](https://foxglove.dev) WebSocket | `ws://127.0.0.1:8765` 연결. 레이아웃은 `examples/humanoopen_foxglove.layout.json`에 자동 저장 (한 번만 임포트). **권장** — 렌더 지연 최소 |
+
+```bash
+# Foxglove (권장)
+python3 examples/teleop_leader_to_follower.py --remote_ip=192.168.1.100 --display-foxglove
+
+# Rerun
+python3 examples/teleop_leader_to_follower.py --remote_ip=192.168.1.100 --display
+```
+
+> **디스플레이 지연**: 두 백엔드 모두 고정된 렌더 파이프라인 지연이 있습니다
+> (Foxglove 데스크톱 ≈ 0.5–1.5초 / Rerun 네이티브 ≈ 2초) — 이는 시각화 라이브러리 자체의 특성입니다.
+> **액션 명령은 실시간 무지연**이며, 디스플레이 지연은 기록된 데이터 품질에 **영향을 미치지 않습니다** —
+> 관측과 행동은 항상 동일한 프레임에서 동기화되어 샘플링됩니다.
 
 카메라 인자: `--cameras=head,left_wrist` (부분 집합), `--head-camera /dev/videoN`,
 `--left-wrist-camera`, `--right-wrist-camera`, `--chest-camera` (각각 디바이스 경로 재정의;

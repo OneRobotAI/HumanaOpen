@@ -314,12 +314,31 @@ python3 examples/teleop_leader_to_follower.py
 # 加第 4 个胸口摄像头
 python3 examples/teleop_leader_to_follower.py --chest-camera /dev/video6
 
-# Rerun 实时画面
-python3 examples/teleop_leader_to_follower.py --chest-camera /dev/video6 --display
+# 双机模式：Host 在机器人端，teleop 在 PC 端
+python3 examples/teleop_leader_to_follower.py --remote_ip=192.168.1.100 --chest-camera /dev/video6
 
 # 纯遥操，无摄像头
 python3 examples/teleop_leader_to_follower.py --no-cameras
 ```
+
+#### 实时画面显示模式
+
+`teleop_leader_to_follower.py` 支持两种可视化后端。图像在控制线程解码一次后交给后台显示线程，**不阻塞 30Hz 控制循环**。
+
+| 参数 | 后端 | 说明 |
+|------|------|------|
+| `--display` | [Rerun](https://rerun.io) 原生窗口 | gRPC 通信，`rr.spawn` 桌面端，`--serve-web` 备选 |
+| `--display-foxglove` | [Foxglove Studio](https://foxglove.dev) WebSocket | 连接桌面版或 foxglove.dev，端口 `ws://127.0.0.1:8765`。**推荐**——两者中渲染延迟最低 |
+
+```bash
+# Foxglove（推荐）
+python3 examples/teleop_leader_to_follower.py --remote_ip=192.168.1.100 --display-foxglove
+
+# Rerun
+python3 examples/teleop_leader_to_follower.py --remote_ip=192.168.1.100 --display
+```
+
+> **画面延迟说明**：两个后端均有固定的渲染管线延迟（桌面版 Foxglove ≈ 0.5–1.5 s，Rerun ≈ 2 s），这是可视化库本身的特性，与 HumanaOpen 无关。**动作指令实时无延迟**；画面延迟不影响采集数据质量——录制时 observation 与 action 帧严格同步采样。
 
 摄像头参数：`--cameras=head,left_wrist`（子集），`--head-camera /dev/videoN`，
 `--left-wrist-camera`，`--right-wrist-camera`，`--chest-camera`（每个覆盖设备路径；

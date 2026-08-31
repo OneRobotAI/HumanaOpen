@@ -291,12 +291,38 @@ python3 examples/teleop_leader_to_follower.py
 # Ajouter la 4ème caméra poitrine
 python3 examples/teleop_leader_to_follower.py --chest-camera /dev/video6
 
-# Vue caméra en direct via Rerun
-python3 examples/teleop_leader_to_follower.py --chest-camera /dev/video6 --display
+# Mode double machine : Host sur le robot, téléop sur votre PC
+python3 examples/teleop_leader_to_follower.py --remote_ip=192.168.1.100 --chest-camera /dev/video6
 
 # Téléop uniquement, sans caméras
 python3 examples/teleop_leader_to_follower.py --no-cameras
 ```
+
+#### Modes d'affichage en direct
+
+`teleop_leader_to_follower.py` prend en charge deux backends de visualisation.
+Les images sont décodées une seule fois par la boucle de contrôle, puis
+déléguées à un thread d'affichage en arrière-plan — la boucle de 30 Hz
+n'est jamais bloquée.
+
+| Option | Backend | Notes |
+|--------|---------|-------|
+| `--display` | [Rerun](https://rerun.io) fenêtre native | gRPC ; `rr.spawn` desktop, fallback `--serve-web` |
+| `--display-foxglove` | [Foxglove Studio](https://foxglove.dev) WebSocket | Se connecte à `ws://127.0.0.1:8765`. Un layout est écrit dans `examples/humanoopen_foxglove.layout.json` (import une seule fois). **Recommandé** — latence la plus basse des deux. |
+
+```bash
+# Foxglove (recommandé)
+python3 examples/teleop_leader_to_follower.py --remote_ip=192.168.1.100 --display-foxglove
+
+# Rerun
+python3 examples/teleop_leader_to_follower.py --remote_ip=192.168.1.100 --display
+```
+
+> **Latence d'affichage** : Les deux backends ajoutent un délai de rendu
+> fixe (≈1–1,5 s desktop / ≈2 s viewer natif) inhérent aux bibliothèques
+> de visualisation. Les commandes d'action (bras) sont en temps réel ; le
+> lag d'affichage n'affecte **pas** la qualité des données enregistrées —
+> observation et action sont toujours synchronisées dans la même image.
 
 Arguments caméra : `--cameras=head,left_wrist` (sous-ensemble), `--head-camera /dev/videoN`,
 `--left-wrist-camera`, `--right-wrist-camera`, `--chest-camera` (chacun remplace le

@@ -307,12 +307,38 @@ python3 examples/teleop_leader_to_follower.py
 # Add the 4th chest camera
 python3 examples/teleop_leader_to_follower.py --chest-camera /dev/video6
 
-# Live camera view via Rerun (画面)
-python3 examples/teleop_leader_to_follower.py --chest-camera /dev/video6 --display
+# Dual-machine: run Host on the robot, teleop on your PC
+python3 examples/teleop_leader_to_follower.py --remote_ip=192.168.1.100 --chest-camera /dev/video6
 
 # Teleop only, no cameras
 python3 examples/teleop_leader_to_follower.py --no-cameras
 ```
+
+#### Live display modes
+
+`teleop_leader_to_follower.py` supports two visualization backends. Images are
+decoded once by the control loop, then handed to a background display thread
+so the 30 Hz control loop is never blocked.
+
+| Flag | Backend | Notes |
+|------|---------|-------|
+| `--display` | [Rerun](https://rerun.io) native viewer | Uses gRPC; `rr.spawn` for desktop, `--serve-web` fallback. |
+| `--display-foxglove` | [Foxglove Studio](https://foxglove.dev) WebSocket | Connects Foxglove desktop or foxglove.dev to `ws://127.0.0.1:8765`. A layout is written to `examples/humanoopen_foxglove.layout.json` (import once). **Recommended** — lowest render latency of the two. |
+
+```bash
+# Foxglove (recommended)
+python3 examples/teleop_leader_to_follower.py --remote_ip=192.168.1.100 --display-foxglove
+
+# Rerun
+python3 examples/teleop_leader_to_follower.py --remote_ip=192.168.1.100 --display
+```
+
+> **Display latency**: Both backends add a fixed render pipeline delay
+> (≈1–1.5 s desktop / ≈2 s native viewer on this hardware) which is
+> inherent to the visualization libraries. The action channel (arm
+> commands) is real-time regardless; display lag does **not** affect
+> recorded data quality — observation and action frames are always
+> sampled synchronously.
 
 Camera arguments: `--cameras=head,left_wrist` (subset), `--head-camera /dev/videoN`,
 `--left-wrist-camera`, `--right-wrist-camera`, `--chest-camera` (each overrides the
