@@ -649,21 +649,24 @@ def main():
                             compress_images=True,
                         )
                     if _rerun:
-                        # Pass the full observation (images + state) each tick,
-                        # matching how lerobot record logs to rerun. Do NOT route
-                        # rerun through _fresh_obs: images are logged static once
-                        # the blueprint is set, and _fresh_obs's dedup (id-based)
-                        # can omit images on the blueprint-defining first call
-                        # (images in the shared _img_cache keep the same id()).
+                        # Log images only when they change (id-based dedup via
+                        # _fresh_obs): sending 3 full images at 15Hz saturates
+                        # rerun's gRPC quota channel ("Sender blocked for over 5
+                        # seconds" + transport error -> blank/frozen viewer).
+                        # _fresh_obs returns the FULL obs on its first call (so
+                        # the blueprint gets image panels), then strips unchanged
+                        # images on later ticks while still sending state scalars.
                         log_rerun_data(
-                            observation=_strip_images(_o),
+                            observation=_strip_images(_fresh_obs(_o, _disp_last_img_ids)),
                             action=_a,
                             compress_images=True,
                         )
                 except Exception as e:
                     print(f"  ⚠️ Display log error: {str(e)[:80]}")
-                # 15Hz display cadence, independent of the control loop rate.
-                time.sleep(max(1.0 / 15 - (time.perf_counter() - _disp_t0), 0.0))
+                # 10Hz display cadence: rerun (and foxglove) both render 3
+                # 640x480 images; a higher cadence saturates the render path
+                # and its gRPC quota channel ("Sender blocked for 5+ seconds").
+                time.sleep(max(1.0 / 10 - (time.perf_counter() - _disp_t0), 0.0))
 
         if _foxglove or _rerun:
             _disp_thread_obj = _threading.Thread(target=_display_thread, daemon=True)
