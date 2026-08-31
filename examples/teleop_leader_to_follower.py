@@ -639,8 +639,14 @@ def main():
                             compress_images=True,
                         )
                     if _rerun:
+                        # Pass the full observation (images + state) each tick,
+                        # matching how lerobot record logs to rerun. Do NOT route
+                        # rerun through _fresh_obs: images are logged static once
+                        # the blueprint is set, and _fresh_obs's dedup (id-based)
+                        # can omit images on the blueprint-defining first call
+                        # (images in the shared _img_cache keep the same id()).
                         log_rerun_data(
-                            observation=_strip_images(_fresh_obs(_o, _disp_last_img_ids)),
+                            observation=_strip_images(_o),
                             action=_a,
                             compress_images=True,
                         )
