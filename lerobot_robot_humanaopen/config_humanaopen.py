@@ -177,11 +177,11 @@ class HumanaOpenHostConfig:
     watchdog_timeout_ms: int = 500
     max_loop_freq_hz: int = 30
     # Divide the main loop rate for image frames: images are attached to the obs
-    # every `image_fps_divider` frames, so at max_loop_freq_hz=30 with divider=2
-    # the image stream is ~15Hz while the action channel stays 30Hz. 15Hz keeps
-    # camera teleop smooth; use 1 (30Hz) when recording datasets (image quality
-    # first, control latency less critical).
-    image_fps_divider: int = 2
+    # every `image_fps_divider` frames, so at max_loop_freq_hz=30 with divider=1
+    # the image stream is the full 30Hz, same as the action channel. 3-camera
+    # JPEG payload at 30Hz is ~0.7MB/s, well under 100Mbps, so control latency
+    # impact is negligible while camera teleop is maximally smooth.
+    image_fps_divider: int = 1
     # JPEG quality for image frames sent over ZMQ (0-100). Zero disables JPEG and
     # sends raw frames (huge: 640x480x3 ~= 920KB each). 85 balances visual
     # quality and bandwidth for 3 cameras: real-scene frames are ~20-25KB each,
