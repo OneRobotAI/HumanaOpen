@@ -151,6 +151,10 @@ class HumanaOpenHost:
         cam_lock = threading.Lock()
         cam_cache: dict[str, Any] = {}
         stop_cam = threading.Event()
+        # Wall-clock timestamp of the newest frame the camera thread produced;
+        # the main loop stamps it into the obs head so the client can measure
+        # capture->send->recv latency and attribute the image delay.
+        cam_capture_ts: float = 0.0
 
         def _camera_thread():
             """Continuously capture + JPEG-encode images in the background.
@@ -166,6 +170,7 @@ class HumanaOpenHost:
             starved the image pipeline on low-power hosts, making streamed views
             lag seconds behind reality.
             """
+            nonlocal cam_capture_ts
             cam_interval = loop_dt * self.host_cfg.image_fps_divider
             while not stop_cam.is_set():
                 frames: dict[str, Any] = {}
@@ -195,6 +200,7 @@ class HumanaOpenHost:
                     with cam_lock:
                         if encoded:
                             cam_cache.update(encoded)
+                            cam_capture_ts = time.time()
                         elif not cam_cache:
                             logger.warning("no camera delivered any frame yet")
                 time.sleep(cam_interval)
@@ -237,6 +243,8 @@ class HumanaOpenHost:
                 if frame_count % self.host_cfg.image_fps_divider == 0:
                     with cam_lock:
                         obs.update(cam_cache)
+                    # Stamps for client-side latency measurement (capture -> recv).
+                    obs["_cam_ts"] = cam_capture_ts if cam_capture_ts else time.time()
 
                 # Send the newest observation; drop instead of blocking if the
                 # client is slower than us (SNDHWM=1 keeps only one pending).

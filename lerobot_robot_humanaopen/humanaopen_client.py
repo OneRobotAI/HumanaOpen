@@ -37,21 +37,27 @@ from .humanaopen import _state_keys
 logger = logging.getLogger(__name__)
 
 
-def _parse_observation_multipart(message_parts: list[bytes], camera_names: set[str]) -> dict[str, Any]:
+def _parse_observation_multipart(
+    message_parts: list[bytes], camera_names: set[str]
+) -> tuple[dict[str, Any], float]:
     """Parse a multipart observation: JSON state head + cam/JPEG frame pairs.
 
     The JSON head (part 0) holds the float state plus the ``_images`` name
     list.  Frames follow as alternating [cam_name, jpeg_bytes] frames.
+
+    Returns (obs, cam_ts) where cam_ts is the host-side capture timestamp
+    (0.0 when the frame carries no camera data), used for latency measurement.
     """
     if not message_parts:
-        return {}
+        return {}, 0.0
 
     try:
         state = json.loads(message_parts[0].decode("utf-8"))
     except (UnicodeDecodeError, json.JSONDecodeError) as e:
         logger.error("Error decoding observation JSON: %s", e)
-        return {}
+        return {}, 0.0
 
+    cam_ts = float(state.get("_cam_ts", 0.0) or 0.0)
     obs: dict[str, Any] = {k: v for k, v in state.items() if not k.startswith("_")}
 
     if len(message_parts) > 1:
@@ -73,7 +79,7 @@ def _parse_observation_multipart(message_parts: list[bytes], camera_names: set[s
                 continue
             obs[cam_name] = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
-    return obs
+    return obs, cam_ts
 
 
 def _serialize_cmd(action: dict[str, Any]) -> str:
@@ -214,10 +220,11 @@ class HumanaOpenClient(Robot):
 
         camera_names = set(self._cameras_ft.keys())
         pending = self._sub.poll(0)
+        now = time.time()
         while pending:
             try:
                 message_parts = self._sub.recv_multipart(flags=zmq.NOBLOCK)
-                obs = _parse_observation_multipart(message_parts, camera_names)
+                obs, cam_ts = _parse_observation_multipart(message_parts, camera_names)
                 # Persist image frames separately: they arrive less often than
                 # joint state (host divider), so retain them across calls.
                 for k, v in obs.items():
@@ -226,6 +233,12 @@ class HumanaOpenClient(Robot):
                             self._img_cache[k] = v
                 self._last_obs = obs
                 self._last_obs_time = time.time()
+                # Latency diagnostic: host-capture -> here, printed throttled.
+                if cam_ts > 0:
+                    lat_ms = int((time.time() - cam_ts) * 1000)
+                    if lat_ms > 50 and time.time() - getattr(self, "_last_lat_print", 0.0) > 2.0:
+                        self._last_lat_print = time.time()
+                        print(f"  ⏱️ obs latency: {lat_ms}ms (host capture -> PC recv)")
             except zmq.Again:
                 break
             pending = self._sub.poll(0)
