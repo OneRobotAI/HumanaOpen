@@ -642,33 +642,26 @@ def main():
                     _o = dict(_disp_state["obs"])
                     _a = dict(_disp_state["action"])
                 try:
+                    # foxglove is socket-based and thread-safe — keep it on the
+                    # display thread. Rerun is NOT logged here: its gRPC sink
+                    # backpressures (bounded channel) and a daemon thread stuck
+                    # blocking on it wedges past 5s -> "Sender blocked" +
+                    # "transport error" + frozen viewer. Rerun logs on the main
+                    # control thread instead (like record_data.py).
                     if _foxglove:
                         log_foxglove_data(
                             observation=_strip_images(_fresh_obs(_o, _disp_last_img_ids)),
                             action=_a,
                             compress_images=True,
                         )
-                    if _rerun:
-                        # Log images only when they change (id-based dedup via
-                        # _fresh_obs): sending 3 full images at 15Hz saturates
-                        # rerun's gRPC quota channel ("Sender blocked for over 5
-                        # seconds" + transport error -> blank/frozen viewer).
-                        # _fresh_obs returns the FULL obs on its first call (so
-                        # the blueprint gets image panels), then strips unchanged
-                        # images on later ticks while still sending state scalars.
-                        log_rerun_data(
-                            observation=_strip_images(_fresh_obs(_o, _disp_last_img_ids)),
-                            action=_a,
-                            compress_images=True,
-                        )
                 except Exception as e:
                     print(f"  ⚠️ Display log error: {str(e)[:80]}")
-                # 10Hz display cadence: rerun (and foxglove) both render 3
-                # 640x480 images; a higher cadence saturates the render path
-                # and its gRPC quota channel ("Sender blocked for 5+ seconds").
                 time.sleep(max(1.0 / 10 - (time.perf_counter() - _disp_t0), 0.0))
 
-        if _foxglove or _rerun:
+        # The display thread now handles FOXGLOVE only (rerun logs on the main
+        # control thread to avoid gRPC backpressure in a daemon). Only spawn it
+        # when foxglove is enabled.
+        if _foxglove:
             _disp_thread_obj = _threading.Thread(target=_display_thread, daemon=True)
             _disp_thread_obj.start()
 
@@ -745,11 +738,29 @@ def main():
                 print(f"  ⚠️ get_observation error: {str(e)[:80]}")
 
             # Hand the freshest obs+action to the display thread (cheap dict
-            # swap under a lock — the display loop does the actual logging).
-            if _foxglove or _rerun:
+            # swap under a lock — the display thread logs foxglove only).
+            if _foxglove:
                 with _disp_lock:
                     _disp_state["obs"] = latest_obs
                     _disp_state["action"] = action
+
+            # Rerun logs on the MAIN control thread (same as record_data.py):
+            # its gRPC sink backpressures on a bounded channel, and calling it
+            # from the daemon display thread wedged the thread >5s -> frozen
+            # viewer. Interleaving with the control loop provides natural
+            # pacing so the sink stays drained. Images via _fresh_obs (send
+            # only on change) + compression keep volume under the channel limit.
+            if _rerun:
+                try:
+                    _rerun_last = getattr(follower, "_rerun_last_img_ids", {})
+                    log_rerun_data(
+                        observation=_strip_images(_fresh_obs(latest_obs, _rerun_last)),
+                        action=action,
+                        compress_images=True,
+                    )
+                    setattr(follower, "_rerun_last_img_ids", _rerun_last)
+                except Exception as e:
+                    print(f"  ⚠️ Rerun log error: {str(e)[:80]}")
 
             if keys.is_down("b"):
                 print("\nQuitting...")
@@ -762,8 +773,9 @@ def main():
 
     finally:
         # stop the display thread BEFORE tearing down foxglove/rerun, otherwise
-        # the daemon keeps calling log_* after shutdown and crashes at exit
-        if _foxglove or _rerun:
+        # the daemon keeps calling log_* after shutdown and crashes at exit.
+        # (Only foxglove has a display thread; rerun logs on the main thread.)
+        if _foxglove:
             try:
                 _disp_stop.set()
                 _disp_thread_obj.join(timeout=1.0)
