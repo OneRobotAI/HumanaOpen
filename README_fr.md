@@ -461,7 +461,7 @@ caméras et l'état en temps réel pendant la téléopération, ajoutez un drape
 python3 examples/record_data.py ... --display
 
 # Application Foxglove (recommandé — latence plus basse, même backend que teleop)
-python3 examples/record_data.py ... --display --display-mode=foxglove
+python3 examples/record_data.py ... --display-foxglove
 # connectez Foxglove Studio à ws://127.0.0.1:8765
 ```
 

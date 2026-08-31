@@ -478,7 +478,7 @@ time while you teleoperate, add a display flag:
 python3 examples/record_data.py ... --display
 
 # Foxglove app (recommended — lower render latency, same backend as teleop)
-python3 examples/record_data.py ... --display --display-mode=foxglove
+python3 examples/record_data.py ... --display-foxglove
 # connect Foxglove Studio to ws://127.0.0.1:8765
 ```
 

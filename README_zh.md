@@ -468,7 +468,7 @@ rm -rf ~/.cache/huggingface/lerobot/your-name/humanaopen_demo    # 全新开始
 python3 examples/record_data.py ... --display
 
 # Foxglove 应用（推荐——渲染延迟更低，与 teleop 同后端）
-python3 examples/record_data.py ... --display --display-mode=foxglove
+python3 examples/record_data.py ... --display-foxglove
 # 连接 Foxglove Studio 到 ws://127.0.0.1:8765
 ```
 

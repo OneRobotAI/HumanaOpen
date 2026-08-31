@@ -14,7 +14,7 @@ Usage (all args optional — defaults match the tested hardware setup):
 
 Live display (optional, off by default):
     python3 examples/record_data.py --display                      # Rerun viewer
-    python3 examples/record_data.py --display --display-mode=foxglove  # Foxglove app (recommended)
+    python3 examples/record_data.py --display-foxglove             # Foxglove app (recommended)
 
 Controls (same as lerobot-record):
     C = start recording episode, Q = quit, A = re-record current episode
@@ -85,11 +85,14 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--episodes", dest="dataset.num_episodes", type=int, default=None)
     p.add_argument("--task", dest="dataset.single_task", default=None)
     p.add_argument("--no-hub", dest="dataset.push_to_hub", action="store_const", const="false", default=None)
-    # Live display: rerun (default) or foxglove. Pass --display-mode=foxglove to
-    # stream to the Foxglove app (ws://127.0.0.1:8765 by default) instead of rerun.
-    p.add_argument("--display", action="store_true", help="stream cameras/state to a live viewer")
+    # Live display: off by default. --display = rerun, --display-foxglove = Foxglove.
+    # The low-level --display-mode / --display-port are kept for full
+    # lerobot-record compatibility (both compose with --display).
+    p.add_argument("--display", action="store_true", help="stream cameras/state to a live viewer (rerun)")
+    p.add_argument("--display-foxglove", action="store_true",
+                   help="stream to the Foxglove app (recommended, lower latency) instead of rerun")
     p.add_argument("--display-mode", default="rerun", choices=["rerun", "foxglove"],
-                   help="visualization backend for --display (default: rerun; foxglove recommended)")
+                   help="visualization backend for --display (default: rerun)")
     p.add_argument("--display-port", type=int, default=None, help="foxglove WebSocket port (default 8765)")
     return p
 
@@ -188,6 +191,11 @@ def main():
     d["dataset.root"] = _parse_port(d["dataset.root"])
 
     show_command(args)
+
+    # --display-foxglove is a convenience alias for --display --display-mode=foxglove.
+    if d.get("display_foxglove"):
+        d["display"] = True
+        d["display_mode"] = "foxglove"
 
     cameras = _load_cameras(d["robot.cameras"])
     if d.get("chest"):

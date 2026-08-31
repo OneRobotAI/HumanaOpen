@@ -455,7 +455,7 @@ rm -rf ~/.cache/huggingface/lerobot/your-name/humanaopen_demo    # 새로 시작
 python3 examples/record_data.py ... --display
 
 # Foxglove 앱 (권장 — 렌더 지연 낮음, teleop과 동일 백엔드)
-python3 examples/record_data.py ... --display --display-mode=foxglove
+python3 examples/record_data.py ... --display-foxglove
 # Foxglove Studio를 ws://127.0.0.1:8765에 연결
 ```
 
