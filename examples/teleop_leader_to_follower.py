@@ -611,6 +611,40 @@ def main():
         _last_display = 0.0  # throttles rerun logging
         _rerun = args.display  # whether rerun is enabled
         _foxglove = args.display_foxglove  # whether foxglove is enabled
+        # Track the last image array objects we handed to the viewer(s). Images
+        # arrive at host image_fps_divider rate (e.g. 10Hz) while we log at 15Hz:
+        # between new frames the client returns the SAME cached arrays, which we
+        # must NOT re-encode/re-send. Keyed by image key -> id(array). We log the
+        # streamed observation only when at least one image object changed.
+        _last_img_ids: dict = {}
+
+        def _fresh_obs(obs: dict, last_ids: dict) -> dict:
+            """Return obs stripped of images that did not change since last call.
+
+            Keeps only state + image keys whose array OBJECT changed (id()). Returns
+            the full obs as-is on the first call, thereafter drops unchanged images
+            so the viewer backend does not re-encode/re-send stale frames at its own
+            log rate (images arrive at host divider rate, e.g. 10Hz)."""
+            if not last_ids:
+                for k, v in obs.items():
+                    if isinstance(v, np.ndarray) and v.ndim == 3:
+                        last_ids[k] = id(v)
+                return obs
+            changed = False
+            for k, v in obs.items():
+                if isinstance(v, np.ndarray) and v.ndim == 3:
+                    if last_ids.get(k) != id(v):
+                        last_ids[k] = id(v)
+                        changed = True
+            if changed:
+                return obs
+            # No new image: return obs without images (state-only)
+            return {
+                k: v
+                for k, v in obs.items()
+                if not (isinstance(v, np.ndarray) and v.ndim == 3)
+            }
+
 
         while True:
             # leader readings → both-arm action
@@ -678,7 +712,7 @@ def main():
                 _last_display = time.time()
                 try:
                     log_foxglove_data(
-                        observation=_strip_images(follower.get_observation()),
+                        observation=_strip_images(_fresh_obs(follower.get_observation(), _last_img_ids)),
                         action=action,
                         compress_images=True,
                     )
@@ -691,7 +725,7 @@ def main():
                 _last_display = time.time()
                 try:
                     log_rerun_data(
-                        observation=_strip_images(follower.get_observation()),
+                        observation=_strip_images(_fresh_obs(follower.get_observation(), _last_img_ids)),
                         action=action,
                         compress_images=True,
                     )
