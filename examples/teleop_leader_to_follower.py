@@ -729,7 +729,7 @@ def main():
                     log_foxglove_data(
                         observation=_strip_images(_fresh_obs(latest_obs, _last_img_ids)),
                         action=action,
-                        compress_images=False,
+                        compress_images=True,
                     )
                 except Exception as e:
                     print(f"  ⚠️ Foxglove log error: {str(e)[:80]}")
