@@ -459,6 +459,22 @@ rm -rf ~/.cache/huggingface/lerobot/your-name/humanaopen_demo    # 全新开始
 # 或在 record_data.py 命令中添加 --dataset.resume=true            # 从上一条继续
 ```
 
+### 录制时实时画面（可选）
+
+默认录制为无画面运行。要在遥操作时实时查看摄像头和状态，添加显示参数：
+
+```bash
+# Rerun 查看器
+python3 examples/record_data.py ... --display
+
+# Foxglove 应用（推荐——渲染延迟更低，与 teleop 同后端）
+python3 examples/record_data.py ... --display --display-mode=foxglove
+# 连接 Foxglove Studio 到 ws://127.0.0.1:8765
+```
+
+> 显示与录制循环解耦，不影响录制的 `(observation, action)` 帧对齐。与 teleop 一样，
+> 查看器有固定 ~1–1.5s 渲染延迟，**不影响数据质量**。
+
 ## 训练
 
 ### ACT（动作分块 Transformer）
@@ -586,6 +602,25 @@ python3 examples/eval_data.py \
 > **SmolVLA 性能说明**：VLM 推理约 1s/帧（450M 参数）。10s 的 episode
 > 以 10fps = 100 帧 ≈ 100 秒实际等待时间。实时部署请使用 ACT（~50ms/帧）。
 > SmolVLA 最适合语言条件化任务。
+
+### 推理时实时画面（可选）
+
+推理查看器默认用 Rerun。改用 Foxglove（推荐——渲染延迟更低），加 `--display-foxglove`：
+
+```bash
+# Foxglove 应用
+python3 examples/eval_data.py ... --display-foxglove
+# 连接 Foxglove Studio 到 ws://127.0.0.1:8765
+
+# Rerun（默认开启）
+python3 examples/eval_data.py ...
+
+# 完全关闭显示
+python3 examples/eval_data.py ... --no-display
+```
+
+> 显示在后台线程运行，不拖慢策略循环。与 teleop/录制一样，查看器的 ~1–1.5s
+> 渲染延迟是固有的，不影响控制。
 
 ### 推理时的控制
 

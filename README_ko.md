@@ -445,6 +445,24 @@ rm -rf ~/.cache/huggingface/lerobot/your-name/humanaopen_demo    # 새로 시작
 # 또는 record_data.py 명령에 --dataset.resume=true 추가           # 마지막 에피소드부터 계속
 ```
 
+### 녹화 중 실시간 디스플레이 (선택)
+
+기본적으로 녹화는 뷰어 없이 실행됩니다. 텔레옵 중 카메라와 상태를 실시간으로
+보려면 디스플레이 플래그를 추가하세요:
+
+```bash
+# Rerun 뷰어
+python3 examples/record_data.py ... --display
+
+# Foxglove 앱 (권장 — 렌더 지연 낮음, teleop과 동일 백엔드)
+python3 examples/record_data.py ... --display --display-mode=foxglove
+# Foxglove Studio를 ws://127.0.0.1:8765에 연결
+```
+
+> 디스플레이는 녹화 루프와 분리되어 있어 기록된 `(observation, action)` 프레임을
+> 방해하지 않습니다. teleop과 마찬가지로 뷰어는 ~1–1.5초의 고정 렌더 지연을
+> 추가하며 데이터 품질에는 **영향을 미치지 않습니다**.
+
 ## 학습
 
 ### ACT (action chunking transformer)
@@ -572,6 +590,27 @@ python3 examples/eval_data.py \
 > **SmolVLA 성능 참고**: VLM 추론은 ~1s/frame (450M params). 10s 에피소드를
 > 10fps = 100 frames로 실행하면 ≈ 100s 실제 대기 시간. 실시간 배포에는
 > ACT(~50ms/frame)를 사용하세요. SmolVLA는 언어 조건부 작업에 가장 적합합니다.
+
+### 추론 중 실시간 디스플레이 (선택)
+
+롤아웃 뷰어는 기본적으로 Rerun을 사용합니다. Foxglove를 사용하려면
+(권장 — 렌더 지연 낮음) `--display-foxglove`를 추가하세요:
+
+```bash
+# Foxglove 앱
+python3 examples/eval_data.py ... --display-foxglove
+# Foxglove Studio를 ws://127.0.0.1:8765에 연결
+
+# Rerun (기본, 켜짐)
+python3 examples/eval_data.py ...
+
+# 디스플레이 완전 끄기
+python3 examples/eval_data.py ... --no-display
+```
+
+> 디스플레이는 백그라운드 스레드에서 실행되어 정책 루프를 늦추지 않습니다.
+> teleop/녹화와 마찬가지로 뷰어의 ~1–1.5초 렌더 지연은 고유한 것이며
+> 제어에는 영향을 미치지 않습니다.
 
 ### 추론 중 컨트롤
 

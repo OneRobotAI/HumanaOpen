@@ -468,6 +468,24 @@ rm -rf ~/.cache/huggingface/lerobot/your-name/humanaopen_demo    # fresh start
 # or add --dataset.resume=true to the record_data.py command     # continue from last episode
 ```
 
+### Live display while recording (optional)
+
+By default recording runs headless (no viewer). To watch cameras + state in real
+time while you teleoperate, add a display flag:
+
+```bash
+# Rerun viewer
+python3 examples/record_data.py ... --display
+
+# Foxglove app (recommended — lower render latency, same backend as teleop)
+python3 examples/record_data.py ... --display --display-mode=foxglove
+# connect Foxglove Studio to ws://127.0.0.1:8765
+```
+
+> Display is decoupled from the control/recording loop, so it never perturbs the
+> recorded `(observation, action)` frames. Like teleop, the viewer adds a fixed
+> ~1–1.5 s render delay that does **not** affect data quality.
+
 ## Training
 
 ### ACT (action chunking transformer)
@@ -596,6 +614,27 @@ python3 examples/eval_data.py \
 > **SmolVLA performance note**: VLM inference is ~1s/frame (450M params). A 10s
 > episode at 10fps = 100 frames ≈ 100s wall clock time. For real-time deployment,
 > use ACT (~50ms/frame). SmolVLA is best for language-conditioned tasks.
+
+### Live display during inference (optional)
+
+The rollout viewer defaults to Rerun. To use Foxglove instead (recommended —
+lower render latency), add `--display-foxglove`:
+
+```bash
+# Foxglove app
+python3 examples/eval_data.py ... --display-foxglove
+# connect Foxglove Studio to ws://127.0.0.1:8765
+
+# Rerun (default, on)
+python3 examples/eval_data.py ...
+
+# Disable display entirely
+python3 examples/eval_data.py ... --no-display
+```
+
+> Display runs in a background thread so it never slows the policy loop. Like
+> teleop/record, the ~1–1.5 s render delay is inherent to the viewer and does not
+> affect control.
 
 ### Controls during inference
 

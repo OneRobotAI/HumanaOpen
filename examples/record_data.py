@@ -12,6 +12,10 @@ Usage (all args optional — defaults match the tested hardware setup):
     python3 examples/record_data.py --robot.cameras='{"head": {...}, ...}' --dataset.push_to_hub=false
     python3 examples/record_data.py --robot.confirm_lift_after_home=false
 
+Live display (optional, off by default):
+    python3 examples/record_data.py --display                      # Rerun viewer
+    python3 examples/record_data.py --display --display-mode=foxglove  # Foxglove app (recommended)
+
 Controls (same as lerobot-record):
     C = start recording episode, Q = quit, A = re-record current episode
 """
@@ -81,6 +85,12 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--episodes", dest="dataset.num_episodes", type=int, default=None)
     p.add_argument("--task", dest="dataset.single_task", default=None)
     p.add_argument("--no-hub", dest="dataset.push_to_hub", action="store_const", const="false", default=None)
+    # Live display: rerun (default) or foxglove. Pass --display-mode=foxglove to
+    # stream to the Foxglove app (ws://127.0.0.1:8765 by default) instead of rerun.
+    p.add_argument("--display", action="store_true", help="stream cameras/state to a live viewer")
+    p.add_argument("--display-mode", default="rerun", choices=["rerun", "foxglove"],
+                   help="visualization backend for --display (default: rerun; foxglove recommended)")
+    p.add_argument("--display-port", type=int, default=None, help="foxglove WebSocket port (default 8765)")
     return p
 
 
@@ -246,7 +256,11 @@ def main():
             tags=d["dataset.tags"].split(",") if d["dataset.tags"] else None,
         ),
         teleop=teleop_cfg,
-        display_data=True,
+        display_data=d["display"],
+        # --display-mode=foxglove streams to the Foxglove app instead of rerun
+        # (lower render latency, recommended — same backend as teleop).
+        display_mode=d["display_mode"],
+        display_port=d["display_port"],
     )
     try:
         record(cfg)

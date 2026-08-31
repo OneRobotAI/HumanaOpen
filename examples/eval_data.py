@@ -14,6 +14,16 @@ Usage:
         --policy.type=smolvla \
         --policy.repo_id=your-name/humanaopen_smolvla_policy \
         --task="wave hello with both arms"
+
+Display (optional):
+    # Rerun (default, on)
+    python3 examples/eval_data.py --policy.repo_id=your-name/humanaopen_act_policy
+
+    # Foxglove app (recommended, lower render latency)
+    python3 examples/eval_data.py --policy.repo_id=your-name/humanaopen_act_policy --display-foxglove
+
+    # Disable display entirely
+    python3 examples/eval_data.py --policy.repo_id=your-name/humanaopen_act_policy --no-display
 """
 
 import argparse
@@ -78,7 +88,12 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--fps", type=int, default=30)
     p.add_argument("--task", default="", help="Language instruction (required for smolvla)")
     p.add_argument("--enable-base", default="false", choices=["true", "false"], help="Allow policy to control base wheels")
-    p.add_argument("--no-display", action="store_true")
+    p.add_argument("--no-display", action="store_true", help="disable live visualization (rerun)")
+    # --display-foxglove: stream observations + actions to the Foxglove app
+    # (ws://127.0.0.1:8765 default) instead of rerun — lower render latency,
+    # same backend as teleop_leader_to_follower.py --display-foxglove.
+    p.add_argument("--display-foxglove", action="store_true", help="stream to Foxglove app instead of rerun")
+    p.add_argument("--foxglove-port", type=int, default=8765)
     # --teleop.* (optional leader arms for manual control)
     p.add_argument("--teleop.left_arm_port", default="/dev/ttyACM2")
     p.add_argument("--teleop.right_arm_port", default="/dev/ttyACM3")
@@ -155,6 +170,8 @@ def main():
 
     cameras = build_cameras(d["robot.cameras"])
     enable_base = d.get("enable_base", "false").strip().lower() == "true"
+    use_foxglove = d.get("display_foxglove", False)
+    show_display = not d.get("no_display", False)
 
     print("=" * 60)
     print("HumanaOpen Policy Rollout")
@@ -222,13 +239,70 @@ def main():
     except Exception as e:
         print(f"  ⚠️ Leader arms not available: {e}")
 
-    # Rerun display
-    if not d["no_display"]:
+    # ── Display: rerun (default) or foxglove, in a background thread ──
+    # Logging is decoupled from the control loop (same pattern as teleop) so
+    # the policy loop is never blocked by serialization/render cost.
+    import threading
+    _disp_lock = threading.Lock()
+    _disp_state: dict = {"obs": {}, "action": {}}
+    _disp_stop = threading.Event()
+    _disp_err = [None]
+
+    if use_foxglove:
+        try:
+            from lerobot.utils.visualization_utils import init_foxglove, shutdown_foxglove
+            init_foxglove(port=d["foxglove_port"])
+            print(f"  🦊 Foxglove viewer — connect Studio to ws://127.0.0.1:{d['foxglove_port']}")
+        except Exception as e:
+            _disp_err[0] = f"Foxglove init failed: {e}"
+            print(f"  ⚠️ {_disp_err[0]}")
+    elif show_display:
         try:
             rr.init("humanaopen_rollout", spawn=True)
             print("  Rerun viewer started")
         except Exception as e:
-            print(f"  ⚠️ Rerun unavailable: {e}")
+            _disp_err[0] = f"Rerun init failed: {e}"
+            print(f"  ⚠️ {_disp_err[0]}")
+
+    def _display_thread(_use_foxglove, _rr, _cam_names):
+        _last_img_ids: dict = {}
+        while not _disp_stop.is_set():
+            _t0 = time.perf_counter()
+            with _disp_lock:
+                _o = dict(_disp_state["obs"])
+                _a = dict(_disp_state["action"])
+            try:
+                if _use_foxglove:
+                    from lerobot.utils.visualization_utils import log_foxglove_data
+                    # Re-send images only when a new frame arrived (id() changed),
+                    # same freshness trick as teleop so we don't re-encode stale
+                    # frames at the display's own 15Hz rate.
+                    _changed = False
+                    for _k in _cam_names:
+                        _v = _o.get(_k)
+                        if _v is not None and _last_img_ids.get(_k) != id(_v):
+                            _last_img_ids[_k] = id(_v)
+                            _changed = True
+                    _log_obs = _o if _changed else {
+                        k: v for k, v in _o.items() if not isinstance(v, np.ndarray)
+                    }
+                    log_foxglove_data(observation=_log_obs, action=_a, compress_images=True)
+                else:
+                    _log_rerun(_o, _a, _disp_state.get("step", 0), _disp_state.get("ep", 0))
+            except Exception as e:
+                if _disp_err[0] is None:
+                    _disp_err[0] = str(e)
+                    print(f"  ⚠️ Display log error: {str(e)[:80]}")
+            time.sleep(max(1.0 / 15 - (time.perf_counter() - _t0), 0.0))
+
+    _disp_enabled = (use_foxglove or show_display) and _disp_err[0] is None
+    if _disp_enabled:
+        _disp_thread = threading.Thread(
+            target=_display_thread,
+            args=(use_foxglove, rr, list(cameras.keys())),
+            daemon=True,
+        )
+        _disp_thread.start()
 
     # Quit key (pynput, lightweight)
     from pynput import keyboard as kb
@@ -267,8 +341,13 @@ def main():
                 action_dict = _action_to_dict(action_np, robot, enable_base=enable_base)
                 robot.send_action(action_dict)
 
-                if not d["no_display"] and step % 5 == 0:
-                    _log_rerun(obs, action_dict, step, ep)
+                # Hand the latest obs+action to the display thread.
+                if _disp_enabled:
+                    with _disp_lock:
+                        _disp_state["obs"] = obs
+                        _disp_state["action"] = action_dict
+                        _disp_state["step"] = step
+                        _disp_state["ep"] = ep
 
                 elapsed = time.perf_counter() - t_start
                 if elapsed < 1.0 / d["fps"]:
@@ -286,6 +365,19 @@ def main():
     except KeyboardInterrupt:
         print("\n  Stopped")
     finally:
+        # Stop the display thread before tearing down the backend.
+        if _disp_enabled:
+            try:
+                _disp_stop.set()
+                _disp_thread.join(timeout=1.0)
+            except Exception:
+                pass
+            if use_foxglove:
+                try:
+                    from lerobot.utils.visualization_utils import shutdown_foxglove
+                    shutdown_foxglove()
+                except Exception:
+                    pass
         try:
             robot.lift_axis.save_zero()
         except Exception:

@@ -451,6 +451,24 @@ rm -rf ~/.cache/huggingface/lerobot/votre-nom/humanaopen_demo    # nouveau dépa
 # ou ajouter --dataset.resume=true à la commande record_data.py   # continuer depuis le dernier épisode
 ```
 
+### Affichage en direct pendant l'enregistrement (optionnel)
+
+Par défaut l'enregistrement tourne sans visualisation. Pour surveiller les
+caméras et l'état en temps réel pendant la téléopération, ajoutez un drapeau :
+
+```bash
+# Visualiseur Rerun
+python3 examples/record_data.py ... --display
+
+# Application Foxglove (recommandé — latence plus basse, même backend que teleop)
+python3 examples/record_data.py ... --display --display-mode=foxglove
+# connectez Foxglove Studio à ws://127.0.0.1:8765
+```
+
+> L'affichage est découplé de la boucle d'enregistrement, il ne perturbe jamais
+> les trames `(observation, action)` enregistrées. Comme en teleop, le visualiseur
+> ajoute ~1–1,5s de délai de rendu qui **n'affecte pas** la qualité des données.
+
 ## Entraînement
 
 ### ACT (action chunking transformer)
@@ -578,6 +596,27 @@ python3 examples/eval_data.py \
 > **Note performance SmolVLA** : L'inférence VLM prend ~1s/frame (450M params). Un épisode
 > de 10s à 10fps = 100 frames ≈ 100s de temps réel. Pour un déploiement temps réel,
 > utilisez ACT (~50ms/frame). SmolVLA convient mieux aux tâches conditionnées par langage.
+
+### Affichage en direct pendant l'inférence (optionnel)
+
+Le visualiseur de rollout utilise Rerun par défaut. Pour utiliser Foxglove à la
+place (recommandé — latence de rendu plus basse), ajoutez `--display-foxglove` :
+
+```bash
+# Application Foxglove
+python3 examples/eval_data.py ... --display-foxglove
+# connectez Foxglove Studio à ws://127.0.0.1:8765
+
+# Rerun (défaut, activé)
+python3 examples/eval_data.py ...
+
+# Désactiver l'affichage
+python3 examples/eval_data.py ... --no-display
+```
+
+> L'affichage tourne dans un thread d'arrière-plan, il ne ralentit jamais la boucle
+> de politique. Comme en teleop/enregistrement, le délai de rendu de ~1–1,5s est
+> inhérent au visualiseur et n'affecte pas le contrôle.
 
 ### Contrôles pendant l'inférence
 
