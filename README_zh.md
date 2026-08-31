@@ -436,7 +436,7 @@ python3 examples/record_data.py \
 **先启动 Host**，然后在 PC 上运行 `record_data.py`：
 
 ```bash
-# 1) 机器人端（Jetson）— 先启动 Host 并保持运行
+# 1) 机器人端（Jetson 或树莓派，见上面"安装：树莓派 / Jetson"章节）— 先启动 Host 并保持运行
 #    （HumanaOpenHost(...).run()，带 port1/port2 + 3 个摄像头）
 
 # 2) PC 端 — 采集（follower 走 ZMQ，主臂走本机串口 ttyACM0/1）

@@ -419,8 +419,8 @@ follower가 로봇(자체 카메라)에서 실행되고 리더 암이 PC에 연�
 녹화합니다. **Host를 먼저 시작**한 후 PC에서 `record_data.py`를 실행하세요:
 
 ```bash
-# 1) 로봇(Jetson)에서 — Host를 시작하고 계속 실행
-#    (HumanaOpenHost(...).run(), port1/port2 + 3개 카메라)
+# 1) 로봇(Jetson 또는 Raspberry Pi, 위 "설치: Raspberry Pi / Jetson" 섹션 참조)에서 —
+#    Host를 시작하고 계속 실행 (humanaopenHost(...).run(), port1/port2 + 3개 카메라)
 
 # 2) PC에서 — 녹화 (follower는 ZMQ, 리더는 로컬 ttyACM0/1 직렬)
 python3 examples/record_data.py \

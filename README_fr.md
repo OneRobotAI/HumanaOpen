@@ -425,7 +425,8 @@ leaders sont branchés sur le PC, enregistrez via ZMQ. **Démarrez le Host d'abo
 puis lancez `record_data.py` sur le PC :
 
 ```bash
-# 1) Sur le robot (Jetson) — démarrez le Host et laissez-le tourner
+# 1) Sur le robot (Jetson ou Raspberry Pi, voir "Installation : Raspberry Pi / Jetson"
+#    ci-dessus) — démarrez le Host et laissez-le tourner
 #    (HumanaOpenHost(...).run() avec port1/port2 + les 3 caméras).
 
 # 2) Sur votre PC — enregistrez (follower via ZMQ, leader via le ttyACM0/1 local)

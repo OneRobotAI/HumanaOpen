@@ -442,7 +442,8 @@ are plugged into your PC, record over ZMQ. **Start the Host first**, then run
 `record_data.py` on the PC:
 
 ```bash
-# 1) On the robot (Jetson) — start the Host, then leave it running
+# 1) On the robot (Jetson or Raspberry Pi, see "Installing: Raspberry Pi / Jetson"
+#    above) — start the Host, then leave it running
 #    (HumanaOpenHost(...).run() with port1/port2 + the 3 cameras).
 
 # 2) On your PC — record (follower via ZMQ, leader via local serial ttyACM0/1)
