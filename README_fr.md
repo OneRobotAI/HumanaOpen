@@ -784,6 +784,41 @@ Ainsi, même si le processus PC est tué brutalement (`kill -9`) ou se déconnec
 pendant que la base bouge, elle s'arrête d'elle-même au lieu de continuer jusqu'à
 l'arrêt du Host.
 
+## Feuille de route
+
+Directions prévues (contributions bienvenues — voir
+[CONTRIBUTING.md](CONTRIBUTING.md)) :
+
+### Simulation & modélisation
+- **URDF / XACRO** — description complète du robot pour RViz, Gazebo et MuJoCo
+  (actuellement un squelette modèle dans [`hardware/urdf/`](hardware/urdf/) ;
+  maillages et chaînes de bras à compléter).
+- **Sim-vers-réel** — entraîner des politiques en simulation, transférer au matériel.
+
+### Manipulation
+- **Préhension basée vision** — CV classique (ArUco/segmentation) + prise-dépose
+  avec les deux bras.
+- **Cinématique inverse (IK)** — IK analytique/numérique pour les bras 7-DOF
+  (commander directement la pose de l'effecteur).
+
+### Navigation
+- **Navigation autonome de la base** — SLAM / odométrie + planification type
+  move_base pour la base différentielle.
+- **Évitement d'obstacles** et suivi de waypoints.
+
+### Interaction & IA incarnée
+- **Modèles physiques incarnés** — adapter les pipelines existantes (ACT/SmolVLA)
+  aux modèles et plateformes physiques (MuJoCo, Isaac Lab, etc.).
+- **VLA / multimodal** — comportements plus riches conditionnés par langage
+  sur la base du support SmolVLA existant.
+- **Téléopération améliorée** — retour d'effort, visionneuse VR/3D (rerun/foxglove
+  déjà pris en charge), contrôle à distance web.
+
+### Données & outils
+- **Améliorations de la collecte** — métadonnées d'épisode plus riches, contrôles
+  qualité automatisés, versionnement des données.
+- **Jeux de données communautaires plus larges** et points de contrôle pré-entraînés.
+
 ## Licence
 
 Apache 2.0

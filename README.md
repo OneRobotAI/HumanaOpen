@@ -814,6 +814,41 @@ instead of continuing to drive until the Host is stopped.
 On startup, the script will prompt for calibration confirmation (ENTER to restore).
 On exit, it will prompt for torque release confirmation (ENTER to release).
 
+## Roadmap
+
+Planned directions (community contributions welcome — see
+[CONTRIBUTING.md](CONTRIBUTING.md)):
+
+### Simulation & modeling
+- **URDF / XACRO** — full robot description for RViz, Gazebo and MuJoCo
+  (currently a template skeleton in [`hardware/urdf/`](hardware/urdf/); meshes and
+  arm chains to be completed).
+- **Sim-to-Real** — train policies in simulation, transfer to hardware.
+
+### Manipulation
+- **Vision-based grasping** — classic CV (ArUco/segmentation) + pick-and-place
+  with the two arms.
+- **Inverse kinematics (IK)** — analytical/numerical IK for the 7-DOF arms
+  (e.g. to command end-effector poses directly).
+
+### Navigation
+- **Autonomous base navigation** — SLAM / odometry + move_base-style planning for
+  the differential-drive base.
+- **Obstacle avoidance** and waypoint following.
+
+### Interaction & embodied AI
+- **Embodied physics models** — adapt current pipelines (ACT/SmolVLA) to
+  physics-aware models and platforms (MuJoCo, Isaac Lab, etc.).
+- **VLA / multimodal** — richer language-conditioned behaviours on top of the
+  existing SmolVLA support.
+- **Teleoperation enhancements** — force feedback, VR/3D-viewer (rerun/foxglove
+  already supported) and web-based remote control.
+
+### Data & tooling
+- **Data collection improvements** — richer episode metadata, automated quality
+  checks, dataset versioning.
+- **Larger community datasets** and pre-trained checkpoints.
+
 ## License
 
 Apache 2.0
