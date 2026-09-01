@@ -88,6 +88,8 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--fps", type=int, default=30)
     p.add_argument("--task", default="", help="Language instruction (required for smolvla)")
     p.add_argument("--enable-base", default="false", choices=["true", "false"], help="Allow policy to control base wheels")
+    p.add_argument("--enable-lift", default="false", choices=["true", "false"],
+                   help="Allow policy to control the lift height; when false the lift is held at its current height (default: false)")
     p.add_argument("--no-display", action="store_true", help="disable live visualization (rerun)")
     # --display-foxglove: stream observations + actions to the Foxglove app
     # (ws://127.0.0.1:8765 default) instead of rerun — lower render latency,
@@ -134,13 +136,17 @@ def _build_policy_obs(obs, policy, cameras, device, robot, task=""):
     return batch
 
 
-def _action_to_dict(action_np, robot, enable_base=False):
+def _action_to_dict(action_np, robot, enable_base=False, enable_lift=False, obs=None):
     action_keys = list(robot.action_features.keys())
     action_dict = {}
     for i, key in enumerate(action_keys):
         val = float(action_np[i]) if i < len(action_np) else 0.0
         if not enable_base and key in ("x.vel", "theta.vel"):
             val = 0.0
+        if not enable_lift and key == "lift_axis.height_mm":
+            # Hold the lift at its current height instead of letting the policy
+            # drive it (the policy can output 0, dragging the lift to the bottom).
+            val = float(obs.get("lift_axis.height_mm", 0.0)) if obs else 0.0
         action_dict[key] = val
     return action_dict
 
@@ -170,6 +176,7 @@ def main():
 
     cameras = build_cameras(d["robot.cameras"])
     enable_base = d.get("enable_base", "false").strip().lower() == "true"
+    enable_lift = d.get("enable_lift", "false").strip().lower() == "true"
     use_foxglove = d.get("display_foxglove", False)
     show_display = not d.get("no_display", False)
 
@@ -180,6 +187,7 @@ def main():
     print(f"  Cameras:  {list(cameras.keys())}")
     print(f"  Episodes: {d['num_episodes']} x {d['duration']}s @ {d['fps']}Hz")
     print(f"  Base:     {'enabled' if enable_base else 'disabled'}")
+    print(f"  Lift:     {'enabled' if enable_lift else 'held at current height'}")
     if d.get("task"):
         print(f"  Task:     \"{d['task']}\"")
     print("=" * 60)
@@ -250,9 +258,21 @@ def main():
 
     if use_foxglove:
         try:
-            from lerobot.utils.visualization_utils import init_foxglove, shutdown_foxglove
+            from lerobot.utils.visualization_utils import init_foxglove, shutdown_foxglove, log_foxglove_data
             init_foxglove(port=d["foxglove_port"])
-            print(f"  🦊 Foxglove viewer — connect Studio to ws://127.0.0.1:{d['foxglove_port']}")
+            # Auto-open the Foxglove web viewer (same as teleop): fetch the
+            # server's app_url and open it in the default browser.
+            _app = getattr(getattr(log_foxglove_data, "server", None), "app_url", None)
+            if _app is not None:
+                _u = _app()
+                print(f"  🦊 Foxglove viewer — open in browser:\n     {_u}")
+                try:
+                    import webbrowser
+                    webbrowser.open(_u)
+                except Exception:
+                    pass
+            else:
+                print(f"  🦊 Foxglove viewer — connect Studio to ws://127.0.0.1:{d['foxglove_port']}")
         except Exception as e:
             _disp_err[0] = f"Foxglove init failed: {e}"
             print(f"  ⚠️ {_disp_err[0]}")
@@ -338,7 +358,7 @@ def main():
                 with torch.no_grad():
                     action_tensor = policy.select_action(policy_obs)
                 action_np = action_tensor.cpu().numpy().flatten()
-                action_dict = _action_to_dict(action_np, robot, enable_base=enable_base)
+                action_dict = _action_to_dict(action_np, robot, enable_base=enable_base, enable_lift=enable_lift, obs=obs)
                 robot.send_action(action_dict)
 
                 # Hand the latest obs+action to the display thread.
