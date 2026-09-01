@@ -94,6 +94,7 @@ def build_parser() -> argparse.ArgumentParser:
     # --display-foxglove: stream observations + actions to the Foxglove app
     # (ws://127.0.0.1:8765 default) instead of rerun — lower render latency,
     # same backend as teleop_leader_to_follower.py --display-foxglove.
+    p.add_argument("--display", action="store_true", help="stream to the Rerun native viewer (default visualization)")
     p.add_argument("--display-foxglove", action="store_true", help="stream to Foxglove app instead of rerun")
     p.add_argument("--foxglove-port", type=int, default=8765)
     # --teleop.* (optional leader arms for manual control)
