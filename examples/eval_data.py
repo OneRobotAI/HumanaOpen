@@ -403,9 +403,20 @@ def main():
             robot.lift_axis.save_zero()
         except Exception:
             pass
+        # Stop the robot. Order matters: the ZMQ cmd sockets use CONFLATE=1
+        # (only the newest message is kept), so sending vel=0 FIRST and then a
+        # lift message would let the lift message REPLACE the wheel-stop command
+        # in the buffer — the wheels would never be told to stop. Send the wheel
+        # stop LAST (and alone), then a short pause so it reaches the Host before
+        # the sockets are torn down.
+        try:
+            robot.send_action({"lift_axis.height_mm": robot.lift_axis.get_height_mm()})
+        except Exception:
+            pass
         try:
             robot.send_action({k: 0.0 for k in robot.action_features if k.endswith(".vel")})
-            robot.send_action({"lift_axis.height_mm": robot.lift_axis.get_height_mm()})
+            import time as _t
+            _t.sleep(0.1)
         except Exception:
             pass
         quit_listener.stop()

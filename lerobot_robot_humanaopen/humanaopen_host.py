@@ -223,6 +223,7 @@ class HumanaOpenHost:
 
         try:
             frame_count = 0
+            last_cmd_time = time.monotonic()
             while time.monotonic() < deadline:
                 t0 = time.perf_counter()
 
@@ -233,6 +234,7 @@ class HumanaOpenHost:
                 try:
                     cmd_str = sub.recv_string(zmq.NOBLOCK)
                     action = dict(json.loads(cmd_str))
+                    last_cmd_time = time.monotonic()
                 except zmq.Again:
                     action = {}
                 except (ValueError, TypeError) as e:
@@ -241,6 +243,18 @@ class HumanaOpenHost:
 
                 if action:
                     robot.send_action(action)
+
+                # ── Watchdog: if no command arrives for watchdog_timeout_ms, stop
+                # the base (and lift) as a safety net. The ZMQ cmd socket is
+                # CONFLATE=1, and a single vel=0 can be dropped if the client stops
+                # after sending it; more importantly a client that is killed
+                # (kill -9) never sends an explicit stop. This zeroes the wheels so
+                # they don't keep driving after the operator stops/aborts.
+                if time.monotonic() - last_cmd_time > self.host_cfg.watchdog_timeout_ms / 1000.0:
+                    try:
+                        robot.stop_base()
+                    except Exception:
+                        pass
 
                 # High frequency: read joint state (no cameras, millisecond-level)
                 try:
