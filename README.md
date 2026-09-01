@@ -818,7 +818,7 @@ On exit, it will prompt for torque release confirmation (ENTER to release).
 
 | Module | Status |
 |--------|--------|
-| URDF (RViz / Gazebo / MuJoCo) | ☐ |
+| URDF | ☐ |
 | Vision-based grasping | ☐ |
 | Navigation | ☐ |
 | Data collection | ☐ |

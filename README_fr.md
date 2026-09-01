@@ -788,7 +788,7 @@ l'arrêt du Host.
 
 | Module | État |
 |--------|------|
-| URDF (RViz / Gazebo / MuJoCo) | ☐ |
+| URDF | ☐ |
 | Préhension basée vision | ☐ |
 | Navigation | ☐ |
 | Collecte de données | ☐ |

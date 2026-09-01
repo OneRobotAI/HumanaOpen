@@ -772,7 +772,7 @@ python3 examples/eval_data.py ... --enable-lift=true
 
 | 模块 | 状态 |
 |------|------|
-| URDF（RViz / Gazebo / MuJoCo）| ☐ |
+| URDF | ☐ |
 | 视觉抓取 | ☐ |
 | 导航 | ☐ |
 | 数据采集 | ☐ |
