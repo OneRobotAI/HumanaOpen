@@ -715,9 +715,9 @@ def main():
             # 1-slot queue is full, keeping the oldest one — so if we consume at
             # 15Hz while the host produces at 30Hz, the queue is always full and
             # we always receive a stale frame (latency grows unbounded). Matching
-            # consumption to the host rate (AlohaMini pattern) keeps the queue
-            # empty and every observation fresh. No message queued -> returns the
-            # cached observation at ~zero cost (no decode happens).
+            # consumption to the host rate keeps the queue empty and every
+            # observation fresh. No message queued -> returns the cached
+            # observation at ~zero cost (no decode happens).
             try:
                 latest_obs = follower.get_observation()
             except Exception as e:

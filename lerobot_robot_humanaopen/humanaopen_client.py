@@ -10,7 +10,7 @@ The feature surfaces (``observation_features`` / ``action_features``) mirror
 ``HumanaOpen`` exactly (same key names and order), so datasets recorded over
 ZMQ are schema-identical to single-machine ones.
 
-Transport (modeled on lerobot AlohaMini client):
+Transport model:
 - obs: PULL socket (host PUSH+SNDHWM=1), multipart
       [0] JSON state (`_image_encoding`, `_images`)
       [1..] alternating camera-name / JPEG-bytes frames
@@ -163,9 +163,8 @@ class HumanaOpenClient(Robot):
         self._sub.connect(f"tcp://{self.config.remote_ip}:{self.config.port_zmq_observations}")
 
         # Send action commands — PUSH to host PULL (JSON single-frame).
-        # CONFLATE=1 keeps only the newest command in-flight (same as lerobot
-        # AlohaMini): a stale backlog must never make the operator's latest
-        # action wait behind already-obsolete ones.
+        # CONFLATE=1 keeps only the newest command in-flight so a stale backlog
+        # never makes the operator's latest action wait behind obsolete ones.
         self._pub = self._ctx.socket(zmq.PUSH)
         self._pub.setsockopt(zmq.CONFLATE, 1)
         self._pub.connect(f"tcp://{self.config.remote_ip}:{self.config.port_zmq_cmd}")
@@ -234,8 +233,7 @@ class HumanaOpenClient(Robot):
         # Drain to the NEWEST observation without decoding stale frames: each
         # decode is 3x imdecode, so decoding every backlogged message would
         # compound latency (decode slower -> more backlog -> even slower).
-        # Store only the last message, decode it once after the drain
-        # (same pattern as lerobot AlohaMini client).
+        # Store only the last message, decode it once after the drain.
         last_parts: list[bytes] | None = None
         pending = self._sub.poll(0)
         while pending:

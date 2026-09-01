@@ -3,7 +3,7 @@
 Connects to the real hardware and forwards observations / receives
 action commands from a remote ``HumanaOpenClient`` over ZMQ.
 
-Transport (modeled on lerobot AlohaMini host):
+Transport model:
 - cmd: PULL socket, JSON single-frame, CONFLATE-safe
 - obs: PUSH socket with SNDHWM=1, multipart message:
       [0] JSON state (floats) with `_image_encoding` + `_images` metadata
@@ -227,10 +227,10 @@ class HumanaOpenHost:
             while time.monotonic() < deadline:
                 t0 = time.perf_counter()
 
-                # ── Receive + execute command FIRST (like lerobot LeKiwi/AlohaMini
-                # hosts): the action channel must NOT wait behind observation/image
-                # work. Non-blocking + CONFLATE keeps only the newest command, so a
-                # slow obs/build below never delays the operator's action.
+                # ── Receive + execute command FIRST: the action channel must NOT
+                # wait behind observation/image work. Non-blocking + CONFLATE
+                # keeps only the newest command, so a slow obs/build below never
+                # delays the operator's action.
                 try:
                     cmd_str = sub.recv_string(zmq.NOBLOCK)
                     action = dict(json.loads(cmd_str))
