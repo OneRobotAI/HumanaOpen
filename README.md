@@ -620,6 +620,7 @@ python3 examples/eval_data.py \
     --remote_ip=192.168.1.9 \
     --robot.cameras='{"head": {"type": "opencv", "index_or_path": "/dev/video0", "width": 640, "height": 480, "fps": 30, "fourcc": "MJPG"}, "left_wrist": {"type": "opencv", "index_or_path": "/dev/video2", "width": 640, "height": 480, "fps": 30, "fourcc": "MJPG"}, "right_wrist": {"type": "opencv", "index_or_path": "/dev/video4", "width": 640, "height": 480, "fps": 30, "fourcc": "MJPG"}}' \
     --enable-base=false \
+    --enable-lift=false \
     --num-episodes=5 \
     --duration=30 \
     --fps=30 \
@@ -644,6 +645,7 @@ python3 examples/eval_data.py \
     --robot.port3=None \
     --robot.cameras='{"head": {"type": "opencv", "index_or_path": "/dev/video0", "width": 640, "height": 480, "fps": 30, "fourcc": "MJPG"}, "left_wrist": {"type": "opencv", "index_or_path": "/dev/video2", "width": 640, "height": 480, "fps": 30, "fourcc": "MJPG"}, "right_wrist": {"type": "opencv", "index_or_path": "/dev/video4", "width": 640, "height": 480, "fps": 30, "fourcc": "MJPG"}}' \
     --enable-base=false \
+    --enable-lift=false \
     --num-episodes=5 \
     --duration=30 \
     --fps=30
@@ -666,6 +668,7 @@ python3 examples/eval_data.py \
     --remote_ip=192.168.1.9 \
     --robot.cameras='{"head": {"type": "opencv", "index_or_path": "/dev/video0", "width": 640, "height": 480, "fps": 30, "fourcc": "MJPG"}, "left_wrist": {"type": "opencv", "index_or_path": "/dev/video2", "width": 640, "height": 480, "fps": 30, "fourcc": "MJPG"}, "right_wrist": {"type": "opencv", "index_or_path": "/dev/video4", "width": 640, "height": 480, "fps": 30, "fourcc": "MJPG"}}' \
     --enable-base=false \
+    --enable-lift=false \
     --num-episodes=2 \
     --duration=10 \
     --fps=10 \
@@ -686,6 +689,7 @@ python3 examples/eval_data.py \
     --robot.port3=None \
     --robot.cameras='{"head": {"type": "opencv", "index_or_path": "/dev/video0", "width": 640, "height": 480, "fps": 30, "fourcc": "MJPG"}, "left_wrist": {"type": "opencv", "index_or_path": "/dev/video2", "width": 640, "height": 480, "fps": 30, "fourcc": "MJPG"}, "right_wrist": {"type": "opencv", "index_or_path": "/dev/video4", "width": 640, "height": 480, "fps": 30, "fourcc": "MJPG"}}' \
     --enable-base=false \
+    --enable-lift=false \
     --num-episodes=2 \
     --duration=10 \
     --fps=10
