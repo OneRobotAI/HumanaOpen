@@ -164,26 +164,13 @@ def main():
             default=None,
             help=f"{name} camera device (default {DEFAULT_CAM_DEVICES.get(name, 'undefined')})",
         )
-    parser.add_argument("--display", action="store_true", help="use rerun to display camera feeds and joint states in real time")
     parser.add_argument(
-        "--display-foxglove",
-        action="store_true",
-        help="[RECOMMENDED] display via lerobot's official foxglove backend: starts an "
-        "in-process WebSocket server (ws://127.0.0.1:8765); view in the Foxglove app "
-        "(or foxglove studio web). Avoids rerun's native wgpu/NVIDIA black-screen bug "
-        "and needs no viewer subprocess (no orphan/port issues).",
+        "--display",
+        choices=["rerun", "foxglove"],
+        default=None,
+        help="enable live display: 'rerun' (native Rerun viewer) or 'foxglove' "
+        "(Foxglove app, recommended — lower render latency). Omit to run headless.",
     )
-    parser.add_argument("--foxglove-port", type=int, default=8765, help="port for --display-foxglove (default 8765)")
-    parser.add_argument(
-        "--display-web",
-        action="store_true",
-        help="display via rerun WEB viewer (browser) instead of the native window. "
-        "Bypasses the NVIDIA/wgpu black-screen present bug: rerun --serve-web hosts "
-        "gRPC + a web server, lerobot init_rerun connects over gRPC, and the browser "
-        "renders with WebGL. Requires a browser and rerun CLI (bundled).",
-    )
-    parser.add_argument("--web-port", type=int, default=9090, help="port for --display-web browser URL (default 9090)")
-    parser.add_argument("--web-grpc-port", type=int, default=9876, help="gRPC backend port for --display-web (default 9876)")
     args = parser.parse_args()
 
     cams = build_cameras(args)
@@ -304,8 +291,8 @@ def main():
         obs = follower.get_observation()
 
         # optional live visualization — foxglove (official lerobot backend, in-process
-        # WebSocket server; render in the Foxglove app, no native wgpu, no subprocesses)
-        if args.display_foxglove:
+        #         WebSocket server; render in the Foxglove app, no native wgpu, no subprocesses)
+        if args.display == "foxglove":
             try:
                 from lerobot.utils.visualization_utils import (
                     init_foxglove,
@@ -313,7 +300,7 @@ def main():
                     shutdown_foxglove,
                 )
 
-                init_foxglove(port=args.foxglove_port)
+                init_foxglove(port=8765)
                 # The server exposes the OFFICIAL viewer link: app.foxglove.dev with
                 # ds=foxglove-websocket (NOT rosbridge). Opening it pre-configures the
                 # correct connection type + ws URL — this is what the SDK documents.
@@ -336,7 +323,7 @@ def main():
                 else:
                     print(
                         f"  🦊 Foxglove viewer: connect Foxglove Studio (type=Foxglove "
-                        f"WebSocket) to ws://127.0.0.1:{args.foxglove_port}"
+                        f"WebSocket) to ws://127.0.0.1:8765"
                     )
                 # One-shot diagnostic: which image/state keys actually reach Foxglove
                 # (if wrist is missing here, the Host/schema is the problem, not Foxglove)
@@ -413,8 +400,8 @@ def main():
                 print(f"  ⚠️ Foxglove startup failed: {str(e)[:80]}")
 
         # optional rerun live visualization (camera feeds + joint states)
-        _display_web = args.display_web and not args.display  # --display takes precedence
-        if args.display or _display_web:
+        _display_web = False  # removed --display-web flag; keep var for shutdown safety
+        if args.display == "rerun":
             try:
                 from lerobot.utils.visualization_utils import init_rerun, log_rerun_data
 
@@ -591,8 +578,8 @@ def main():
         _last_lift_dir = 0  # 0=none, 1=last pressed u, -1=last pressed h
         speed_idx = 1  # base speed level (1 = base)
         _last_lift_print = 0.0  # throttles the lift-status display
-        _rerun = args.display  # whether rerun is enabled
-        _foxglove = args.display_foxglove  # whether foxglove is enabled
+        _rerun = args.display == "rerun"  # whether rerun display is enabled
+        _foxglove = args.display == "foxglove"  # whether foxglove display is enabled
 
         # ── Display decoupling ─────────────────────────────────────────
         # foxglove/rerun logging is MOVED OFF the control loop: log_foxglove_data
@@ -786,12 +773,12 @@ def main():
             follower.lift_axis.save_zero()
         except Exception:
             pass
-        if args.display or args.display_web:
+        if args.display == "rerun":
             try:
                 rerun.rerun_shutdown()
             except Exception:
                 pass
-        if args.display_foxglove:
+        if args.display == "foxglove":
             try:
                 from lerobot.utils.visualization_utils import shutdown_foxglove
 

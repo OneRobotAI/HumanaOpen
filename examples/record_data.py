@@ -13,8 +13,8 @@ Usage (all args optional — defaults match the tested hardware setup):
     python3 examples/record_data.py --robot.confirm_lift_after_home=false
 
 Live display (optional, off by default):
-    python3 examples/record_data.py --display                      # Rerun viewer
-    python3 examples/record_data.py --display-foxglove             # Foxglove app (recommended)
+    python3 examples/record_data.py --display=rerun                # Rerun viewer
+    python3 examples/record_data.py --display=foxglove             # Foxglove app (recommended)
 
 Controls (same as lerobot-record):
     C = start recording episode, Q = quit, A = re-record current episode
@@ -85,15 +85,11 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--episodes", dest="dataset.num_episodes", type=int, default=None)
     p.add_argument("--task", dest="dataset.single_task", default=None)
     p.add_argument("--no-hub", dest="dataset.push_to_hub", action="store_const", const="false", default=None)
-    # Live display: off by default. --display = rerun, --display-foxglove = Foxglove.
-    # The low-level --display-mode / --display-port are kept for full
-    # lerobot-record compatibility (both compose with --display).
-    p.add_argument("--display", action="store_true", help="stream cameras/state to a live viewer (rerun)")
-    p.add_argument("--display-foxglove", action="store_true",
-                   help="stream to the Foxglove app (recommended, lower latency) instead of rerun")
-    p.add_argument("--display-mode", default="rerun", choices=["rerun", "foxglove"],
-                   help="visualization backend for --display (default: rerun)")
-    p.add_argument("--display-port", type=int, default=None, help="foxglove WebSocket port (default 8765)")
+    # Live display: off by default. Example: --display=rerun (native Rerun) or
+    # --display=foxglove (Foxglove app, recommended). Omit to run headless.
+    p.add_argument("--display", choices=["rerun", "foxglove"], default=None,
+                   help="enable live display: 'rerun' (native Rerun viewer) or "
+                   "'foxglove' (Foxglove app, lower latency). Omit to run headless.")
     return p
 
 
@@ -192,10 +188,12 @@ def main():
 
     show_command(args)
 
-    # --display-foxglove is a convenience alias for --display --display-mode=foxglove.
-    if d.get("display_foxglove"):
-        d["display"] = True
-        d["display_mode"] = "foxglove"
+    # Map --display=rerun|foxglove to lerobot RecordConfig display fields.
+    # display_data (on/off) is driven by presence of --display;
+    # display_mode selects the backend lerobot uses internally.
+    d["display_data"] = d["display"] is not None
+    d["display_mode"] = d["display"] or "rerun"
+    d["display_port"] = None
 
     cameras = _load_cameras(d["robot.cameras"])
     if d.get("chest"):
@@ -264,7 +262,7 @@ def main():
             tags=d["dataset.tags"].split(",") if d["dataset.tags"] else None,
         ),
         teleop=teleop_cfg,
-        display_data=d["display"],
+        display_data=d["display_data"],
         # --display-mode=foxglove streams to the Foxglove app instead of rerun
         # (lower render latency, recommended — same backend as teleop).
         display_mode=d["display_mode"],
@@ -275,7 +273,7 @@ def main():
     # same way teleop does. init_foxglove is idempotent (returns early if the
     # server already exists), so this does not conflict with record()'s own
     # init_visualization("foxglove").
-    if d["display"] and d["display_mode"] == "foxglove":
+    if d["display_data"] and d["display_mode"] == "foxglove":
         try:
             from lerobot.utils.visualization_utils import init_foxglove, log_foxglove_data
             _port = d["display_port"] or 8765

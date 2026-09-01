@@ -15,15 +15,15 @@ Usage:
         --policy.repo_id=your-name/humanaopen_smolvla_policy \
         --task="wave hello with both arms"
 
-Display (optional):
-    # Rerun (default, on)
-    python3 examples/eval_data.py --policy.repo_id=your-name/humanaopen_act_policy
+Display (optional, off by default):
+    # Rerun native viewer
+    python3 examples/eval_data.py --policy.repo_id=your-name/humanaopen_act_policy --display=rerun
 
     # Foxglove app (recommended, lower render latency)
-    python3 examples/eval_data.py --policy.repo_id=your-name/humanaopen_act_policy --display-foxglove
+    python3 examples/eval_data.py --policy.repo_id=your-name/humanaopen_act_policy --display=foxglove
 
-    # Disable display entirely
-    python3 examples/eval_data.py --policy.repo_id=your-name/humanaopen_act_policy --no-display
+    # Headless (default): omit --display
+    python3 examples/eval_data.py --policy.repo_id=your-name/humanaopen_act_policy
 """
 
 import argparse
@@ -90,13 +90,9 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--enable-base", default="false", choices=["true", "false"], help="Allow policy to control base wheels")
     p.add_argument("--enable-lift", default="false", choices=["true", "false"],
                    help="Allow policy to control the lift height; when false the lift is held at its current height (default: false)")
-    p.add_argument("--no-display", action="store_true", help="disable live visualization (rerun)")
-    # --display-foxglove: stream observations + actions to the Foxglove app
-    # (ws://127.0.0.1:8765 default) instead of rerun — lower render latency,
-    # same backend as teleop_leader_to_follower.py --display-foxglove.
-    p.add_argument("--display", action="store_true", help="stream to the Rerun native viewer (default visualization)")
-    p.add_argument("--display-foxglove", action="store_true", help="stream to Foxglove app instead of rerun")
-    p.add_argument("--foxglove-port", type=int, default=8765)
+    p.add_argument("--display", choices=["rerun", "foxglove"], default=None,
+                   help="enable live display: 'rerun' (native Rerun viewer) or "
+                   "'foxglove' (Foxglove app, lower latency). Omit to run headless.")
     # --teleop.* (optional leader arms for manual control)
     p.add_argument("--teleop.left_arm_port", default="/dev/ttyACM2")
     p.add_argument("--teleop.right_arm_port", default="/dev/ttyACM3")
@@ -178,8 +174,8 @@ def main():
     cameras = build_cameras(d["robot.cameras"])
     enable_base = d.get("enable_base", "false").strip().lower() == "true"
     enable_lift = d.get("enable_lift", "false").strip().lower() == "true"
-    use_foxglove = d.get("display_foxglove", False)
-    show_display = not d.get("no_display", False)
+    use_foxglove = d.get("display", None) == "foxglove"
+    show_display = d.get("display", None) is not None  # True when --display given
 
     print("=" * 60)
     print("HumanaOpen Policy Rollout")
@@ -260,7 +256,7 @@ def main():
     if use_foxglove:
         try:
             from lerobot.utils.visualization_utils import init_foxglove, shutdown_foxglove, log_foxglove_data
-            init_foxglove(port=d["foxglove_port"])
+            init_foxglove(port=8765)
             # Auto-open the Foxglove web viewer (same as teleop): fetch the
             # server's app_url and open it in the default browser.
             _app = getattr(getattr(log_foxglove_data, "server", None), "app_url", None)
@@ -273,7 +269,7 @@ def main():
                 except Exception:
                     pass
             else:
-                print(f"  🦊 Foxglove viewer — connect Studio to ws://127.0.0.1:{d['foxglove_port']}")
+                print(f"  🦊 Foxglove viewer — connect Studio to ws://127.0.0.1:8765")
         except Exception as e:
             _disp_err[0] = f"Foxglove init failed: {e}"
             print(f"  ⚠️ {_disp_err[0]}")
