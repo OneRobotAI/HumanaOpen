@@ -701,6 +701,24 @@ python3 examples/eval_data.py ... --no-display
 > de politique. Comme en teleop/enregistrement, le délai de rendu de ~1–1,5s est
 > inhérent au visualiseur et n'affecte pas le contrôle.
 
+### Contrôle de la base (désactivé par défaut)
+
+Par défaut, la base est **désactivée** (`--enable-base=false`) : les `x.vel` /
+`theta.vel` prédits par la politique sont forcés à `0`, donc seuls les bras, la
+tête et la levée bougent. Cela évite que le robot parte tout seul, plus sûr
+pendant la validation d'une nouvelle politique.
+
+```bash
+# Base désactivée (défaut, plus sûr) — les roues restent immobiles
+python3 examples/eval_data.py ... --enable-base=false
+
+# Base activée — la politique peut piloter les roues
+python3 examples/eval_data.py ... --enable-base=true
+```
+
+Commencez avec `--enable-base=false` jusqu'à ce que la politique se comporte bien,
+puis activez la base si votre tâche nécessite de se déplacer.
+
 ### Contrôles pendant l'inférence
 
 | Contrôle | Touches | Notes |

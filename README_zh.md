@@ -694,6 +694,21 @@ python3 examples/eval_data.py ... --no-display
 > 显示在后台线程运行，不拖慢策略循环。与 teleop/录制一样，查看器的 ~1–1.5s
 > 渲染延迟是固有的，不影响控制。
 
+### 底盘控制（默认关闭）
+
+默认底盘**关闭**（`--enable-base=false`）：策略预测的 `x.vel` / `theta.vel` 被强制置 0，
+只有手臂、头部和升降动作。这可防止机器人意外移动，验证新策略时更安全。
+
+```bash
+# 底盘关闭（默认，更安全）— 轮子不动，只有手臂/头部/升降动作
+python3 examples/eval_data.py ... --enable-base=false
+
+# 底盘开启 — 允许策略驱动轮子
+python3 examples/eval_data.py ... --enable-base=true
+```
+
+建议先用 `--enable-base=false` 直到策略表现稳定，若任务需要移动再开启底盘。
+
 ### 推理时的控制
 
 | 控制 | 按键 | 说明 |

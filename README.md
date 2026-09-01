@@ -716,6 +716,24 @@ python3 examples/eval_data.py ... --no-display
 > teleop/record, the ~1–1.5 s render delay is inherent to the viewer and does not
 > affect control.
 
+### Base control (disable by default)
+
+By default the base wheels are **disabled** (`--enable-base=false`): the policy's
+predicted `x.vel` / `theta.vel` are forced to `0`, so only the arms, head and lift
+move. This prevents the robot from driving away unexpectedly, which is safer while
+validating a new policy.
+
+```bash
+# Base disabled (default, safer) — wheels stay still, only arms/head/lift move
+python3 examples/eval_data.py ... --enable-base=false
+
+# Base enabled — policy is allowed to drive the wheels
+python3 examples/eval_data.py ... --enable-base=true
+```
+
+Start with `--enable-base=false` until the policy behaves well, then enable the
+base if your task requires locomotion.
+
 ### Controls during inference
 
 | Control | Keys |

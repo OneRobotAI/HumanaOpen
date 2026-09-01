@@ -689,6 +689,23 @@ python3 examples/eval_data.py ... --no-display
 > teleop/녹화와 마찬가지로 뷰어의 ~1–1.5초 렌더 지연은 고유한 것이며
 > 제어에는 영향을 미치지 않습니다.
 
+### 베이스 제어 (기본 비활성화)
+
+기본적으로 베이스 바퀴는 **비활성화**(`--enable-base=false`): 정책이 예측한
+`x.vel` / `theta.vel`이 `0`으로 강제되어 팔, 머리, 리프트만 움직입니다. 로봇이
+갑자기 이동하는 것을 방지하여 새 정책을 검증할 때 더 안전합니다.
+
+```bash
+# 베이스 비활성화 (기본, 안전) — 바퀴가 움직이지 않음, 팔/머리/리프트만 동작
+python3 examples/eval_data.py ... --enable-base=false
+
+# 베이스 활성화 — 정책이 바퀴를 구동하도록 허용
+python3 examples/eval_data.py ... --enable-base=true
+```
+
+정책이 잘 동작할 때까지 `--enable-base=false`로 시작하고, 작업에 이동이
+필요하면 베이스를 활성화하세요.
+
 ### 추론 중 컨트롤
 
 | 제어 | 키 | 참고 |
