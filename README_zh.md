@@ -46,6 +46,23 @@ examples/
 ├── test_base_keyboard.py       # 底盘键盘测试（不含升降/手臂）
 ├── test_lift_only.py           # 升降轴测试（归零 + 升降）
 └── check_phase.py              # 检查舵机速度单位（Phase BIT2）
+```
+
+## 硬件
+
+```
+hardware/
+├── README.md               # 硬件概览（目录指南）
+├── BOM/bom.md              # 物料清单 — 部件、规格、采购
+├── assembly/assembly.md    # 分步骤组装说明
+├── cad/
+│   ├── fusion360/          # Fusion 360 源设计（.f3d）
+│   └── step/               # STEP 导出（.step/.stp）
+├── stl/                    # 可直接打印的 3D 打印文件（.stl）
+├── urdf/                   # 机器人描述（RViz / Gazebo / 仿真用）
+│   └── humanaopen.urdf     # （meshes/ 存放 URDF 引用的 STL 网格）
+└── electronics/wiring.md   # 接线 / 电路布局与电源说明
+```
 
 ### 诊断与调参工具
 

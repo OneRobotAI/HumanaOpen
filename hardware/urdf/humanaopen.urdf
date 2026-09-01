@@ -1,0 +1,65 @@
+<?xml version="1.0"?>
+<!--
+  HumanaOpen URDF — placeholder skeleton.
+  Joint/link names mirror the software (see lerobot_robot_humanaopen/humanaopen.py):
+    left_arm_*, right_arm_* (8 joints each: 7-DOF + gripper)
+    head_pan, head_tilt
+    lift_axis (prismatic)
+    base (differential)
+  Fill in the <mesh> origins/collisions and inertial from your CAD export.
+-->
+<robot name="humanaopen">
+
+  <!-- === Base / chassis === -->
+  <link name="base_link">
+    <!-- mesh from stl/, inertial from CAD -->
+  </link>
+
+  <!-- Differential-drive wheel joints -->
+  <joint name="base_left_wheel_joint" type="continuous">
+    <parent link="base_link"/>
+    <child link="base_left_wheel"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+  <link name="base_left_wheel"/>
+  <joint name="base_right_wheel_joint" type="continuous">
+    <parent link="base_link"/>
+    <child link="base_right_wheel"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+  <link name="base_right_wheel"/>
+
+  <!-- === Lift (prismatic) === -->
+  <joint name="lift_axis" type="prismatic">
+    <parent link="base_link"/>
+    <child link="lift_carriage"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="0.003" upper="0.200" effort="30" velocity="0.2"/>
+  </joint>
+  <link name="lift_carriage"/>
+
+  <!-- === Torso :: head === -->
+  <joint name="head_pan" type="revolute">
+    <parent link="lift_carriage"/>
+    <child link="head_pan_link"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <limit lower="-3.14159" upper="3.14159" effort="10" velocity="1.0"/>
+  </joint>
+  <link name="head_pan_link"/>
+  <joint name="head_tilt" type="revolute">
+    <parent link="head_pan_link"/>
+    <child link="head_tilt_link"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <limit lower="-3.14159" upper="3.14159" effort="10" velocity="1.0"/>
+  </joint>
+  <link name="head_tilt_link"/>
+
+  <!-- === Left arm (8 joints: 7-DOF + gripper) === -->
+  <!-- Add one revolute joint + link per left_arm_* segment, ordering:
+       shoulder_pan -> shoulder_lift -> shoulder_roll -> elbow_flex ->
+       forearm_rotation -> wrist_flex -> wrist_yaw -> gripper -->
+
+  <!-- === Right arm (8 joints) === -->
+
+</robot>

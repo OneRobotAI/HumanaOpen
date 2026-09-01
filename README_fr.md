@@ -47,6 +47,23 @@ examples/
 ├── test_base_keyboard.py       # Test clavier base uniquement (sans levage/bras)
 ├── test_lift_only.py           # Test axe de levage (homing + montée/descente)
 └── check_phase.py              # Vérifier unité de vitesse servo (Phase BIT2)
+```
+
+## Matériel
+
+```
+hardware/
+├── README.md               # Aperçu du matériel (guide des répertoires)
+├── BOM/bom.md              # Liste de pièces — composants, spécifications, approvisionnement
+├── assembly/assembly.md    # Instructions d'assemblage pas à pas
+├── cad/
+│   ├── fusion360/          # Conceptions sources Fusion 360 (.f3d)
+│   └── step/               # Exports STEP (.step/.stp)
+├── stl/                    # Fichiers d'impression 3D prêts à imprimer (.stl)
+├── urdf/                   # Description du robot (RViz / Gazebo / simulation)
+│   └── humanaopen.urdf     # (meshes/ contient les maillages STL référencés)
+└── electronics/wiring.md   # Câblage / disposition électronique et alimentation
+```
 
 ### Outils de diagnostic et réglage
 

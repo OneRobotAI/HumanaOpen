@@ -47,6 +47,23 @@ examples/
 ├── test_base_keyboard.py       # Base-only keyboard test (no lift/arms)
 ├── test_lift_only.py           # Lift axis test (homing + raise/lower)
 └── check_phase.py              # Check servo velocity unit (Phase BIT2)
+```
+
+## Hardware
+
+```
+hardware/
+├── README.md               # Hardware overview (directory guide)
+├── BOM/bom.md              # Bill of Materials — parts, specs, sourcing
+├── assembly/assembly.md    # Step-by-step build instructions
+├── cad/
+│   ├── fusion360/          # Fusion 360 source designs (.f3d)
+│   └── step/               # STEP exports (.step/.stp)
+├── stl/                    # Ready-to-print 3D printing files (.stl)
+├── urdf/                   # Robot description for RViz / Gazebo / simulation
+│   └── humanaopen.urdf     # (meshes/ holds the referenced STL meshes)
+└── electronics/wiring.md   # Wiring / electronics layout and power notes
+```
 
 ### Diagnostics & Tuning Tools
 

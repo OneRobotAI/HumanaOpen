@@ -46,6 +46,23 @@ examples/
 ├── test_base_keyboard.py       # 베이스 전용 키보드 테스트 (리프트/암 제외)
 ├── test_lift_only.py           # 리프트 축 테스트 (호밍 + 상승/하강)
 └── check_phase.py              # 서보 속도 단위 확인 (Phase BIT2)
+```
+
+## 하드웨어
+
+```
+hardware/
+├── README.md               # 하드웨어 개요 (디렉터리 가이드)
+├── BOM/bom.md              # 부품 목록 — 부품, 사양, 조달
+├── assembly/assembly.md    # 단계별 조립 설명서
+├── cad/
+│   ├── fusion360/          # Fusion 360 소스 설계 (.f3d)
+│   └── step/               # STEP 내보내기 (.step/.stp)
+├── stl/                    # 바로 인쇄 가능한 3D 프린팅 파일 (.stl)
+├── urdf/                   # 로봇 설명 (RViz / Gazebo / 시뮬레이션용)
+│   └── humanaopen.urdf     # (meshes/는 URDF가 참조하는 STL 메시 보관)
+└── electronics/wiring.md   # 배선 / 전자회로 배치 및 전원 설명
+```
 
 ### 진단 및 튜닝 도구
 
