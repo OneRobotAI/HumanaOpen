@@ -786,38 +786,21 @@ l'arrêt du Host.
 
 ## Feuille de route
 
-Directions prévues (contributions bienvenues — voir
-[CONTRIBUTING.md](CONTRIBUTING.md)) :
+| Module | État |
+|--------|------|
+| URDF (RViz / Gazebo / MuJoCo) | ☐ |
+| Préhension basée vision | ☐ |
+| Navigation | ☐ |
+| Collecte de données | ☐ |
+| Modèles du monde incarnés | ☐ |
 
-### Simulation & modélisation
-- **URDF / XACRO** — description complète du robot pour RViz, Gazebo et MuJoCo
-  (actuellement un squelette modèle dans [`hardware/urdf/`](hardware/urdf/) ;
-  maillages et chaînes de bras à compléter).
-- **Sim-vers-réel** — entraîner des politiques en simulation, transférer au matériel.
+### Remerciements
 
-### Manipulation
-- **Préhension basée vision** — CV classique (ArUco/segmentation) + prise-dépose
-  avec les deux bras.
-- **Cinématique inverse (IK)** — IK analytique/numérique pour les bras 7-DOF
-  (commander directement la pose de l'effecteur).
-
-### Navigation
-- **Navigation autonome de la base** — SLAM / odométrie + planification type
-  move_base pour la base différentielle.
-- **Évitement d'obstacles** et suivi de waypoints.
-
-### Interaction & IA incarnée
-- **Modèles physiques incarnés** — adapter les pipelines existantes (ACT/SmolVLA)
-  aux modèles et plateformes physiques (MuJoCo, Isaac Lab, etc.).
-- **VLA / multimodal** — comportements plus riches conditionnés par langage
-  sur la base du support SmolVLA existant.
-- **Téléopération améliorée** — retour d'effort, visionneuse VR/3D (rerun/foxglove
-  déjà pris en charge), contrôle à distance web.
-
-### Données & outils
-- **Améliorations de la collecte** — métadonnées d'épisode plus riches, contrôles
-  qualité automatisés, versionnement des données.
-- **Jeux de données communautaires plus larges** et points de contrôle pré-entraînés.
+- Le logiciel est construit sur [LeRobot](https://github.com/huggingface/lerobot)
+  et [open-arms-mini](https://github.com/TheRobotStudio/open-arms-mini).
+- La conception matérielle s'inspire de [xlerobot](https://github.com/xrobot/xlerobot) :
+  les degrés de liberté de la tête et la base à entraînement différentiel suivent
+  son approche.
 
 ## Licence
 

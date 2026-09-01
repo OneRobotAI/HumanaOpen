@@ -770,30 +770,20 @@ python3 examples/eval_data.py ... --enable-lift=true
 
 ## 未来规划
 
-计划方向（欢迎社区贡献——见 [CONTRIBUTING.md](CONTRIBUTING.md)）：
+| 模块 | 状态 |
+|------|------|
+| URDF（RViz / Gazebo / MuJoCo）| ☐ |
+| 视觉抓取 | ☐ |
+| 导航 | ☐ |
+| 数据采集 | ☐ |
+| 具身世界模型 | ☐ |
 
-### 仿真与建模
-- **URDF / XACRO** — 完整的机器人描述，用于 RViz、Gazebo 和 MuJoCo
-  （目前为 [`hardware/urdf/`](hardware/urdf/) 中的模板骨架；网格和手臂链路待补全）。
-- **Sim-to-Real** — 在仿真中训练策略，迁移到实物。
+### 致谢
 
-### 操作
-- **视觉抓取** — 经典 CV（ArUco/分割）+ 双臂抓放（pick-and-place）。
-- **运动学逆解（IK）** — 双臂 7-DOF 的解析/数值逆解（直接指令末端位姿）。
-
-### 导航
-- **底盘自主导航** — 差速底盘的 SLAM / 里程计 + move_base 式路径规划。
-- **避障** 和路径点跟随。
-
-### 交互与具身 AI
-- **具身物理模型适配** — 将现有流程（ACT/SmolVLA）适配到物理感知模型和平台
-  （MuJoCo、Isaac Lab 等）。
-- **VLA / 多模态** — 在现有 SmolVLA 支持上扩展更丰富的语言条件行为。
-- **遥操作增强** — 力反馈、VR/3D 查看器（rerun/foxglove 已支持）、Web 远程控制。
-
-### 数据与工具
-- **数据采集改进** — 更丰富的 episode 元数据、自动质量检查、数据集版本管理。
-- **更大的社区数据集** 和预训练检查点。
+- 软件基于 [LeRobot](https://github.com/huggingface/lerobot) 和
+  [open-arms-mini](https://github.com/TheRobotStudio/open-arms-mini) 构建。
+- 硬件设计参考了 [xlerobot](https://github.com/xrobot/xlerobot)：
+  头部自由度和差速底盘的设计借鉴了其方案。
 
 ## 许可证
 
