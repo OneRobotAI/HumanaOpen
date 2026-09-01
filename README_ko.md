@@ -305,15 +305,17 @@ python3 examples/teleop_leader_to_follower.py --no-cameras
 
 | 플래그 | 백엔드 | 설명 |
 |--------|--------|------|
-| `--display` | [Rerun](https://rerun.io) 네이티브 뷰어 | gRPC; `rrspawn` 데스크톱, `--serve-web` 대안 |
-| `--display-foxglove` | [Foxglove Studio](https://foxglove.dev) WebSocket | `ws://127.0.0.1:8765` 연결. 레이아웃은 `examples/humanoopen_foxglove.layout.json`에 자동 저장 (한 번만 임포트). **권장** — 렌더 지연 최소 |
+| `--display=rerun` | [Rerun](https://rerun.io) 네이티브 뷰어 | 네이티브 Rerun 뷰어 창 |
+| `--display=foxglove` | [Foxglove Studio](https://foxglove.dev) WebSocket | `ws://127.0.0.1:8765` 연결. 레이아웃은 `examples/humanoopen_foxglove.layout.json`에 자동 저장 (한 번만 임포트). **권장** — 렌더 지연 최소 |
+
+`--display`를 생략하면 화면 없이(headless) 실행합니다.
 
 ```bash
 # Foxglove (권장)
-python3 examples/teleop_leader_to_follower.py --remote_ip=192.168.1.100 --display-foxglove
+python3 examples/teleop_leader_to_follower.py --remote_ip=192.168.1.100 --display=foxglove
 
 # Rerun
-python3 examples/teleop_leader_to_follower.py --remote_ip=192.168.1.100 --display
+python3 examples/teleop_leader_to_follower.py --remote_ip=192.168.1.100 --display=rerun
 ```
 
 > **디스플레이 지연**: 두 백엔드 모두 고정된 렌더 파이프라인 지연이 있습니다
@@ -437,14 +439,14 @@ python3 examples/record_data.py \
     --dataset.reset_time_s=10 \
     --dataset.fps=30 \
     --dataset.push_to_hub=true \
-    --display-foxglove
+    --display=foxglove
 ```
 
 - `--remote_ip`는 듀얼 머신 모드로 전환: follower는 ZMQ로 Host에 연결
   (`--robot.type/id/port1-3`는 **불필요**), 리더 암은 PC 로컬 직렬 포트 사용.
 - `--robot.cameras`는 *schema*(이름+해상도)로 전달; 실제 카메라는 Host가 소유하고
   ZMQ로 이미지를 스트리밍.
-- `--display-foxglove`(선택)는 PC에서 카메라+상태를 Foxglove 앱으로 스트리밍
+- `--display=foxglove`(선택)는 PC에서 카메라+상태를 Foxglove 앱으로 스트리밍
   (Studio를 `ws://127.0.0.1:8765`에 연결).
 
 ### 녹화 중 컨트롤
@@ -486,10 +488,10 @@ rm -rf ~/.cache/huggingface/lerobot/your-name/humanaopen_demo    # 새로 시작
 
 ```bash
 # Rerun 뷰어
-python3 examples/record_data.py ... --display
+python3 examples/record_data.py ... --display=rerun
 
 # Foxglove 앱 (권장 — 렌더 지연 낮음, teleop과 동일 백엔드)
-python3 examples/record_data.py ... --display-foxglove
+python3 examples/record_data.py ... --display=foxglove
 # Foxglove Studio를 ws://127.0.0.1:8765에 연결
 ```
 
@@ -598,13 +600,13 @@ python3 examples/eval_data.py \
     --num-episodes=5 \
     --duration=30 \
     --fps=30 \
-    --display-foxglove
+    --display=foxglove
 ```
 
 - `--remote_ip`는 듀얼 머신 모드로 전환: follower는 ZMQ로 Host에 연결
   (`--robot.port1/port2/port3` 불필요); 카메라는 Host에 있음.
-- `--display-foxglove`(선택)는 PC에서 Foxglove 앱으로 스트리밍
-  (Studio를 `ws://127.0.0.1:8765`에 연결). 순수 추론은 `--no-display`.
+- `--display=foxglove`(선택)는 PC에서 Foxglove 앱으로 스트리밍
+  (Studio를 `ws://127.0.0.1:8765`에 연결). `--display`를 생략하면 화면 없는 순수 추론.
 
 **싱글 머신**(follower가 직렬 포트에 직접 연결):
 ```bash
@@ -645,7 +647,7 @@ python3 examples/eval_data.py \
     --num-episodes=2 \
     --duration=10 \
     --fps=10 \
-    --display-foxglove
+    --display=foxglove
 ```
 
 **싱글 머신**(follower가 직렬 포트에 직접 연결):
@@ -674,19 +676,18 @@ python3 examples/eval_data.py \
 
 ### 추론 중 실시간 디스플레이 (선택)
 
-롤아웃 뷰어는 기본적으로 Rerun을 사용합니다. Foxglove를 사용하려면
-(권장 — 렌더 지연 낮음) `--display-foxglove`를 추가하세요:
+기본적으로 화면이 꺼져 있습니다. `--display`를 추가하여 롤아웃을 실시간으로 스트리밍:
 
 ```bash
-# Foxglove 앱
-python3 examples/eval_data.py ... --display-foxglove
+# Foxglove 앱 (권장 — 렌더 지연 낮음)
+python3 examples/eval_data.py ... --display=foxglove
 # Foxglove Studio를 ws://127.0.0.1:8765에 연결
 
-# Rerun (기본, 켜짐)
-python3 examples/eval_data.py ...
+# Rerun 네이티브 뷰어
+python3 examples/eval_data.py ... --display=rerun
 
-# 디스플레이 완전 끄기
-python3 examples/eval_data.py ... --no-display
+# 화면 없음 (기본) : --display 생략
+python3 examples/eval_data.py ...
 ```
 
 > 디스플레이는 백그라운드 스레드에서 실행되어 정책 루프를 늦추지 않습니다.

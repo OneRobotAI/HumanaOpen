@@ -307,15 +307,17 @@ n'est jamais bloquée.
 
 | Option | Backend | Notes |
 |--------|---------|-------|
-| `--display` | [Rerun](https://rerun.io) fenêtre native | gRPC ; `rr.spawn` desktop, fallback `--serve-web` |
-| `--display-foxglove` | [Foxglove Studio](https://foxglove.dev) WebSocket | Se connecte à `ws://127.0.0.1:8765`. Un layout est écrit dans `examples/humanoopen_foxglove.layout.json` (import une seule fois). **Recommandé** — latence la plus basse des deux. |
+| `--display=rerun` | [Rerun](https://rerun.io) fenêtre native | Fenêtre native du viewer Rerun. |
+| `--display=foxglove` | [Foxglove Studio](https://foxglove.dev) WebSocket | Se connecte à `ws://127.0.0.1:8765`. Un layout est écrit dans `examples/humanoopen_foxglove.layout.json` (import une seule fois). **Recommandé** — latence la plus basse des deux. |
+
+Omettez `--display` pour exécuter sans visualisation (headless).
 
 ```bash
 # Foxglove (recommandé)
-python3 examples/teleop_leader_to_follower.py --remote_ip=192.168.1.100 --display-foxglove
+python3 examples/teleop_leader_to_follower.py --remote_ip=192.168.1.100 --display=foxglove
 
 # Rerun
-python3 examples/teleop_leader_to_follower.py --remote_ip=192.168.1.100 --display
+python3 examples/teleop_leader_to_follower.py --remote_ip=192.168.1.100 --display=rerun
 ```
 
 > **Latence d'affichage** : Les deux backends ajoutent un délai de rendu
@@ -444,7 +446,7 @@ python3 examples/record_data.py \
     --dataset.reset_time_s=10 \
     --dataset.fps=30 \
     --dataset.push_to_hub=true \
-    --display-foxglove
+    --display=foxglove
 ```
 
 - `--remote_ip` passe en mode double machine : le follower se connecte au Host via
@@ -452,7 +454,7 @@ python3 examples/record_data.py \
   utilisent les ports série locaux du PC.
 - `--robot.cameras` est passé comme *schéma* (noms + résolutions) ; le Host possède
   les caméras physiques et diffuse les images via ZMQ.
-- `--display-foxglove` (optionnel) diffuse caméras + état à l'application Foxglove
+- `--display=foxglove` (optionnel) diffuse caméras + état à l'application Foxglove
   sur le PC (connectez Studio à `ws://127.0.0.1:8765`).
 
 ### Contrôles pendant l'enregistrement
@@ -495,10 +497,10 @@ caméras et l'état en temps réel pendant la téléopération, ajoutez un drape
 
 ```bash
 # Visualiseur Rerun
-python3 examples/record_data.py ... --display
+python3 examples/record_data.py ... --display=rerun
 
 # Application Foxglove (recommandé — latence plus basse, même backend que teleop)
-python3 examples/record_data.py ... --display-foxglove
+python3 examples/record_data.py ... --display=foxglove
 # connectez Foxglove Studio à ws://127.0.0.1:8765
 ```
 
@@ -608,14 +610,14 @@ python3 examples/eval_data.py \
     --num-episodes=5 \
     --duration=30 \
     --fps=30 \
-    --display-foxglove
+    --display=foxglove
 ```
 
 - `--remote_ip` passe en mode double machine : le follower se connecte au Host
   via ZMQ (pas de `--robot.port1/port2/port3`) ; les caméras sont sur le Host.
-- `--display-foxglove` (optionnel) diffuse sur l'application Foxglove du PC
-  (connectez Studio à `ws://127.0.0.1:8765`). Utilisez `--no-display` pour de
-  l'inférence pure.
+- `--display=foxglove` (optionnel) diffuse sur l'application Foxglove du PC
+  (connectez Studio à `ws://127.0.0.1:8765`). Omettez `--display` pour une
+  inférence sans visualisation.
 
 **Machine unique** (follower directement sur ports série) :
 ```bash
@@ -657,7 +659,7 @@ python3 examples/eval_data.py \
     --num-episodes=2 \
     --duration=10 \
     --fps=10 \
-    --display-foxglove
+    --display=foxglove
 ```
 
 **Machine unique** (follower directement sur ports série) :
@@ -686,19 +688,18 @@ python3 examples/eval_data.py \
 
 ### Affichage en direct pendant l'inférence (optionnel)
 
-Le visualiseur de rollout utilise Rerun par défaut. Pour utiliser Foxglove à la
-place (recommandé — latence de rendu plus basse), ajoutez `--display-foxglove` :
+L'affichage est désactivé par défaut. Ajoutez `--display` pour diffuser le rollout en direct :
 
 ```bash
-# Application Foxglove
-python3 examples/eval_data.py ... --display-foxglove
+# Application Foxglove (recommandé — latence de rendu plus basse)
+python3 examples/eval_data.py ... --display=foxglove
 # connectez Foxglove Studio à ws://127.0.0.1:8765
 
-# Rerun (défaut, activé)
-python3 examples/eval_data.py ...
+# Visualiseur natif Rerun
+python3 examples/eval_data.py ... --display=rerun
 
-# Désactiver l'affichage
-python3 examples/eval_data.py ... --no-display
+# Sans visualisation (défaut) : omettez --display
+python3 examples/eval_data.py ...
 ```
 
 > L'affichage tourne dans un thread d'arrière-plan, il ne ralentit jamais la boucle

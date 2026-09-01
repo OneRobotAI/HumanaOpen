@@ -327,15 +327,17 @@ python3 examples/teleop_leader_to_follower.py --no-cameras
 
 | 参数 | 后端 | 说明 |
 |------|------|------|
-| `--display` | [Rerun](https://rerun.io) 原生窗口 | gRPC 通信，`rr.spawn` 桌面端，`--serve-web` 备选 |
-| `--display-foxglove` | [Foxglove Studio](https://foxglove.dev) WebSocket | 连接桌面版或 foxglove.dev，端口 `ws://127.0.0.1:8765`。**推荐**——两者中渲染延迟最低 |
+| `--display=rerun` | [Rerun](https://rerun.io) 原生窗口 | 原生 Rerun viewer 窗口 |
+| `--display=foxglove` | [Foxglove Studio](https://foxglove.dev) WebSocket | 连接桌面版或 foxglove.dev，端口 `ws://127.0.0.1:8765`。**推荐**——两者中渲染延迟最低 |
+
+不加 `--display` 则为无画面（headless）运行。
 
 ```bash
 # Foxglove（推荐）
-python3 examples/teleop_leader_to_follower.py --remote_ip=192.168.1.100 --display-foxglove
+python3 examples/teleop_leader_to_follower.py --remote_ip=192.168.1.100 --display=foxglove
 
 # Rerun
-python3 examples/teleop_leader_to_follower.py --remote_ip=192.168.1.100 --display
+python3 examples/teleop_leader_to_follower.py --remote_ip=192.168.1.100 --display=rerun
 ```
 
 > **画面延迟说明**：两个后端均有固定的渲染管线延迟（桌面版 Foxglove ≈ 0.5–1.5 s，Rerun ≈ 2 s），这是可视化库本身的特性，与 HumanaOpen 无关。**动作指令实时无延迟**；画面延迟不影响采集数据质量——录制时 observation 与 action 帧严格同步采样。
@@ -454,13 +456,13 @@ python3 examples/record_data.py \
     --dataset.reset_time_s=10 \
     --dataset.fps=30 \
     --dataset.push_to_hub=true \
-    --display-foxglove
+    --display=foxglove
 ```
 
 - `--remote_ip` 切换为双机模式：follower 通过 ZMQ 连 Host（**不需要** `--robot.type/id/port1-3`），
   主臂用 PC 本机串口。
 - `--robot.cameras` 作为 *schema*（名称+分辨率）传入；真实相机由 Host 持有并通过 ZMQ 传图。
-- `--display-foxglove`（可选）在 PC 上把摄像头+状态流到 Foxglove 应用（连接 Studio 到 `ws://127.0.0.1:8765`）。
+- `--display=foxglove`（可选）在 PC 上把摄像头+状态流到 Foxglove 应用（连接 Studio 到 `ws://127.0.0.1:8765`）。
 
 ### 录制时的控制
 
@@ -497,10 +499,10 @@ rm -rf ~/.cache/huggingface/lerobot/your-name/humanaopen_demo    # 全新开始
 
 ```bash
 # Rerun 查看器
-python3 examples/record_data.py ... --display
+python3 examples/record_data.py ... --display=rerun
 
 # Foxglove 应用（推荐——渲染延迟更低，与 teleop 同后端）
-python3 examples/record_data.py ... --display-foxglove
+python3 examples/record_data.py ... --display=foxglove
 # 连接 Foxglove Studio 到 ws://127.0.0.1:8765
 ```
 
@@ -607,11 +609,11 @@ python3 examples/eval_data.py \
     --num-episodes=5 \
     --duration=30 \
     --fps=30 \
-    --display-foxglove
+    --display=foxglove
 ```
 
 - `--remote_ip` 切换为双机模式：follower 通过 ZMQ 连 Host（不需要 `--robot.port1/port2/port3`）；摄像头在 Host 端。
-- `--display-foxglove`（可选）在 PC 上把画面流到 Foxglove 应用（连接 Studio 到 `ws://127.0.0.1:8765`）。纯推理可用 `--no-display`。
+- `--display=foxglove`（可选）在 PC 上把画面流到 Foxglove 应用（连接 Studio 到 `ws://127.0.0.1:8765`）；不加 `--display` 则为纯推理无画面。
 
 **单机**（follower 直接串口，同机）：
 ```bash
@@ -652,7 +654,7 @@ python3 examples/eval_data.py \
     --num-episodes=2 \
     --duration=10 \
     --fps=10 \
-    --display-foxglove
+    --display=foxglove
 ```
 
 **单机**（follower 直接串口）：
@@ -681,18 +683,18 @@ python3 examples/eval_data.py \
 
 ### 推理时实时画面（可选）
 
-推理查看器默认用 Rerun。改用 Foxglove（推荐——渲染延迟更低），加 `--display-foxglove`：
+默认无画面。加 `--display` 实时查看推理过程：
 
 ```bash
-# Foxglove 应用
-python3 examples/eval_data.py ... --display-foxglove
+# Foxglove 应用（推荐——渲染延迟更低）
+python3 examples/eval_data.py ... --display=foxglove
 # 连接 Foxglove Studio 到 ws://127.0.0.1:8765
 
-# Rerun（默认开启）
-python3 examples/eval_data.py ...
+# Rerun 原生查看器
+python3 examples/eval_data.py ... --display=rerun
 
-# 完全关闭显示
-python3 examples/eval_data.py ... --no-display
+# 无画面（默认）：不加 --display
+python3 examples/eval_data.py ...
 ```
 
 > 显示在后台线程运行，不拖慢策略循环。与 teleop/录制一样，查看器的 ~1–1.5s
