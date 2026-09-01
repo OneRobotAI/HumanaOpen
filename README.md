@@ -605,6 +605,33 @@ The pushed model will be at `https://huggingface.co/your-name/humanaopen_act_pol
 
 ### ACT inference
 
+**Dual-machine (recommended):** the robot runs a Host (Jetson/Raspberry Pi) with the
+cameras; `eval_data.py` connects to it over ZMQ on your PC. Start the Host first, then:
+
+```bash
+# On the robot (Jetson or Raspberry Pi) — start the Host and leave it running
+#   (HumanaOpenHost(...).run() with port1/port2 + the 3 cameras).
+
+# On your PC — run inference
+python3 examples/eval_data.py \
+    --policy.type=act \
+    --policy.repo_id=your-name/humanaopen_act_policy \
+    --policy.device=cuda \
+    --remote_ip=192.168.1.9 \
+    --robot.cameras='{"head": {"type": "opencv", "index_or_path": "/dev/video0", "width": 640, "height": 480, "fps": 30, "fourcc": "MJPG"}, "left_wrist": {"type": "opencv", "index_or_path": "/dev/video2", "width": 640, "height": 480, "fps": 30, "fourcc": "MJPG"}, "right_wrist": {"type": "opencv", "index_or_path": "/dev/video4", "width": 640, "height": 480, "fps": 30, "fourcc": "MJPG"}}' \
+    --enable-base=false \
+    --num-episodes=5 \
+    --duration=30 \
+    --fps=30 \
+    --display-foxglove
+```
+
+- `--remote_ip` switches to dual-machine mode: the follower connects to the Host
+  over ZMQ (no `--robot.port1/port2/port3`); the cameras live on the Host.
+- `--display-foxglove` (optional) streams to the Foxglove app on the PC
+  (connect Studio to `ws://127.0.0.1:8765`). Use `--no-display` for pure inference.
+
+**Single-machine** (follower directly on serial ports, same machine):
 ```bash
 python3 examples/eval_data.py \
     --policy.type=act \
@@ -615,12 +642,7 @@ python3 examples/eval_data.py \
     --robot.port1=/dev/ttyACM0 \
     --robot.port2=/dev/ttyACM1 \
     --robot.port3=None \
-    --enable-base=false \
     --robot.cameras='{"head": {"type": "opencv", "index_or_path": "/dev/video0", "width": 640, "height": 480, "fps": 30, "fourcc": "MJPG"}, "left_wrist": {"type": "opencv", "index_or_path": "/dev/video2", "width": 640, "height": 480, "fps": 30, "fourcc": "MJPG"}, "right_wrist": {"type": "opencv", "index_or_path": "/dev/video4", "width": 640, "height": 480, "fps": 30, "fourcc": "MJPG"}}' \
-    --teleop.left_arm_port=/dev/ttyACM2 \
-    --teleop.right_arm_port=/dev/ttyACM3 \
-    --teleop.flip_joints='{"left": [], "right": []}' \
-    --teleop.joint_remap='{}' \
     --enable-base=false \
     --num-episodes=5 \
     --duration=30 \
@@ -629,13 +651,34 @@ python3 examples/eval_data.py \
 
 ### SmolVLA inference (language-conditioned)
 
+**Dual-machine (recommended):** same as ACT — start the Host on the robot, run on
+your PC over ZMQ:
+
+```bash
+# On the robot — start the Host and leave it running.
+
+# On your PC
+python3 examples/eval_data.py \
+    --policy.type=smolvla \
+    --policy.repo_id=your-name/humanaopen_smolvla_policy \
+    --policy.device=cuda \
+    --task="wave hello with both arms" \
+    --remote_ip=192.168.1.9 \
+    --robot.cameras='{"head": {"type": "opencv", "index_or_path": "/dev/video0", "width": 640, "height": 480, "fps": 30, "fourcc": "MJPG"}, "left_wrist": {"type": "opencv", "index_or_path": "/dev/video2", "width": 640, "height": 480, "fps": 30, "fourcc": "MJPG"}, "right_wrist": {"type": "opencv", "index_or_path": "/dev/video4", "width": 640, "height": 480, "fps": 30, "fourcc": "MJPG"}}' \
+    --enable-base=false \
+    --num-episodes=2 \
+    --duration=10 \
+    --fps=10 \
+    --display-foxglove
+```
+
+**Single-machine** (follower directly on serial):
 ```bash
 python3 examples/eval_data.py \
     --policy.type=smolvla \
     --policy.repo_id=your-name/humanaopen_smolvla_policy \
     --policy.device=cuda \
     --task="wave hello with both arms" \
-    --enable-base=false \
     --robot.type=humanaopen \
     --robot.id=follower \
     --robot.port1=/dev/ttyACM0 \

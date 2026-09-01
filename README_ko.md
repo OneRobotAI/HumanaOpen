@@ -579,6 +579,33 @@ outputs/humanaopen_act_demo/
 
 ### ACT 추론 
 
+**듀얼 머신(권장)**: 로봇이 카메라와 함께 Host(Jetson/Raspberry Pi)를 실행하고,
+`eval_data.py`가 PC에서 ZMQ로 연결합니다. Host를 먼저 시작하세요:
+
+```bash
+# 로봇(Jetson 또는 Raspberry Pi)에서 — Host를 시작하고 계속 실행
+#   (HumanaOpenHost(...).run(), port1/port2 + 3개 카메라)
+
+# PC에서 — 추론 실행
+python3 examples/eval_data.py \
+    --policy.type=act \
+    --policy.repo_id=your-name/humanaopen_act_policy \
+    --policy.device=cuda \
+    --remote_ip=192.168.1.9 \
+    --robot.cameras='{"head": {"type": "opencv", "index_or_path": "/dev/video0", "width": 640, "height": 480, "fps": 30, "fourcc": "MJPG"}, "left_wrist": {"type": "opencv", "index_or_path": "/dev/video2", "width": 640, "height": 480, "fps": 30, "fourcc": "MJPG"}, "right_wrist": {"type": "opencv", "index_or_path": "/dev/video4", "width": 640, "height": 480, "fps": 30, "fourcc": "MJPG"}}' \
+    --enable-base=false \
+    --num-episodes=5 \
+    --duration=30 \
+    --fps=30 \
+    --display-foxglove
+```
+
+- `--remote_ip`는 듀얼 머신 모드로 전환: follower는 ZMQ로 Host에 연결
+  (`--robot.port1/port2/port3` 불필요); 카메라는 Host에 있음.
+- `--display-foxglove`(선택)는 PC에서 Foxglove 앱으로 스트리밍
+  (Studio를 `ws://127.0.0.1:8765`에 연결). 순수 추론은 `--no-display`.
+
+**싱글 머신**(follower가 직렬 포트에 직접 연결):
 ```bash
 python3 examples/eval_data.py \
     --policy.type=act \
@@ -590,25 +617,41 @@ python3 examples/eval_data.py \
     --robot.port2=/dev/ttyACM1 \
     --robot.port3=None \
     --robot.cameras='{"head": {"type": "opencv", "index_or_path": "/dev/video0", "width": 640, "height": 480, "fps": 30, "fourcc": "MJPG"}, "left_wrist": {"type": "opencv", "index_or_path": "/dev/video2", "width": 640, "height": 480, "fps": 30, "fourcc": "MJPG"}, "right_wrist": {"type": "opencv", "index_or_path": "/dev/video4", "width": 640, "height": 480, "fps": 30, "fourcc": "MJPG"}}' \
-    --teleop.left_arm_port=/dev/ttyACM2 \
-    --teleop.right_arm_port=/dev/ttyACM3 \
-    --teleop.flip_joints='{"left": [], "right": []}' \
-    --teleop.joint_remap='{}' \
     --enable-base=false \
     --num-episodes=5 \
     --duration=30 \
     --fps=30
 ```
 
-### SmolVLA 추론 (언어 조건부, 오버라이드 없음)
+### SmolVLA 추론 (언어 조건부)
 
+**듀얼 머신(권장)**: ACT와 동일 — 로봇에서 Host를 시작, PC에서 ZMQ로 실행:
+
+```bash
+# 로봇에서 — Host를 시작하고 계속 실행
+
+# PC에서
+python3 examples/eval_data.py \
+    --policy.type=smolvla \
+    --policy.repo_id=your-name/humanaopen_smolvla_policy \
+    --policy.device=cuda \
+    --task="wave hello with both arms" \
+    --remote_ip=192.168.1.9 \
+    --robot.cameras='{"head": {"type": "opencv", "index_or_path": "/dev/video0", "width": 640, "height": 480, "fps": 30, "fourcc": "MJPG"}, "left_wrist": {"type": "opencv", "index_or_path": "/dev/video2", "width": 640, "height": 480, "fps": 30, "fourcc": "MJPG"}, "right_wrist": {"type": "opencv", "index_or_path": "/dev/video4", "width": 640, "height": 480, "fps": 30, "fourcc": "MJPG"}}' \
+    --enable-base=false \
+    --num-episodes=2 \
+    --duration=10 \
+    --fps=10 \
+    --display-foxglove
+```
+
+**싱글 머신**(follower가 직렬 포트에 직접 연결):
 ```bash
 python3 examples/eval_data.py \
     --policy.type=smolvla \
     --policy.repo_id=your-name/humanaopen_smolvla_policy \
     --policy.device=cuda \
     --task="wave hello with both arms" \
-    --enable-base=false \
     --robot.type=humanaopen \
     --robot.id=follower \
     --robot.port1=/dev/ttyACM0 \

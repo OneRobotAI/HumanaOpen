@@ -589,6 +589,30 @@ outputs/humanaopen_act_demo/
 
 ### ACT 推理
 
+**双机（推荐）**：机器人在设备端运行 Host（Jetson/树莓派）带摄像头；`eval_data.py` 在 PC 端通过 ZMQ 连接。先启动 Host：
+
+```bash
+# 设备端（Jetson 或树莓派）— 先启动 Host 并保持运行
+#   （HumanaOpenHost(...).run()，带 port1/port2 + 3 个摄像头）
+
+# PC 端 — 运行推理
+python3 examples/eval_data.py \
+    --policy.type=act \
+    --policy.repo_id=your-name/humanaopen_act_policy \
+    --policy.device=cuda \
+    --remote_ip=192.168.1.9 \
+    --robot.cameras='{"head": {"type": "opencv", "index_or_path": "/dev/video0", "width": 640, "height": 480, "fps": 30, "fourcc": "MJPG"}, "left_wrist": {"type": "opencv", "index_or_path": "/dev/video2", "width": 640, "height": 480, "fps": 30, "fourcc": "MJPG"}, "right_wrist": {"type": "opencv", "index_or_path": "/dev/video4", "width": 640, "height": 480, "fps": 30, "fourcc": "MJPG"}}' \
+    --enable-base=false \
+    --num-episodes=5 \
+    --duration=30 \
+    --fps=30 \
+    --display-foxglove
+```
+
+- `--remote_ip` 切换为双机模式：follower 通过 ZMQ 连 Host（不需要 `--robot.port1/port2/port3`）；摄像头在 Host 端。
+- `--display-foxglove`（可选）在 PC 上把画面流到 Foxglove 应用（连接 Studio 到 `ws://127.0.0.1:8765`）。纯推理可用 `--no-display`。
+
+**单机**（follower 直接串口，同机）：
 ```bash
 python3 examples/eval_data.py \
     --policy.type=act \
@@ -600,10 +624,6 @@ python3 examples/eval_data.py \
     --robot.port2=/dev/ttyACM1 \
     --robot.port3=None \
     --robot.cameras='{"head": {"type": "opencv", "index_or_path": "/dev/video0", "width": 640, "height": 480, "fps": 30, "fourcc": "MJPG"}, "left_wrist": {"type": "opencv", "index_or_path": "/dev/video2", "width": 640, "height": 480, "fps": 30, "fourcc": "MJPG"}, "right_wrist": {"type": "opencv", "index_or_path": "/dev/video4", "width": 640, "height": 480, "fps": 30, "fourcc": "MJPG"}}' \
-    --teleop.left_arm_port=/dev/ttyACM2 \
-    --teleop.right_arm_port=/dev/ttyACM3 \
-    --teleop.flip_joints='{"left": [], "right": []}' \
-    --teleop.joint_remap='{}' \
     --enable-base=false \
     --num-episodes=5 \
     --duration=30 \
@@ -612,13 +632,33 @@ python3 examples/eval_data.py \
 
 ### SmolVLA 推理（语言条件）
 
+**双机（推荐）**：与 ACT 相同——先在机器人端启动 Host，PC 端通过 ZMQ 运行：
+
+```bash
+# 设备端 — 先启动 Host 并保持运行
+
+# PC 端
+python3 examples/eval_data.py \
+    --policy.type=smolvla \
+    --policy.repo_id=your-name/humanaopen_smolvla_policy \
+    --policy.device=cuda \
+    --task="wave hello with both arms" \
+    --remote_ip=192.168.1.9 \
+    --robot.cameras='{"head": {"type": "opencv", "index_or_path": "/dev/video0", "width": 640, "height": 480, "fps": 30, "fourcc": "MJPG"}, "left_wrist": {"type": "opencv", "index_or_path": "/dev/video2", "width": 640, "height": 480, "fps": 30, "fourcc": "MJPG"}, "right_wrist": {"type": "opencv", "index_or_path": "/dev/video4", "width": 640, "height": 480, "fps": 30, "fourcc": "MJPG"}}' \
+    --enable-base=false \
+    --num-episodes=2 \
+    --duration=10 \
+    --fps=10 \
+    --display-foxglove
+```
+
+**单机**（follower 直接串口）：
 ```bash
 python3 examples/eval_data.py \
     --policy.type=smolvla \
     --policy.repo_id=your-name/humanaopen_smolvla_policy \
     --policy.device=cuda \
     --task="wave hello with both arms" \
-    --enable-base=false \
     --robot.type=humanaopen \
     --robot.id=follower \
     --robot.port1=/dev/ttyACM0 \
