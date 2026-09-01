@@ -747,6 +747,25 @@ changer de hauteur.
 |---------|------|-------|
 | Quitter | `q` | Arrêter tous les épisodes |
 
+### Sécurité : relâchement du couple à la sortie
+
+Lorsque vous appuyez sur `q` / Ctrl+C pour arrêter l'inférence, le script :
+1. **Arrête les roues de la base** (envoie `x.vel=0 / theta.vel=0` en dernier) et
+   maintient la levée à sa hauteur actuelle
+2. Sauvegarde la position de la levée
+3. Invite : **"Press ENTER to release torque and disconnect..."**
+4. Tenez les bras avant d'appuyer sur ENTER — le couple est relâché et les bras tombent librement
+5. Appuyez sur ENTER quand vous êtes prêt → déconnexion
+
+Cela évite que les bras chutent brusquement quand les servos perdent l'alimentation.
+
+**Filet de sécurité d'arrêt automatique base/levée (double machine)** : le Host
+exécute un chien de garde — si aucune commande d'action n'arrive pendant
+`watchdog_timeout_ms` (500 ms), il met les roues à zéro et maintient la levée.
+Ainsi, même si le processus PC est tué brutalement (`kill -9`) ou se déconnecte
+pendant que la base bouge, elle s'arrête d'elle-même au lieu de continuer jusqu'à
+l'arrêt du Host.
+
 ## Licence
 
 Apache 2.0

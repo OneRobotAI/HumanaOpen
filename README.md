@@ -763,13 +763,21 @@ Start with the lift held, then enable it once your task requires changing height
 
 ### Safety: torque release on exit
 
-When you press `q` to stop inference, the script will:
-1. Stop all motors and save lift position
-2. Prompt: **"Press ENTER to release torque and disconnect..."**
-3. Hold the arms before pressing ENTER — torque will be released and arms drop freely
-4. Press ENTER when ready → disconnect
+When you press `q` / Ctrl+C to stop inference, the script will:
+1. **Stop the base wheels** (send `x.vel=0 / theta.vel=0` as the final command) and
+   hold the lift at its current height
+2. Save the lift position
+3. Prompt: **"Press ENTER to release torque and disconnect..."**
+4. Hold the arms before pressing ENTER — torque will be released and arms drop freely
+5. Press ENTER when ready → disconnect
 
 This prevents arms from suddenly dropping when servos lose power.
+
+**Base/lift auto-stop safety net (dual-machine):** the Host runs a watchdog — if it
+receives no action command for `watchdog_timeout_ms` (500 ms), it zeroes the wheel
+velocity and holds the lift. So even if the PC process is killed abruptly
+(`kill -9`) or disconnects while the wheels are moving, the base stops on its own
+instead of continuing to drive until the Host is stopped.
 
 ### Key parameters (inference)
 

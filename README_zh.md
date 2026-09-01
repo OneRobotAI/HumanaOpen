@@ -734,6 +734,21 @@ python3 examples/eval_data.py ... --enable-lift=true
 |---------|------|-------|
 | 退出 | `q` | 停止所有 episode |
 
+### 安全：退出时扭矩释放
+
+按 `q` / Ctrl+C 停止推理时，脚本会：
+1. **停止底盘轮子**（最后发送 `x.vel=0 / theta.vel=0`），并把升降保持当前高度
+2. 保存升降位置
+3. 提示：**"Press ENTER to release torque and disconnect..."**
+4. 按 ENTER 前扶住机械臂——扭矩释放后手臂会自由下垂
+5. 准备好后按 ENTER → 断开
+
+这防止舵机断电时手臂突然坠落。
+
+**底盘/升降自动停止安全网（双机）**：Host 运行看门狗——若超过 `watchdog_timeout_ms`（500ms）
+未收到动作命令，就自动把轮速归零并保持升降。即使 PC 进程被异常终止（`kill -9`）或断开时轮子
+正在转动，底盘也会自行停止，而不是一直转到 Host 被停止为止。
+
 
 ## 许可证
 
