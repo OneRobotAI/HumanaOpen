@@ -773,6 +773,7 @@ python3 examples/eval_data.py ... --enable-lift=true
 | 模块 | 状态 |
 |------|------|
 | URDF | ☐ |
+| Agent | ☐ |
 | 视觉抓取 | ☐ |
 | 导航 | ☐ |
 | 数据采集 | ☐ |

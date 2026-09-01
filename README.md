@@ -819,6 +819,7 @@ On exit, it will prompt for torque release confirmation (ENTER to release).
 | Module | Status |
 |--------|--------|
 | URDF | ☐ |
+| Agent | ☐ |
 | Vision-based grasping | ☐ |
 | Navigation | ☐ |
 | Data collection | ☐ |

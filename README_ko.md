@@ -773,6 +773,7 @@ python3 examples/eval_data.py ... --enable-lift=true
 | 모듈 | 상태 |
 |------|------|
 | URDF | ☐ |
+| Agent | ☐ |
 | 비전 기반 파지 | ☐ |
 | 내비게이션 | ☐ |
 | 데이터 수집 | ☐ |

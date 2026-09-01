@@ -789,6 +789,7 @@ l'arrêt du Host.
 | Module | État |
 |--------|------|
 | URDF | ☐ |
+| Agent | ☐ |
 | Préhension basée vision | ☐ |
 | Navigation | ☐ |
 | Collecte de données | ☐ |
