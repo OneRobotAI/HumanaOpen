@@ -734,6 +734,23 @@ python3 examples/eval_data.py ... --enable-base=true
 Start with `--enable-base=false` until the policy behaves well, then enable the
 base if your task requires locomotion.
 
+### Lift control (hold height by default)
+
+By default the lift is **held at its current height** (`--enable-lift=false`): the
+policy's `lift_axis.height_mm` is overridden to the current height each frame, so
+the lift does not move (the policy can otherwise output 0 and drag the lift to the
+bottom).
+
+```bash
+# Lift held at current height (default, safer) — the lift stays put
+python3 examples/eval_data.py ... --enable-lift=false
+
+# Lift enabled — policy controls the lift height
+python3 examples/eval_data.py ... --enable-lift=true
+```
+
+Start with the lift held, then enable it once your task requires changing height.
+
 ### Controls during inference
 
 | Control | Keys |
@@ -758,6 +775,7 @@ This prevents arms from suddenly dropping when servos lose power.
 | `--policy.repo_id` | — | **Required.** Hub repo of the trained model. |
 | `--task` | — | Language instruction (required for SmolVLA). |
 | `--enable-base` | `false` | Set `true` to allow policy control of base wheels. Default: disabled. |
+| `--enable-lift` | `false` | Set `true` to let the policy control the lift height. Default: held at current height. |
 | `--num-episodes` | 5 | Number of inference episodes. |
 | `--duration` | 30 | Seconds per episode. |
 | `--fps` | 30 | Inference frequency (Hz). |

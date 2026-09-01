@@ -709,6 +709,21 @@ python3 examples/eval_data.py ... --enable-base=true
 
 建议先用 `--enable-base=false` 直到策略表现稳定，若任务需要移动再开启底盘。
 
+### 升降控制（默认保持当前高度）
+
+默认升降**保持当前高度**（`--enable-lift=false`）：策略预测的 `lift_axis.height_mm`
+每帧被覆盖为当前高度，升降不动（否则策略可能输出 0 把升降拉到最低）。
+
+```bash
+# 升降保持当前高度（默认，更安全）— 升降不动
+python3 examples/eval_data.py ... --enable-lift=false
+
+# 升降开启 — 允许策略控制升降高度
+python3 examples/eval_data.py ... --enable-lift=true
+```
+
+建议先保持升降不动，等任务需要变高度再开启。
+
 ### 推理时的控制
 
 | 控制 | 按键 | 说明 |

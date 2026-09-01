@@ -706,6 +706,22 @@ python3 examples/eval_data.py ... --enable-base=true
 정책이 잘 동작할 때까지 `--enable-base=false`로 시작하고, 작업에 이동이
 필요하면 베이스를 활성화하세요.
 
+### 리프트 제어 (기본: 현재 높이 유지)
+
+기본적으로 리프트는 **현재 높이에 유지**(`--enable-lift=false`): 정책이 예측한
+`lift_axis.height_mm`이 매 프레임 현재 높이로 덮어써져 리프트가 움직이지 않습니다
+(그렇지 않으면 정책이 0을 출력해 리프트를 바닥으로 끌어내릴 수 있음).
+
+```bash
+# 리프트 현재 높이 유지 (기본, 안전) — 리프트 움직이지 않음
+python3 examples/eval_data.py ... --enable-lift=false
+
+# 리프트 활성화 — 정책이 리프트 높이 제어
+python3 examples/eval_data.py ... --enable-lift=true
+```
+
+리프트를 먼저 유지하고, 작업에 높이 변경이 필요하면 활성화하세요.
+
 ### 추론 중 컨트롤
 
 | 제어 | 키 | 참고 |

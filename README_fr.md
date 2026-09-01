@@ -719,6 +719,24 @@ python3 examples/eval_data.py ... --enable-base=true
 Commencez avec `--enable-base=false` jusqu'à ce que la politique se comporte bien,
 puis activez la base si votre tâche nécessite de se déplacer.
 
+### Contrôle de la levée (hauteur maintenue par défaut)
+
+Par défaut, la levée est **maintenue à sa hauteur actuelle** (`--enable-lift=false`) :
+le `lift_axis.height_mm` prédit par la politique est remplacé par la hauteur actuelle
+à chaque image, donc la levée ne bouge pas (sinon la politique peut sortir 0 et
+entraîner la levée vers le bas).
+
+```bash
+# Levée maintenue à la hauteur actuelle (défaut, plus sûr) — la levée reste en place
+python3 examples/eval_data.py ... --enable-lift=false
+
+# Levée activée — la politique contrôle la hauteur de la levée
+python3 examples/eval_data.py ... --enable-lift=true
+```
+
+Commencez avec la levée maintenue, puis activez-la quand votre tâche nécessite de
+changer de hauteur.
+
 ### Contrôles pendant l'inférence
 
 | Contrôle | Touches | Notes |
