@@ -788,6 +788,9 @@ l'arrêt du Host.
 
 | Module | État |
 |--------|------|
+| BOM | ☐ |
+| Assembly | ☐ |
+| CAD | ☐ |
 | URDF | ☐ |
 | Agent | ☐ |
 | Préhension basée vision | ☐ |

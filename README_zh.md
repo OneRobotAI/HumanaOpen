@@ -772,6 +772,9 @@ python3 examples/eval_data.py ... --enable-lift=true
 
 | 模块 | 状态 |
 |------|------|
+| BOM | ☐ |
+| Assembly | ☐ |
+| CAD | ☐ |
 | URDF | ☐ |
 | Agent | ☐ |
 | 视觉抓取 | ☐ |

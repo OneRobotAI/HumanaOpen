@@ -818,6 +818,9 @@ On exit, it will prompt for torque release confirmation (ENTER to release).
 
 | Module | Status |
 |--------|--------|
+| BOM | ☐ |
+| Assembly | ☐ |
+| CAD | ☐ |
 | URDF | ☐ |
 | Agent | ☐ |
 | Vision-based grasping | ☐ |
