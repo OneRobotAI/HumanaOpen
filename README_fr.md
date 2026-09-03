@@ -788,6 +788,8 @@ l'arrêt du Host.
 
 | Module | État |
 |--------|------|
+| ACT | ✅ |
+| SmolVLA | ✅ |
 | BOM | ☐ |
 | Assembly | ☐ |
 | CAD | ☐ |

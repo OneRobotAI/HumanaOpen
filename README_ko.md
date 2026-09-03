@@ -772,6 +772,8 @@ python3 examples/eval_data.py ... --enable-lift=true
 
 | 모듈 | 상태 |
 |------|------|
+| ACT | ✅ |
+| SmolVLA | ✅ |
 | BOM | ☐ |
 | Assembly | ☐ |
 | CAD | ☐ |

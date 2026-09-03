@@ -818,6 +818,8 @@ On exit, it will prompt for torque release confirmation (ENTER to release).
 
 | Module | Status |
 |--------|--------|
+| ACT | ✅ |
+| SmolVLA | ✅ |
 | BOM | ☐ |
 | Assembly | ☐ |
 | CAD | ☐ |
