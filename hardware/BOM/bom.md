@@ -6,14 +6,7 @@ Complete parts list to build one HumanaOpen. Quantities are per robot.
 
 ## Cost summary
 
-| Configuration | Total (RMB) |
-|---------------|-------------|
-| Base build (excluding control board) | ≈ 5,499 |
-| Base + Raspberry Pi 5 4GB | ≈ 6,699 |
-| Base + Jetson Orin Nano Super 8GB | ≈ 9,299 |
-
-The control board is optional (choose one of the two options above). Fasteners
-are yet to be added.
+The control board is optional. Fasteners are yet to be added.
 
 | Section | Subtotal (RMB) |
 |---------|----------------|
