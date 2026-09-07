@@ -10,12 +10,12 @@ The control board is optional. Fasteners are yet to be added.
 
 | Section | Subtotal (RMB) |
 |---------|----------------|
-| Mechanical / structure | 259 |
+| Mechanical / structure | 265 |
 | 3D printed parts | 300 |
 | Motion / actuation | 4,110 |
 | Electronics (excl. control board) | 793 |
 | Cables / misc | 37 |
-| **Total (excl. control board, excl. fasteners)** | **≈ 5,499** |
+| **Total (excl. control board, excl. fasteners)** | **≈ 5,505** |
 
 ## Mechanical / structure
 
@@ -24,6 +24,7 @@ The control board is optional. Fasteners are yet to be added.
 | Part / description | Spec / size | Qty | Unit price | Total | Source |
 |--------------------|-------------|-----|------------|-------|--------|
 | Caster wheel (differential-drive base) | 5 inch (12.7 cm) | 2 | 33 RMB | 66 RMB | [link](https://e.tb.cn/h.8KjMwtvPCctqYIB?tk=8CsCTTQGr5Y) |
+| Swivel caster wheel | Ø25 mm, wheel width 13 mm, base 39 × 33 mm, mounting hole pitch 30 × 24 mm, mounting height 37.5 mm | 2 | 3 RMB | 6 RMB | [link](https://e.tb.cn/h.8KvHhYsMbquYeNy?tk=0FWcTTwToO5) |
 
 ### Lift structure
 
