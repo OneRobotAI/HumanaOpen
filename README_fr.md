@@ -808,6 +808,14 @@ l'arrêt du Host.
   les degrés de liberté de la tête et la base à entraînement différentiel suivent
   son approche.
 
+## Contact & Achat
+
+- **Boutique Taobao** : [onerobot](https://m.tb.cn/h.8L4yb9vlYloGQMV) — achetez le
+  kit matériel / BOM complet de HumanaOpen.
+- **WeChat** : scannez le QR code pour nous contacter :
+
+![boutique officielle onerobot](docs/onerobot_official_shop.jpg)
+
 ## Licence
 
 Apache 2.0

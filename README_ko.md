@@ -791,6 +791,14 @@ python3 examples/eval_data.py ... --enable-lift=true
 - 하드웨어 설계는 [xlerobot](https://github.com/xrobot/xlerobot)을 참고했습니다:
   머리 자유도와 차동 구동 베이스 설계가 그 방식을 따릅니다.
 
+## 문의 및 구매
+
+- **타오바오 스토어** : [onerobot](https://m.tb.cn/h.8L4yb9vlYloGQMV) — HumanaOpen
+  전체 하드웨어 / BOM 키트 구매.
+- **WeChat** : QR 코드를 스캔하여 연락하세요 :
+
+![onerobot 공식 스토어](docs/onerobot_official_shop.jpg)
+
 ## 라이선스
 
 Apache 2.0

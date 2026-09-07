@@ -838,6 +838,14 @@ On exit, it will prompt for torque release confirmation (ENTER to release).
   the head degrees-of-freedom and the differential-drive base follow its
   approach.
 
+## Contact & Purchase
+
+- **Taobao store**: [onerobot](https://m.tb.cn/h.8L4yb9vlYloGQMV) — buy the full
+  hardware / BOM kit for HumanaOpen.
+- **WeChat**: scan the QR code to contact us:
+
+![onerobot official store](docs/onerobot_official_shop.jpg)
+
 ## License
 
 Apache 2.0

@@ -791,6 +791,13 @@ python3 examples/eval_data.py ... --enable-lift=true
 - 硬件设计参考了 [xlerobot](https://github.com/xrobot/xlerobot)：
   头部自由度和差速底盘的设计借鉴了其方案。
 
+## 交流与购买
+
+- **淘宝店铺**：[onerobot](https://m.tb.cn/h.8L4yb9vlYloGQMV) — 购买 HumanaOpen 全套硬件 / BOM 套件。
+- **微信**：扫描二维码联系我们：
+
+![onerobot 官方店铺](docs/onerobot_official_shop.jpg)
+
 ## 许可证
 
 Apache 2.0
