@@ -786,7 +786,7 @@ python3 examples/eval_data.py ... --enable-lift=true
 
 ### 致谢
 
-- 软件基于 [LeRobot](https://github.com/huggingface/lerobot) 和
+- 基于 [LeRobot](https://github.com/huggingface/lerobot) 和
   [open-arms-mini](https://github.com/TheRobotStudio/open-arms-mini) 构建。
 - 硬件设计参考了 [xlerobot](https://github.com/xrobot/xlerobot)：
   头部自由度和差速底盘的设计借鉴了其方案。

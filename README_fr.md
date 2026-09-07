@@ -802,7 +802,7 @@ l'arrêt du Host.
 
 ### Remerciements
 
-- Le logiciel est construit sur [LeRobot](https://github.com/huggingface/lerobot)
+- Construit sur [LeRobot](https://github.com/huggingface/lerobot)
   et [open-arms-mini](https://github.com/TheRobotStudio/open-arms-mini).
 - La conception matérielle s'inspire de [xlerobot](https://github.com/xrobot/xlerobot) :
   les degrés de liberté de la tête et la base à entraînement différentiel suivent
