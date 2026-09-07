@@ -60,7 +60,8 @@ Filament: Bambu Lab PLA Basic / Anycubic PLA. A large-build-volume printer
 
 | Part / description | Model / spec | Qty | Unit price | Total | Source |
 |--------------------|--------------|-----|------------|-------|--------|
-| Main control board (Host) | Raspberry Pi 5 4GB — 1,200 RMB · Jetson Orin Nano Super 8GB — 3,800 RMB | 1 | 1,200 / 3,800 RMB | — | — |
+| Main control board (Host) — optional | Raspberry Pi 5 4GB | 1 | 1,200 RMB | 1,200 RMB | — |
+| Main control board (Host) — optional | Jetson Orin Nano Super 8GB | 1 | 3,800 RMB | 3,800 RMB | — |
 | Camera (head/left_wrist/right_wrist/chest) | 720P 90° distortion-free USB | 4 | 70 RMB | 280 RMB | [link](https://e.tb.cn/h.8KRXD6pf6IHHQNu?tk=Liq1TT8421C) |
 | Follower (from) power supply | 12V 4A | 1 | 20 RMB | 20 RMB | — |
 | Leader (master) power supply | 7.3V 3A | 2 | 20 RMB | 40 RMB | — |
