@@ -4,6 +4,26 @@ Complete parts list to build one HumanaOpen. Quantities are per robot.
 
 > Work in progress — sections are filled in as the build is completed.
 
+## Cost summary
+
+| Configuration | Total (RMB) |
+|---------------|-------------|
+| Base build (excluding control board) | ≈ 5,499 |
+| Base + Raspberry Pi 5 4GB | ≈ 6,699 |
+| Base + Jetson Orin Nano Super 8GB | ≈ 9,299 |
+
+The control board is optional (choose one of the two options above). Fasteners
+are yet to be added.
+
+| Section | Subtotal (RMB) |
+|---------|----------------|
+| Mechanical / structure | 259 |
+| 3D printed parts | 300 |
+| Motion / actuation | 4,110 |
+| Electronics (excl. control board) | 793 |
+| Cables / misc | 37 |
+| **Total (excl. control board, excl. fasteners)** | **≈ 5,499** |
+
 ## Mechanical / structure
 
 ### Differential base
@@ -50,11 +70,11 @@ Filament: Bambu Lab PLA Basic / Anycubic PLA. A large-build-volume printer
 
 | Part / description | Model | Qty | Unit price | Total | Source |
 |--------------------|-------|-----|------------|-------|--------|
-| Follower arm servos (left + right, 8 each) | ST3215 C018 | 16 | 110 RMB | 1,760 RMB | [link](https://e.tb.cn/h.8KS047iJugyLfv9?tk=DSDWTTSxLeS) |
-| Head servos (pan + tilt) | ST3215 C018 | 2 | 110 RMB | 220 RMB | [link](https://e.tb.cn/h.8KS047iJugyLfv9?tk=DSDWTTSxLeS) |
-| Lift motor | ST3250 | 1 | 310 RMB | 310 RMB | [link](https://e.tb.cn/h.8LwGPtampPRo6fc?tk=uCJATT7aXjl) |
-| Base wheel motors (left + right) | ST3215 C018 | 2 | 110 RMB | 220 RMB | [link](https://e.tb.cn/h.8KS047iJugyLfv9?tk=DSDWTTSxLeS) |
-| Leader arm servos (left + right, 8 each) | ST3215 C046 | 16 | 100 RMB | 1,600 RMB | [link](https://e.tb.cn/h.8KS047iJugyLfv9?tk=DSDWTTSxLeS) |
+| Follower arm servos (left + right, 8 each) | FEETECH ST3215 C018 | 16 | 110 RMB | 1,760 RMB | [link](https://e.tb.cn/h.8KS047iJugyLfv9?tk=DSDWTTSxLeS) |
+| Head servos (pan + tilt) | FEETECH ST3215 C018 | 2 | 110 RMB | 220 RMB | [link](https://e.tb.cn/h.8KS047iJugyLfv9?tk=DSDWTTSxLeS) |
+| Lift motor | FEETECH ST3250 | 1 | 310 RMB | 310 RMB | [link](https://e.tb.cn/h.8LwGPtampPRo6fc?tk=uCJATT7aXjl) |
+| Base wheel motors (left + right) | FEETECH ST3215 C018 | 2 | 110 RMB | 220 RMB | [link](https://e.tb.cn/h.8KS047iJugyLfv9?tk=DSDWTTSxLeS) |
+| Leader arm servos (left + right, 8 each) | FEETECH ST3215 C046 | 16 | 100 RMB | 1,600 RMB | [link](https://e.tb.cn/h.8KS047iJugyLfv9?tk=DSDWTTSxLeS) |
 
 ## Electronics
 
