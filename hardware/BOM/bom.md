@@ -23,7 +23,7 @@ Complete parts list to build one HumanaOpen. Quantities are per robot.
 | Hardened shaft (光轴) | Ø8 × 310 mm, hard shaft | 2 | 3.5 RMB | 7 RMB | — |
 | Aluminium extrusion | 2040 EU-spec silver, 300 mm | 1 | 10 RMB | 10 RMB | [link](https://e.tb.cn/h.8oH8sbI8ngX3S5c?tk=VQAlTTQObBL) |
 
-### Leader arm (主臂)
+### Leader arm
 
 | Part / description | Spec / size | Qty | Unit price | Total | Source |
 |--------------------|-------------|-----|------------|-------|--------|
