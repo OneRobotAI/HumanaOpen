@@ -832,8 +832,9 @@ On exit, it will prompt for torque release confirmation (ENTER to release).
 
 ### Acknowledgements
 
-- Built on [LeRobot](https://github.com/huggingface/lerobot) and
+- Software is built on [LeRobot](https://github.com/huggingface/lerobot) and
   [open-arms-mini](https://github.com/TheRobotStudio/open-arms-mini).
+- The arms are based on open-arms-mini, with a gripper added at the end of each arm.
 - Hardware design references [xlerobot](https://github.com/xrobot/xlerobot):
   the head degrees-of-freedom and the differential-drive base follow its
   approach.

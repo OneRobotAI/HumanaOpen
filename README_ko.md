@@ -786,8 +786,9 @@ python3 examples/eval_data.py ... --enable-lift=true
 
 ### 감사의 말
 
-- [LeRobot](https://github.com/huggingface/lerobot)과
+- 소프트웨어는 [LeRobot](https://github.com/huggingface/lerobot)과
   [open-arms-mini](https://github.com/TheRobotStudio/open-arms-mini) 기반으로 제작되었습니다.
+- 팔은 open-arms-mini를 기반으로 하며, 각 팔 끝에 그리퍼가 추가되었습니다.
 - 하드웨어 설계는 [xlerobot](https://github.com/xrobot/xlerobot)을 참고했습니다:
   머리 자유도와 차동 구동 베이스 설계가 그 방식을 따릅니다.
 
