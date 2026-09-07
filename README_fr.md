@@ -812,9 +812,12 @@ l'arrêt du Host.
 
 - **Boutique Taobao** : [onerobot](https://m.tb.cn/h.8L4yb9vlYloGQMV) — achetez le
   kit matériel / BOM complet de HumanaOpen.
+
+![QR code boutique onerobot](docs/onerobot_official_shop.jpg)
+
 - **WeChat** : scannez le QR code pour nous contacter :
 
-![boutique officielle onerobot](docs/onerobot_official_shop.jpg)
+![QR code contact WeChat](docs/contact)
 
 ## Licence
 

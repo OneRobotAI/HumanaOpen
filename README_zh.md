@@ -794,9 +794,12 @@ python3 examples/eval_data.py ... --enable-lift=true
 ## 交流与购买
 
 - **淘宝店铺**：[onerobot](https://m.tb.cn/h.8L4yb9vlYloGQMV) — 购买 HumanaOpen 全套硬件 / BOM 套件。
+
+![onerobot 店铺二维码](docs/onerobot_official_shop.jpg)
+
 - **微信**：扫描二维码联系我们：
 
-![onerobot 官方店铺](docs/onerobot_official_shop.jpg)
+![微信联系二维码](docs/contact)
 
 ## 许可证
 

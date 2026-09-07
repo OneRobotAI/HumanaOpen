@@ -795,9 +795,12 @@ python3 examples/eval_data.py ... --enable-lift=true
 
 - **타오바오 스토어** : [onerobot](https://m.tb.cn/h.8L4yb9vlYloGQMV) — HumanaOpen
   전체 하드웨어 / BOM 키트 구매.
+
+![onerobot 스토어 QR 코드](docs/onerobot_official_shop.jpg)
+
 - **WeChat** : QR 코드를 스캔하여 연락하세요 :
 
-![onerobot 공식 스토어](docs/onerobot_official_shop.jpg)
+![WeChat 연락 QR 코드](docs/contact)
 
 ## 라이선스
 
