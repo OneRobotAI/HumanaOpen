@@ -72,5 +72,5 @@ Filament: Bambu Lab PLA Basic / Anycubic PLA. A large-build-volume printer
 
 | Part / description | Spec | Qty | Unit price | Total | Source |
 |--------------------|------|-----|------------|-------|--------|
-| USB-to-Type-C cable | | 2 | 8.5 RMB | 17 RMB | [link](https://e.tb.cn/h.8KRq9s1kJBHLtdN?tk=yS9XTT8GzSZ) |
+| USB-to-Type-C cable | USB 3.2, 10 Gbps | 2 | 8.5 RMB | 17 RMB | [link](https://e.tb.cn/h.8KRq9s1kJBHLtdN?tk=yS9XTT8GzSZ) |
 | Y-split Type-C to DC 5521 cable | 0.5 m | 1 | 20 RMB | 20 RMB | [link](https://e.tb.cn/h.8KRHy0GP3Zk8Rw8?tk=UkoSTT8Dq9k) |
