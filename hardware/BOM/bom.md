@@ -14,8 +14,8 @@ The control board is optional. Fasteners are yet to be added.
 | 3D printed parts | 300 |
 | Motion / actuation | 4,110 |
 | Electronics (excl. control board) | 793 |
-| Cables / misc | 43 |
-| **Total (excl. control board, excl. fasteners)** | **≈ 5,536** |
+| Cables / misc | 49 |
+| **Total (excl. control board, excl. fasteners)** | **≈ 5,542** |
 
 ## Mechanical / structure
 
@@ -92,3 +92,4 @@ Filament: Bambu Lab PLA Basic / Anycubic PLA. A large-build-volume printer
 | Y-split Type-C to DC 5521 cable | 0.5 m | 1 | 20 RMB | 20 RMB | [link](https://e.tb.cn/h.8KRHy0GP3Zk8Rw8?tk=UkoSTT8Dq9k) |
 | Terminal wire | 3P 5264 reverse terminal wire, 1000 mm | 1 | 3 RMB | 3 RMB | [link](https://e.tb.cn/h.8oTllunUw9ECpZp?tk=PRvNT60hcKX) |
 | Terminal wire | 3P 5264 reverse terminal wire, 500 mm | 1 | 3 RMB | 3 RMB | [link](https://e.tb.cn/h.8oTllunUw9ECpZp?tk=PRvNT60hcKX) |
+| Terminal wire | 3P 5264 reverse terminal wire, 200 mm | 2 | 3 RMB | 6 RMB | [link](https://e.tb.cn/h.8oTllunUw9ECpZp?tk=PRvNT60hcKX) |
