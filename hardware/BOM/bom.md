@@ -10,12 +10,12 @@ The control board is optional. Fasteners are yet to be added.
 
 | Section | Subtotal (RMB) |
 |---------|----------------|
-| Mechanical / structure | 289 |
+| Mechanical / structure | 290 |
 | 3D printed parts | 300 |
 | Motion / actuation | 4,110 |
 | Electronics (excl. control board) | 793 |
 | Cables / misc | 43 |
-| **Total (excl. control board, excl. fasteners)** | **≈ 5,535** |
+| **Total (excl. control board, excl. fasteners)** | **≈ 5,536** |
 
 ## Mechanical / structure
 
@@ -33,6 +33,7 @@ The control board is optional. Fasteners are yet to be added.
 |--------------------|-------------|-----|------------|-------|--------|
 | Graphite self-lubricating bronze bushing | 8 × 15 × 24 mm | 2 | 6 RMB | 12 RMB | [link](https://e.tb.cn/h.8LyLe0PfJWP7vzO?tk=2RPvT6qeK39) |
 | T-leadscrew with brass nut | T8 × 300 mm | 1 | 12 RMB | 12 RMB | [link](https://e.tb.cn/h.8MsdKG0YofaR0MA?tk=FcbUTTjETcR) |
+| Bearing (bearing 608-2Z, iron shield) — Japan VBI | 8 × 22 × 7 mm | 1 | 1 RMB | 1 RMB | [link](https://e.tb.cn/h.8KWfffzVtRIZkMB?tk=IkvxT6Jfnwz) |
 | Aluminium rigid coupling | Ø20 × 25 mm, bores Ø8 / Ø6 | 1 | 4 RMB | 4 RMB | [link](https://e.tb.cn/h.8K8vuIaWV6FE6xU?tk=vCWeTTQZ5ji) |
 | Bus-servo flat-shaft flange (A servo horn) | A-style servo horn | 1 | 12 RMB | 12 RMB | [link](https://e.tb.cn/h.8LBtAQFkrs6S6lb?tk=qVBvTTQV6sU) |
 | Hardened shaft (光轴) | Ø8 × 310 mm, hard shaft | 2 | 3.5 RMB | 7 RMB | — |
