@@ -36,8 +36,8 @@ The control board is optional. Fasteners are yet to be added.
 | Bearing (bearing 608-2Z, iron shield) — Japan VBI | 8 × 22 × 7 mm | 1 | 1 RMB | 1 RMB | [link](https://e.tb.cn/h.8KWfffzVtRIZkMB?tk=IkvxT6Jfnwz) |
 | Aluminium rigid coupling | Ø20 × 25 mm, bores Ø8 / Ø6 | 1 | 4 RMB | 4 RMB | [link](https://e.tb.cn/h.8K8vuIaWV6FE6xU?tk=vCWeTTQZ5ji) |
 | Bus-servo flat-shaft flange (A servo horn) | A-style servo horn | 1 | 12 RMB | 12 RMB | [link](https://e.tb.cn/h.8LBtAQFkrs6S6lb?tk=qVBvTTQV6sU) |
-| Hardened precision shaft (光轴) | Ø8 × 310 mm, hardened | 2 | 3.5 RMB | 7 RMB | — |
-| Aluminium extrusion (两头四孔攻丝 M6 孔) | 2040 EU-spec silver, 300 mm | 1 | 10 RMB | 10 RMB | [link](https://e.tb.cn/h.8oH8sbI8ngX3S5c?tk=VQAlTTQObBL) |
+| Hardened precision shaft | Ø8 × 310 mm, hardened | 2 | 3.5 RMB | 7 RMB | — |
+| Aluminium extrusion (M6 tapped holes at both ends) | 2040 EU-spec silver, 300 mm | 1 | 10 RMB | 10 RMB | [link](https://e.tb.cn/h.8oH8sbI8ngX3S5c?tk=VQAlTTQObBL) |
 
 ### Leader arm
 
