@@ -10,12 +10,12 @@ The control board is optional. Fasteners are yet to be added.
 
 | Section | Subtotal (RMB) |
 |---------|----------------|
-| Mechanical / structure | 299 |
+| Mechanical / structure | 289 |
 | 3D printed parts | 300 |
 | Motion / actuation | 4,110 |
 | Electronics (excl. control board) | 793 |
 | Cables / misc | 43 |
-| **Total (excl. control board, excl. fasteners)** | **≈ 5,545** |
+| **Total (excl. control board, excl. fasteners)** | **≈ 5,535** |
 
 ## Mechanical / structure
 
@@ -31,7 +31,6 @@ The control board is optional. Fasteners are yet to be added.
 
 | Part / description | Spec / size | Qty | Unit price | Total | Source |
 |--------------------|-------------|-----|------------|-------|--------|
-| JDB graphite self-lubricating bronze bushing | 6 × 12 × 19 mm | 2 | 5 RMB | 10 RMB | [link](https://e.tb.cn/h.8osKRpqGCDBAzfB?tk=gouxTTjrmso) |
 | Graphite self-lubricating bronze bushing | 8 × 15 × 24 mm | 2 | 6 RMB | 12 RMB | [link](https://e.tb.cn/h.8LyLe0PfJWP7vzO?tk=2RPvT6qeK39) |
 | T-leadscrew with brass nut | T8 × 300 mm | 1 | 12 RMB | 12 RMB | [link](https://e.tb.cn/h.8MsdKG0YofaR0MA?tk=FcbUTTjETcR) |
 | Aluminium rigid coupling | Ø20 × 25 mm, bores Ø8 / Ø6 | 1 | 4 RMB | 4 RMB | [link](https://e.tb.cn/h.8K8vuIaWV6FE6xU?tk=vCWeTTQZ5ji) |
