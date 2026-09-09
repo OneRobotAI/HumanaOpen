@@ -108,6 +108,13 @@ class HumanaOpenConfig(RobotConfig):
     # set False for pure teleoperation (adjustable anytime after startup).
     confirm_lift_after_home: bool = False
 
+    # Force re-homing on connect, ignoring the persistent zero file.
+    # Set to ``True`` after any mechanical re-assembly of the lift (the encoder-
+    # tick match in the zero file can no longer be trusted once the carriage has
+    # been physically moved/rebuild): the lift drives down to the bottom via
+    # stall-detection and rewrites the zero file.
+    force_lift_home: bool = False
+
     # ---- Enable the differential-drive base (wheels) ------------------------
     # Set to ``False`` when the base is not wired up yet (e.g. arms-only testing).
     # In 2-bus mode (port3=None) this also removes the wheel motors from bus 2.

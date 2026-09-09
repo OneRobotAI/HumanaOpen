@@ -254,7 +254,9 @@ class HumanaOpen(Robot):
         # re-homing); only home to the bottom when recovery fails.
         # Fully skipped when home_lift_on_connect=False (must ensure correct position yourself).
         if not getattr(self, "_lift_homed", False):
-            if self.config.home_lift_on_connect and not self.lift_axis.restore_zero():
+            if self.config.home_lift_on_connect and (
+                self.config.force_lift_home or not self.lift_axis.restore_zero()
+            ):
                 logger.info("Running lift homing (stall-detection) ...")
                 self.lift_axis.home()
                 # Data-collection scenario: after homing the lift is at the bottom,
