@@ -164,6 +164,7 @@ class HumanaOpenLiftAxis:
         from lerobot.motors.feetech import OperatingMode
 
         self._bus.write("Operating_Mode", self.cfg.name, OperatingMode.VELOCITY.value)
+        self._mode_is_velocity = True
         self._last_tick = float(self._bus.read("Present_Position", self.cfg.name, normalize=False))
         self._extended_ticks = 0.0
         self._configured = True
@@ -303,6 +304,16 @@ class HumanaOpenLiftAxis:
         import logging
 
         logger = logging.getLogger(__name__)
+        # Torque is NOT enabled by bus.connect() (handshake only) and NOT by
+        # self.configure() either; if home() runs before parent.configure() it
+        # would write Goal_Velocity to a torque-disabled motor, "stall" instantly
+        # (position never moves) and save a garbage zero. Enable torque here so
+        # homing actually drives the carriage down.
+        from lerobot.motors.feetech import TorqueMode
+
+        self._bus.write("Torque_Enable", name, TorqueMode.ENABLED.value)
+        if hasattr(self.cfg, "motor_lock_needed"):
+            self._bus.write("Lock", name, 0)
         logger.info("home(): driving %s DOWN at vel=%s until stall", name, -self.cfg.home_down_speed)
 
         # Downward homing = negative velocity (positive = up, negative = down).
@@ -435,6 +446,18 @@ class HumanaOpenLiftAxis:
             try:
                 cur_mm = self.get_height_mm()
                 v = int(self._apply_safety_limits(v, cur_mm))
+                orig_v = int(action[key_v])
+                if orig_v != 0:
+                    import logging
+
+                    logging.getLogger(__name__).info(
+                        "apply_action vel: raw=%s clamped=%s cur_mm=%.2f final=%s mode_set=%s",
+                        orig_v,
+                        max(-self.cfg.v_max, min(self.cfg.v_max, orig_v)),
+                        cur_mm,
+                        v,
+                        getattr(self, "_mode_is_velocity", "unknown"),
+                    )
             except Exception:
                 pass
             # Positive velocity = up (consistent with the P-controller path; dir_sign semantics in docstring)
