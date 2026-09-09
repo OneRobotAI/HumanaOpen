@@ -771,13 +771,13 @@ A: 按顺序检查：
 
 1. **模式**：升降舵机必须是 VELOCITY 模式。归零后代码会自动恢复，但如果手动改过 `Operating_Mode`，需重新 `connect()` 或 `lift_axis.configure()`。
 2. **扭矩**：`Torque_Enable` 是否为 1。舵机掉扭矩后用手能自由转动。
-3. **速度单位**：见 9.2。`v_max` 设太小（比如 80）会几乎不动。
+3. **速度单位**：见 9.2。代码现在**自动把 Phase BIT2 切到 0**（50 step/s/raw），`v_max=110` 是正确值。如果发现升降"蠕动"（肉眼几乎不动），**先跑 `check_phase.py` 看 BIT2 是不是 1**——通常是换了新舵机（出厂默认 BIT2=1），正常 `connect()` 会自动修正，但手动确认最稳。
 4. **下限保护**：高度已经 ≤ `descent_floor_mm=3` 时，下行指令会被压成 0，属于正常保护。
 5. 检查接线/供电，用 `broadcast_ping` 看 ID 9 是否在线。
 
 ### Q: 升降猛冲 / 过冲？
 
-A: 几乎都是**速度单位失配**。把按 0.732 单位设的 `v_max`（如 4200）直接用到 0.0146 单位的舵机上，速度会严重超预期。先跑 `check_phase.py` 确认 BIT2，再把 `v_max` 改成对应值（BIT2=1 → 3853，BIT2=0 → 77）。如果 BIT2 正确仍过冲，可降低 `kp_vel`。
+A: 几乎都是**速度单位失配**。代码按 BIT2=0（50 step/s/raw）标定，`v_max=110` ≈ 8.7mm/s。如果之前手动改过 `v_max` 为按 BIT2=1 算的值（如 3853），会严重超预期。先跑 `check_phase.py` 确认 BIT2，再改回 `v_max=110`。如果 BIT2 正确仍过冲，可降低 `kp_vel`。
 
 ### Q: Ctrl+C 后升降还在转？
 
@@ -793,7 +793,22 @@ A: 先跑 `lerobot-find-cameras opencv` 确认设备号，再填进 `cameras` �
 
 ### Q: 升降速度太慢？
 
-A: 直驱 8mm 导程，`v_max=3853`（BIT2=1）时约 7.5mm/s，300mm 约 40 秒，这是当前配置的正常速度。想更快可以加大 `v_max` 和 `kp_vel`，或加同步带增速（同时把 `belt_ratio` 改大，注意机械限位）。
+A: 代码按 BIT2=0 标定，`v_max=110` ≈ 8.7mm/s，200mm 约 23 秒。如果实测远慢于此（蠕动级别），**几乎一定是 Phase BIT2 掉回 1**——换新舵机后出厂默认就是 BIT2=1。正常 `connect()` 会自动切回 BIT2=0，但如果不确定，手动确认：
+
+```bash
+python3 examples/check_phase.py          # 看 BIT2
+python3 examples/switch_phase_bit2.py    # 切到 BIT2=0（若为 1）
+```
+
+**换了升降舵机后（重要）**：新舵机出厂 Phase BIT2=1，且旧 `~/.cache/humanaopen/lift_zero.json` 是旧电机数据，两者都要处理：
+
+```bash
+rm ~/.cache/humanaopen/lift_zero.json          # 删旧零位
+python3 examples/check_phase.py                # 确认速度单位
+python3 examples/switch_phase_bit2.py          # 切 BIT2=0
+# 之后正常启动即可；代码会自动校验（Model_Number + 三角一致性）
+# 检测到电机更换 → 自动 re-home，无需手动删文件
+```
 
 ### Q: 用 2 总线还是 3 总线？
 

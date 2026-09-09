@@ -399,6 +399,35 @@ raw > 1000 会方向反转（三角波回绕）— 不安全。切换 Phase BIT2
 **切换后所有速度参数必须除以 50**（`home_down_speed`, `kp_vel`, `v_max`）。工具：
 `examples/switch_phase_bit2.py`（切换），`examples/speed_test_bit2_0.py`（验证）。
 
+> **现代代码已经全自动**：`lift_axis.configure()` 每次启动都会读 Phase，若检测到
+> BIT2=1 自动改写为 BIT2=0（EEPROM 写入，重启后仍保留），无需手动运行切换脚本。
+> `Acceleration` 也会自动设为 254（最快斜坡），确保命令速度真实到达。
+
+**换了升降舵机后（最保险的手动兜底）**：新舵机出厂默认 Phase BIT2=1，且旧的
+零位文件 `~/.cache/humanaopen/lift_zero.json` 是旧电机的编码器数据，两者都需处理。
+
+```bash
+# 1. 删除旧零位文件（新电机编码器零点不同）
+rm ~/.cache/humanaopen/lift_zero.json
+
+# 2. 确认/切换速度单位（新舵机出厂是 BIT2=1，切回 BIT2=0）
+python3 examples/check_phase.py          # 查看当前 BIT2
+python3 examples/switch_phase_bit2.py    # 切换 BIT2 → 0
+
+# 3. 第一次启动强制归零，写入新电机真实零位
+python3 -c "
+from lerobot_robot_humanaopen.humanaopen_host import HumanaOpenHost
+from lerobot_robot_humanaopen import HumanaOpenConfig
+HumanaOpenHost(HumanaOpenConfig(
+    port1='/dev/ttyACM0', port2='/dev/ttyACM1', port3=None,
+    cameras={}, force_lift_home=True
+)).run()
+"
+```
+
+> 正常代码启动时已自动完成 2-3 步；手动跑一遍只是双保险，适合换电机后
+> 先确认硬件状态再接入完整流程的场景。
+
 ### 头部俯仰行程解锁
 
 头部俯仰舵机的 EPROM 位置限制被固定为 [1430, 2096]（~58°），

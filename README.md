@@ -403,6 +403,37 @@ entirely inside the reliable range. **After switching, all velocity params must 
 divided by 50** (`home_down_speed`, `kp_vel`, `v_max`). Tools:
 `examples/switch_phase_bit2.py` (toggle), `examples/speed_test_bit2_0.py` (verify).
 
+> **Modern code does this automatically**: `lift_axis.configure()` reads the Phase
+> register on every startup and, if BIT2=1 is detected, rewrites it to BIT2=0 (EPROM
+> write — persists across reboots). `Acceleration` is also forced to 254 (fastest
+> ramp) so commanded speeds are actually reached. No manual switching needed.
+
+**After replacing the lift servo (safest manual fallback)**: a new servo ships with
+Phase BIT2=1 (factory default), and the old `~/.cache/humanaopen/lift_zero.json`
+holds the previous motor's encoder data — both need handling.
+
+```bash
+# 1. Remove the stale zero file (new motor has a different encoder origin)
+rm ~/.cache/humanaopen/lift_zero.json
+
+# 2. Check / switch the velocity unit (new servo ships BIT2=1 → set BIT2=0)
+python3 examples/check_phase.py          # report current BIT2
+python3 examples/switch_phase_bit2.py    # switch BIT2 → 0
+
+# 3. First boot with forced homing to write the new motor's true zero
+python3 -c "
+from lerobot_robot_humanaopen.humanaopen_host import HumanaOpenHost
+from lerobot_robot_humanaopen import HumanaOpenConfig
+HumanaOpenHost(HumanaOpenConfig(
+    port1='/dev/ttyACM0', port2='/dev/ttyACM1', port3=None,
+    cameras={}, force_lift_home=True
+)).run()
+"
+```
+
+> Normal startup already performs steps 2–3 automatically; running them manually is
+> a belt-and-braces check after a motor swap before going back to the full flow.
+
 ### Head tilt range unlock
 
 The head tilt servo had its EPROM position limits baked to [1430, 2096] (~58°),

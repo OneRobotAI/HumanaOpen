@@ -963,12 +963,31 @@ Check, in order:
 ### Q: Lift moves, but way too slow or barely at all
 
 **Cause**: velocity unit mismatch. The Phase register (address 18) BIT2 sets
-the ST3250's velocity unit (Section 9.7). If the code's `v_max=3853` was tuned
-for BIT2=1 but your servo is at BIT2=0 (0.732 RPM/raw), commands that look
-right in code are far too small in hardware.
+the ST3250's velocity unit (Section 9.2). All speed constants in this repo are
+tuned for **BIT2=0** (50 step/s/raw, `v_max=110` ≈ 8.7 mm/s). A servo that is
+still at BIT2=1 (1 step/s/raw, factory default) makes every command run ~50x
+slower — the lift "creeps" and looks dead.
 
-**Fix**: run `python3 examples/check_phase.py`, confirm BIT2, and set `v_max`
-to the value it prints.
+**Fix**: modern code switches BIT2 to 0 automatically in
+`lift_axis.configure()`. If it still creeps, confirm manually:
+
+```bash
+python3 examples/check_phase.py          # report current BIT2
+python3 examples/switch_phase_bit2.py    # switch BIT2 → 0
+```
+
+**After replacing the lift servo (important)**: a new servo ships with
+BIT2=1, and the old `~/.cache/humanaopen/lift_zero.json` holds the previous
+motor's encoder data — both need handling:
+
+```bash
+rm ~/.cache/humanaopen/lift_zero.json          # stale zero from old motor
+python3 examples/check_phase.py                # confirm speed unit
+python3 examples/switch_phase_bit2.py          # switch BIT2 → 0
+# Normal startup then auto-validates (Model_Number + triangle-consistency
+# checks detect the swapped motor and force a re-home — no manual rm needed
+# going forward)
+```
 
 ### Q: Lift overshoots or slams to full speed
 
@@ -976,10 +995,11 @@ to the value it prints.
 the old-style value the servo hits full speed for the slightest height error
 and overshoots the target badly.
 
-**Fix**: keep `v_max=3853` for a BIT2=1 servo (verified on this bench), or the
-value `check_phase.py` reports for your servo. If overshoot persists, lower
-`kp_vel` (the P gain maps height error to velocity) so approach slows down
-near the target.
+**Fix**: the repo is tuned for **BIT2=0** with `v_max=110`. If you hand-edited
+`v_max` for BIT2=1 (e.g. 3853) while the code auto-switches to BIT2=0, commands
+explode 50x over target. Revert to `v_max=110`, or set what `check_phase.py`
+reports for your servo. If overshoot persists, lower `kp_vel` (the P gain maps
+height error to velocity) so approach slows down near the target.
 
 ### Q: Ctrl+C does not stop the lift
 

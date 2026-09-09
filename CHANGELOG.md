@@ -31,6 +31,12 @@ pre-1.0 so breaking changes may occur until a stable release.
   (50 step/s/raw). `configure()` now reads `Phase` and switches BIT2 to 0
   (EPROM write, survives reboot) automatically — no manual
   `examples/switch_phase_bit2.py` needed after firmware re-flash.
+- Stale lift zero file after a servo replacement: `restore_zero()` now checks
+  `Model_Number` (different-motor detection) and a triangle-consistency check
+  (`(cur - abs_tick_at_home) mod rev == extended_ticks mod rev`) that catches
+  same-model swaps even when the raw encoder tick coincidentally matches.
+  A stale zero file now invalidates automatically → re-home, no manual
+  `rm lift_zero.json` needed.
 
 ## [0.1.0] - 2026-09
 
