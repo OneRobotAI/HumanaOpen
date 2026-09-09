@@ -747,7 +747,7 @@ class HumanaOpen(Robot):
 
     # ── Shutdown ───────────────────────────────────────────────────────────
 
-    def stop_base(self) -> None:
+    def stop_base(self, *, log: bool = True) -> None:
         if self.wheel_motors:
             wheel_bus = self.bus3 if self.bus3 is not None else self.bus2
             wheel_bus.sync_write("Goal_Velocity", dict.fromkeys(self.wheel_motors, 0), num_retry=5)
@@ -755,7 +755,8 @@ class HumanaOpen(Robot):
         lift_bus = getattr(self.lift_axis, "_bus", None)
         if lift_bus is not None and self.lift_axis.cfg.name in lift_bus.motors:
             self.lift_axis.apply_action({"lift_axis.vel": 0})
-        logger.info("Base & lift motors stopped")
+        if log:
+            logger.info("Base & lift motors stopped")
 
     def disconnect(self) -> None:
         # Tolerate partial connection state (e.g. connect() failed midway).

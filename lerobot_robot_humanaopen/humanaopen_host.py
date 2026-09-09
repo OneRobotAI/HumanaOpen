@@ -258,10 +258,19 @@ class HumanaOpenHost:
                 # (kill -9) never sends an explicit stop. This zeroes the wheels so
                 # they don't keep driving after the operator stops/aborts.
                 if time.monotonic() - last_cmd_time > self.host_cfg.watchdog_timeout_ms / 1000.0:
+                    # Log once per watchdog episode, not every frame (~30/s).
+                    # Without a client this fires every frame, drowning real
+                    # diagnostics; the safety action itself still runs each frame.
+                    if not getattr(self, "_watchdog_logging", False):
+                        self._watchdog_logging = True
+                        logger.info("No command for >%.3fs — stopping base & lift (watchdog)",
+                                    self.host_cfg.watchdog_timeout_ms / 1000.0)
                     try:
-                        robot.stop_base()
+                        robot.stop_base(log=False)
                     except Exception:
                         pass
+                else:
+                    self._watchdog_logging = False
 
                 # High frequency: read joint state (no cameras, millisecond-level)
                 try:
@@ -288,7 +297,12 @@ class HumanaOpenHost:
                 try:
                     pub.send_multipart(parts, flags=zmq.NOBLOCK)
                 except zmq.Again:
-                    logger.info("Dropping observation — no client connected.")
+                    # Throttle: without a client this fires on EVERY frame (~30/s),
+                    # drowning real diagnostics. Report at most once per 5s.
+                    now = time.monotonic()
+                    if now - getattr(self, "_last_drop_log", 0.0) >= 5.0:
+                        self._last_drop_log = now
+                        logger.info("Dropping observation — no client connected (throttled 5s).")
 
                 frame_count += 1
                 if frame_count % 150 == 0:  # every ~5s at 30Hz
