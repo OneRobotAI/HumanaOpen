@@ -165,6 +165,12 @@ class HumanaOpenLiftAxis:
 
         self._bus.write("Operating_Mode", self.cfg.name, OperatingMode.VELOCITY.value)
         self._mode_is_velocity = True
+        # Acceleration (SRAM addr 41) resets to 0 on every power cycle. 0 means
+        # a very slow velocity ramp, so a Goal_Velocity command never actually
+        # reaches its target speed (measured: raw=110 -> ~1.7mm/s instead of
+        # ~10.7mm/s). Match lerobot's configure_motors() default (254 = fastest
+        # ramp) so the lift tracks commanded speed.
+        self._bus.write("Acceleration", self.cfg.name, 254)
         self._last_tick = float(self._bus.read("Present_Position", self.cfg.name, normalize=False))
         self._extended_ticks = 0.0
         self._configured = True
