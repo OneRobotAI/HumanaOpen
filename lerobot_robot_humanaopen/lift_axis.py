@@ -277,6 +277,27 @@ class HumanaOpenLiftAxis:
             )
             return False
 
+        # Triangle consistency: extended_ticks is the multi-turn displacement
+        # accumulated since home, so it must agree with (cur - abs_tick_at_home)
+        # modulo one revolution. A replacement motor has a different encoder
+        # origin — even if the raw tick coincidentally matches, this relation
+        # breaks. This catches same-model swaps the raw-match check cannot.
+        saved_abs = state.get("abs_tick_at_home")
+        if saved_abs is not None:
+            expected = (cur - float(saved_abs)) % self._ticks_per_rev
+            actual = float(state.get("extended_ticks", 0.0)) % self._ticks_per_rev
+            diff = abs(expected - actual)
+            diff = min(diff, self._ticks_per_rev - diff)
+            if diff > tol:
+                logger.info(
+                    "restore_zero: ENCODER ORIGIN CHANGED — triangle check "
+                    "expected %.0f got %.0f (diff %.0f ticks) → re-home",
+                    expected,
+                    actual,
+                    diff,
+                )
+                return False
+
         # Sanity check: restore the state, then confirm the resulting height is
         # physically plausible. A replacement motor (or re-assembly) can leave the
         # old extended_ticks pointing at a height outside the mechanical range,
