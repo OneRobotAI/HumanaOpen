@@ -171,6 +171,24 @@ class HumanaOpenLiftAxis:
         # ~10.7mm/s). Match lerobot's configure_motors() default (254 = fastest
         # ramp) so the lift tracks commanded speed.
         self._bus.write("Acceleration", self.cfg.name, 254)
+        # Phase BIT2 selects the Goal_Velocity unit: 0 = 50 step/s/raw
+        # (0.732 RPM/raw), 1 = 1 step/s/raw. All lift speed constants in this
+        # module assume BIT2=0; a firmware default or re-flash resets it to
+        # BIT2=1 which silently caps every speed command by 50x. Fix it here on
+        # every connect (EPROM write, survives reboot).
+        phase = int(self._bus.read("Phase", self.cfg.name, normalize=False))
+        if phase & 0x04:
+            import logging
+
+            logger = logging.getLogger(__name__)
+            logger.info("lift Phase=0x%02X BIT2=1 (1 step/s/raw) -> switching to BIT2=0", phase)
+            self._bus.write("Torque_Enable", self.cfg.name, 0)
+            self._bus.write("Lock", self.cfg.name, 0)
+            self._bus.write("Phase", self.cfg.name, phase & ~0x04)
+            time.sleep(0.2)
+            self._bus.write("Lock", self.cfg.name, 1)
+            verify = int(self._bus.read("Phase", self.cfg.name, normalize=False))
+            logger.info("lift Phase after switch = 0x%02X (BIT2=%d)", verify, (verify >> 2) & 1)
         self._last_tick = float(self._bus.read("Present_Position", self.cfg.name, normalize=False))
         self._extended_ticks = 0.0
         self._configured = True
