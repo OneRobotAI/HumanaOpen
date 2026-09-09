@@ -261,6 +261,11 @@ def main():
     listener = keyboard.Listener(on_press=keys.on_press, on_release=keys.on_release)
     listener.start()
 
+    # Define display mode flags BEFORE any connect() — the finally block
+    # references them even if connection fails, so they must exist up front.
+    _rerun = args.display == "rerun"
+    _foxglove = args.display == "foxglove"
+
     try:
         print("[1] Connecting follower...")
         follower.connect(calibrate=True)
@@ -578,8 +583,6 @@ def main():
         _last_lift_dir = 0  # 0=none, 1=last pressed u, -1=last pressed h
         speed_idx = 1  # base speed level (1 = base)
         _last_lift_print = 0.0  # throttles the lift-status display
-        _rerun = args.display == "rerun"  # whether rerun display is enabled
-        _foxglove = args.display == "foxglove"  # whether foxglove display is enabled
 
         # ── Display decoupling ─────────────────────────────────────────
         # foxglove/rerun logging is MOVED OFF the control loop: log_foxglove_data
