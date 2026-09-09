@@ -200,28 +200,38 @@ class HumanaOpenLiftAxis:
         tolerance), restore the multi-turn tracking state and return True;
         otherwise return False (the caller should re-home).
         """
+        import logging
+
+        logger = logging.getLogger(__name__)
         if not self.enabled or not self.cfg.zero_file:
+            logger.info("restore_zero: SKIP (enabled=%s zero_file=%s)", self.enabled, self.cfg.zero_file)
             return False
         import json
         import os
 
         if not os.path.isfile(self.cfg.zero_file):
+            logger.info("restore_zero: no zero file at %s → re-home", self.cfg.zero_file)
             return False
         try:
             with open(self.cfg.zero_file) as f:
                 state = json.load(f)
         except Exception:
+            logger.info("restore_zero: zero file unreadable → re-home")
             return False
 
         try:
             cur = float(self._bus.read("Present_Position", self.cfg.name, normalize=False))
         except Exception:
+            logger.info("restore_zero: read Present_Position failed → re-home")
             return False
 
         last = float(state.get("last_tick", -1))
         tol = 30  # ±30 ticks ≈ ±0.06mm, tolerates small encoder drift after power-cycled restart
         if abs(cur - last) > tol:
+            logger.info("restore_zero: MISMATCH cur=%s last=%s (tol=%s) → re-home", cur, last, tol)
             return False
+
+        logger.info("restore_zero: MATCH cur=%s last=%s — restoring position, no re-home", cur, last)
 
         self._extended_ticks = float(state.get("extended_ticks", 0.0))
         self._last_tick = cur
@@ -290,6 +300,10 @@ class HumanaOpenLiftAxis:
             return
         self.configure()
         name = self.cfg.name
+        import logging
+
+        logger = logging.getLogger(__name__)
+        logger.info("home(): driving %s DOWN at vel=%s until stall", name, -self.cfg.home_down_speed)
 
         # Downward homing = negative velocity (positive = up, negative = down).
         self._bus.write("Goal_Velocity", name, -self.cfg.home_down_speed)

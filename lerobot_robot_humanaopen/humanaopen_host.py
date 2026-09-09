@@ -117,6 +117,10 @@ class HumanaOpenHost:
         self._ctx: zmq.Context | None = None
 
     def run(self) -> None:
+        logging.basicConfig(
+            level=logging.INFO,
+            format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+        )
         robot = HumanaOpen(self.robot_cfg)
         robot.connect(calibrate=True)
         self._robot = robot
