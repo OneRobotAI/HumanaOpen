@@ -210,11 +210,19 @@ class HumanaOpenLiftAxis:
                 "extended_ticks": self._extended_ticks,
                 "last_tick": self._last_tick,
                 "abs_tick_at_home": self._abs_tick_at_home,
+                "model_number": self._read_model_number(),
             }
             with open(self.cfg.zero_file, "w") as f:
                 json.dump(state, f)
         except Exception:
             pass
+
+    def _read_model_number(self) -> int | None:
+        """Read the servo's Model_Number register (identifies the motor)."""
+        try:
+            return int(self._bus.read("Model_Number", self.cfg.name, normalize=False))
+        except Exception:
+            return None
 
     def restore_zero(self) -> bool:
         """Try to restore the absolute position from the file, avoiding re-homing.
@@ -254,6 +262,46 @@ class HumanaOpenLiftAxis:
         tol = 30  # ±30 ticks ≈ ±0.06mm, tolerates small encoder drift after power-cycled restart
         if abs(cur - last) > tol:
             logger.info("restore_zero: MISMATCH cur=%s last=%s (tol=%s) → re-home", cur, last, tol)
+            return False
+
+        # Motor identity check: if the servo was replaced (different model), the
+        # old zero state is meaningless — re-home. Model_Number was only added to
+        # the file after this change; older files simply have no check.
+        saved_model = state.get("model_number")
+        cur_model = self._read_model_number()
+        if saved_model is not None and cur_model is not None and saved_model != cur_model:
+            logger.info(
+                "restore_zero: MOTOR CHANGED (file model=%s current model=%s) → re-home",
+                saved_model,
+                cur_model,
+            )
+            return False
+
+        # Sanity check: restore the state, then confirm the resulting height is
+        # physically plausible. A replacement motor (or re-assembly) can leave the
+        # old extended_ticks pointing at a height outside the mechanical range,
+        # even when the raw tick happens to match. Re-home if implausible.
+        saved_ext = float(state.get("extended_ticks", 0.0))
+        saved_abs = state.get("abs_tick_at_home")
+        self._extended_ticks = saved_ext
+        self._last_tick = cur
+        self._abs_tick_at_home = saved_abs
+        try:
+            h = self.get_height_mm()
+        except Exception:
+            h = float("nan")
+        margin = max(self.cfg.soft_max_mm * 1.25, 50.0)
+        if not (self.cfg.soft_min_mm - margin <= h <= self.cfg.soft_max_mm + margin):
+            # Roll back the speculative state before re-homing.
+            self._extended_ticks = 0.0
+            self._last_tick = cur
+            self._abs_tick_at_home = None
+            logger.info(
+                "restore_zero: IMPLAUSIBLE height %.1fmm from old zero (range %.0f~%.0f) → re-home",
+                h,
+                self.cfg.soft_min_mm,
+                self.cfg.soft_max_mm,
+            )
             return False
 
         logger.info("restore_zero: MATCH cur=%s last=%s — restoring position, no re-home", cur, last)

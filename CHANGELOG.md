@@ -23,6 +23,14 @@ pre-1.0 so breaking changes may occur until a stable release.
   gRPC backpressure / frozen viewer.
 - `--display` no longer prefix-matched to `--display-foxglove` (added explicit
   `--display` argument).
+- Lift would appear to "not move": `Acceleration` (SRAM) resets to 0 on every
+  power cycle, capping commanded speed at ~10-20% of target; lift
+  `configure()` now writes `Acceleration=254` (fastest ramp) on every connect.
+- Lift would silently run 50x slower than commanded when the servo `Phase`
+  register BIT2 was 1 (1 step/s/raw) while all speed constants assume BIT2=0
+  (50 step/s/raw). `configure()` now reads `Phase` and switches BIT2 to 0
+  (EPROM write, survives reboot) automatically — no manual
+  `examples/switch_phase_bit2.py` needed after firmware re-flash.
 
 ## [0.1.0] - 2026-09
 
