@@ -120,9 +120,12 @@ class HumanaOpenHost:
         logging.basicConfig(
             level=logging.INFO,
             format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+            force=True,
         )
         robot = HumanaOpen(self.robot_cfg)
+        print(">>> connect(calibrate=True) — bus handshake + lift homing/restore ...", flush=True)
         robot.connect(calibrate=True)
+        print(">>> connect() done — lift homing/restore finished", flush=True)
         self._robot = robot
 
         ctx = zmq.Context()
