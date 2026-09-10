@@ -875,11 +875,15 @@ On exit, it will prompt for torque release confirmation (ENTER to release).
 - **Taobao store**: [onerobot](https://m.tb.cn/h.8L4yb9vlYloGQMV) — buy the full
   hardware / BOM kit for HumanaOpen.
 
-<img src="docs/onerobot_official_shop.jpg" alt="onerobot store QR code" width="25%">
+<img src="docs/Official_Shop.jpg.png" alt="onerobot store QR code" width="25%">
 
-- **WeChat**: scan the QR code to contact us:
+- **Product Communication**: scan the QR code to reach our product team:
 
-<img src="docs/contact" alt="WeChat contact QR code" width="25%">
+<img src="docs/Product_Communication" alt="Product communication QR code" width="25%">
+
+- **Business Cooperation**: scan the QR code for business opportunities:
+
+<img src="docs/Business_Cooperation.jpg" alt="Business cooperation QR code" width="25%">
 
 ## License
 
