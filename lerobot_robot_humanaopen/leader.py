@@ -153,7 +153,12 @@ class HumanaOpenLeaderConfig(TeleoperatorConfig):
 
     port: str
     side: str | None = None  # "left" / "right" / None
-    use_degrees: bool = True
+    # Must match the follower's normalization space for 1:1 teleoperation:
+    # follower uses RANGE_M100_100 by default (use_degrees=False), so the
+    # leader must too; a DEGREES leader feeding a RANGE_M100_100 follower
+    # maps ±180° into a ±100% scale and the follower maxes out at ~55% of
+    # the leader's travel.
+    use_degrees: bool = False
     calibration_mode: str = "full"
     flip_joints: dict[str, list[str]] | None = None  # None -> use official default table
     joint_remap: dict[str, str] | None = None  # None -> use official default remapping
@@ -170,6 +175,7 @@ class BiHumanaOpenLeaderConfig(TeleoperatorConfig):
 
     left_arm_port: str
     right_arm_port: str
+    use_degrees: bool = False  # must match the follower's normalization space
     flip_joints: dict[str, list[str]] | None = None  # None -> use official default table
     joint_remap: dict[str, str] | None = None  # None -> use official default remapping
 
@@ -202,11 +208,12 @@ class HumanaOpenLeader(Teleoperator):
         self._joint_remap: dict[str, str] = config.joint_remap if config.joint_remap is not None else DEFAULT_JOINT_REMAP
 
         motors = {}
+        arm_mode = MotorNormMode.DEGREES if config.use_degrees else MotorNormMode.RANGE_M100_100
         for id_, name in enumerate(JOINT_NAMES, start=1):
             if name == "gripper":
                 motors[name] = Motor(id_, "sts3215", MotorNormMode.RANGE_0_100)
             else:
-                motors[name] = Motor(id_, "sts3215", MotorNormMode.DEGREES)
+                motors[name] = Motor(id_, "sts3215", arm_mode)
 
         self.bus = FeetechMotorsBus(
             port=config.port,
@@ -397,6 +404,7 @@ class BiHumanaOpenLeader(Teleoperator):
             calibration_dir=config.calibration_dir,
             port=config.left_arm_port,
             side="left",
+            use_degrees=config.use_degrees,
             flip_joints=config.flip_joints,
             joint_remap=config.joint_remap,
         )
@@ -405,6 +413,7 @@ class BiHumanaOpenLeader(Teleoperator):
             calibration_dir=config.calibration_dir,
             port=config.right_arm_port,
             side="right",
+            use_degrees=config.use_degrees,
             flip_joints=config.flip_joints,
             joint_remap=config.joint_remap,
         )
