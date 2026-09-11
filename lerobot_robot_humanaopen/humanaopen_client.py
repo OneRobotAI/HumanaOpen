@@ -39,28 +39,30 @@ logger = logging.getLogger(__name__)
 
 def _parse_observation_multipart(
     message_parts: list[bytes], camera_names: set[str]
-) -> tuple[dict[str, Any], float, float]:
+) -> tuple[dict[str, Any], float, float, int]:
     """Parse a multipart observation: JSON state head + cam/JPEG frame pairs.
 
     The JSON head (part 0) holds the float state plus the ``_images`` name
     list.  Frames follow as alternating [cam_name, jpeg_bytes] frames.
 
-    Returns (obs, cam_ts, t_send) where cam_ts is the host-side capture
-    timestamp (0.0 when the frame carries no camera data), and t_send is
-    the host wall-clock just before ZMQ send — used to measure pure network
-    latency independent of host/client clock drift.
+    Returns (obs, cam_ts, t_send, echo_client_perf) where cam_ts is the
+    host-side capture timestamp (0.0 when the frame carries no camera data),
+    t_send is the host wall-clock just before ZMQ send, and echo_client_perf
+    is the client's own command timestamp echoed back by the host (0 when the
+    host had no command yet) — used for skew-free command→obs RTT.
     """
     if not message_parts:
-        return {}, 0.0, 0.0
+        return {}, 0.0, 0.0, 0
 
     try:
         state = json.loads(message_parts[0].decode("utf-8"))
     except (UnicodeDecodeError, json.JSONDecodeError) as e:
         logger.error("Error decoding observation JSON: %s", e)
-        return {}, 0.0, 0.0
+        return {}, 0.0, 0.0, 0
 
     cam_ts = float(state.get("_cam_ts", 0.0) or 0.0)
     t_send = float(state.get("_t_send", 0.0) or 0.0)
+    echo_client_perf = int(state.get("_echo_client_perf", 0) or 0)
     obs: dict[str, Any] = {k: v for k, v in state.items() if not k.startswith("_")}
 
     if len(message_parts) > 1:
@@ -120,6 +122,7 @@ class HumanaOpenClient(Robot):
         self._last_obs_time = 0.0
         self._last_t_send = 0.0
         self._last_latency_ms = 0.0
+        self._last_rtt_ms = 0.0
         # Image frames arrive at a lower rate than joint state (host divider);
         # cache them so fresh non-image obs frames can re-attach them.
         self._img_cache: dict[str, Any] = {}
@@ -251,7 +254,7 @@ class HumanaOpenClient(Robot):
             pending = self._sub.poll(0)
 
         if last_parts is not None:
-            obs, _, t_send = _parse_observation_multipart(last_parts, camera_names)
+            obs, _, t_send, echo_client_perf = _parse_observation_multipart(last_parts, camera_names)
             # Persist image frames separately: they arrive less often than
             # joint state (host divider), so retain them across calls.
             for k, v in obs.items():
@@ -260,6 +263,10 @@ class HumanaOpenClient(Robot):
                         self._img_cache[k] = v
             self._last_obs = obs
             self._last_obs_time = time.time()
+            if echo_client_perf:
+                # Full command→obs round trip, measured entirely on the CLIENT
+                # monotonic clock: immune to host/client clock skew.
+                self._last_rtt_ms = (time.perf_counter_ns() - echo_client_perf) / 1e6
             if t_send:
                 self._last_t_send = t_send
                 # Host and client clocks are NOT synchronized across machines,
@@ -279,6 +286,11 @@ class HumanaOpenClient(Robot):
         """Send an action command to the robot host (JSON single-frame)."""
         if not self.is_connected:
             raise RuntimeError("Client is not connected")
+        # Stamp every command with the client's monotonic clock (perf_counter_ns).
+        # The host echoes it back in the next observation, so the client can
+        # measure the FULL command→obs round trip entirely in its own clock —
+        # no cross-machine clock sync needed, immune to skew.
+        action["_client_perf"] = time.perf_counter_ns()
         try:
             self._pub.send_string(_serialize_cmd(action))
         except zmq.Again:

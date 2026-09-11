@@ -255,6 +255,11 @@ class HumanaOpenHost:
                         logger.warning("Bad command message: %s", e)
                         action = {}
 
+                # Echo the newest command's client monotonic timestamp back in the
+                # next observation so the client can measure its own command→obs
+                # round trip (RTT) without any cross-machine clock assumption.
+                self._echo_client_perf = action.get("_client_perf", 0)
+
                 if action:
                     robot.send_action(action)
 
@@ -300,6 +305,10 @@ class HumanaOpenHost:
                 # client can measure pure network latency (t_recv - _t_send)
                 # independent of camera encode time and host/client clock drift.
                 obs["_t_send"] = time.time()
+                # Echo the client's own monotonic command timestamp: the client
+                # computes its command→obs RTT entirely in its own clock.
+                if getattr(self, "_echo_client_perf", 0):
+                    obs["_echo_client_perf"] = self._echo_client_perf
                 parts = build_observation_multipart(obs, robot.cameras.keys(), self.host_cfg.jpeg_quality)
                 try:
                     pub.send_multipart(parts, flags=zmq.NOBLOCK)
