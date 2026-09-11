@@ -93,3 +93,6 @@ Filament: Bambu Lab PLA Basic / Anycubic PLA. A large-build-volume printer
 | Terminal wire | 3P 5264 reverse terminal wire, 1000 mm | 1 | 3 RMB | 3 RMB | [link](https://e.tb.cn/h.8oTllunUw9ECpZp?tk=PRvNT60hcKX) |
 | Terminal wire | 3P 5264 reverse terminal wire, 500 mm | 1 | 3 RMB | 3 RMB | [link](https://e.tb.cn/h.8oTllunUw9ECpZp?tk=PRvNT60hcKX) |
 | Terminal wire | 3P 5264 reverse terminal wire, 200 mm | 2 | 3 RMB | 6 RMB | [link](https://e.tb.cn/h.8oTllunUw9ECpZp?tk=PRvNT60hcKX) |
+| Chest camera cable (optional) | 100 mm | 1 | included with camera | — | — |
+| Head camera cable | 300 mm | 1 | included with camera | — | — |
+| Wrist camera cable | 900 mm | 2 | included with camera | — | — |
