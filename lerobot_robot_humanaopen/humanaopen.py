@@ -742,7 +742,13 @@ class HumanaOpen(Robot):
             wheel_bus.sync_write("Goal_Velocity", wheel_raw)
 
         # ── Lift command ────────────────────────────────────────────────
-        self.lift_axis.apply_action(action)
+        try:
+            self.lift_axis.apply_action(action)
+        except Exception:
+            # A flaky lift motor (bus write fails) must not crash the host in
+            # the middle of a teleop session; the arm commands above already
+            # went out, just skip the lift this frame.
+            pass
 
         return action
 
@@ -755,7 +761,10 @@ class HumanaOpen(Robot):
         # Stop lift too (only if its motor was actually attached to a bus)
         lift_bus = getattr(self.lift_axis, "_bus", None)
         if lift_bus is not None and self.lift_axis.cfg.name in lift_bus.motors:
-            self.lift_axis.apply_action({"lift_axis.vel": 0})
+            try:
+                self.lift_axis.apply_action({"lift_axis.vel": 0})
+            except Exception:
+                pass
         if log:
             logger.info("Base & lift motors stopped")
 

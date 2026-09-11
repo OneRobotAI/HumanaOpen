@@ -167,12 +167,13 @@ class HumanaOpenClient(Robot):
         # Send action commands — PUSH to host PULL (JSON single-frame).
         # CONFLATE=1 keeps only the newest command in-flight so a stale backlog
         # never makes the operator's latest action wait behind obsolete ones.
-        # IMMEDIATE=1: when the TCP link drops, commands are NOT queued into the
-        # dead pipe and replayed in order after reconnect (which looks exactly
-        # like follower lag). Sends instead fail fast with EAGAIN.
+        # SNDTIMEO caps the blocking time: CONFLATE can mute the PUSH under a
+        # stalled peer and a blocking send would freeze the WHOLE teleop loop.
+        # Host-side draining already skips stale commands, so a dropped send
+        # here is just one stale frame — never block the loop for it.
         self._pub = self._ctx.socket(zmq.PUSH)
         self._pub.setsockopt(zmq.CONFLATE, 1)
-        self._pub.setsockopt(zmq.IMMEDIATE, 1)
+        self._pub.setsockopt(zmq.SNDTIMEO, 10)
         self._pub.connect(f"tcp://{self.config.remote_ip}:{self.config.port_zmq_cmd}")
 
         # Verify the connection: wait until the host actually streams an
@@ -274,7 +275,13 @@ class HumanaOpenClient(Robot):
         """Send an action command to the robot host (JSON single-frame)."""
         if not self.is_connected:
             raise RuntimeError("Client is not connected")
-        self._pub.send_string(_serialize_cmd(action))
+        try:
+            self._pub.send_string(_serialize_cmd(action))
+        except zmq.Again:
+            # SNDTIMEO exceeded: the host is momentarily stalled on the serial
+            # bus. Drop this frame — the next one is fresher anyway, and the
+            # host drains + applies newest only.
+            pass
         return action
 
     @property
