@@ -238,15 +238,22 @@ class HumanaOpenHost:
                 # wait behind observation/image work. Non-blocking + CONFLATE
                 # keeps only the newest command, so a slow obs/build below never
                 # delays the operator's action.
-                try:
-                    cmd_str = sub.recv_string(zmq.NOBLOCK)
-                    action = dict(json.loads(cmd_str))
-                    last_cmd_time = time.monotonic()
-                except zmq.Again:
-                    action = {}
-                except (ValueError, TypeError) as e:
-                    logger.warning("Bad command message: %s", e)
-                    action = {}
+                # DRAIN all pending commands and apply only the NEWEST: if the
+                # client momentarily stalls, stale commands pile up in the TCP
+                # buffer (CONFLATE cannot retract in-flight messages). Consuming
+                # one per frame would keep executing OLD commands — lag that
+                # grows with runtime. Draining uses the latest state instead.
+                action = {}
+                while True:
+                    try:
+                        cmd_str = sub.recv_string(zmq.NOBLOCK)
+                        action = dict(json.loads(cmd_str))
+                        last_cmd_time = time.monotonic()
+                    except zmq.Again:
+                        break
+                    except (ValueError, TypeError) as e:
+                        logger.warning("Bad command message: %s", e)
+                        action = {}
 
                 if action:
                     robot.send_action(action)
@@ -310,6 +317,10 @@ class HumanaOpenHost:
 
                 # ── Rate-limit ──────────────────────────────────────────
                 elapsed = time.perf_counter() - t0
+                # Track worst-frame time: if serial work often exceeds loop_dt,
+                # the host drifts below 30Hz and commands unavoidably queue.
+                if elapsed > getattr(self, "_worst_frame_ms", 0.0):
+                    self._worst_frame_ms = elapsed * 1e3
                 if elapsed < loop_dt:
                     time.sleep(loop_dt - elapsed)
 
@@ -318,6 +329,12 @@ class HumanaOpenHost:
         except Exception:
             logger.error("Host crashed:\n%s", traceback.format_exc())
         finally:
+            if getattr(self, "_worst_frame_ms", 0) > 0:
+                logger.info(
+                    "Host loop: worst frame %.0f ms (>%.0f ms budget means frame drops)",
+                    self._worst_frame_ms,
+                    1000.0 / self.host_cfg.max_loop_freq_hz,
+                )
             stop_cam.set()
             cam_thread.join(timeout=1.0)
             # Persist the lift position on ANY host exit (Ctrl+C / timeout / crash):
