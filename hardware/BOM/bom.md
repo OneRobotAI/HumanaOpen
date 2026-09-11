@@ -14,8 +14,8 @@ The control board is optional. Fasteners are yet to be added.
 | 3D printed parts | 300 |
 | Motion / actuation | 4,110 |
 | Electronics (excl. control board) | 953 |
-| Cables / misc | 49 |
-| **Total (excl. control board, excl. fasteners)** | **≈ 5,702** |
+| Cables / misc | 65 |
+| **Total (excl. control board, excl. fasteners)** | **≈ 5,718** |
 
 ## Mechanical / structure
 
@@ -91,6 +91,8 @@ Filament: Bambu Lab PLA Basic / Anycubic PLA. A large-build-volume printer
 |--------------------|------|-----|------------|-------|--------|
 | USB-to-Type-C cable | USB 3.2, 10 Gbps | 2 | 8.5 RMB | 17 RMB | [link](https://e.tb.cn/h.8KRq9s1kJBHLtdN?tk=yS9XTT8GzSZ) |
 | Y-split Type-C to DC 5521 cable | 0.5 m | 1 | 20 RMB | 20 RMB | [link](https://e.tb.cn/h.8KRHy0GP3Zk8Rw8?tk=UkoSTT8Dq9k) |
+| USB to DC 5521 cable (optional, Raspberry Pi) | 0.5 m | 1 | 7 RMB | 7 RMB | [link](https://e.tb.cn/h.8J9K33ZS7bNSVQz?tk=PukJT71DTRR) |
+| Type-C to DC 5521 cable (optional, Jetson) | 0.5 m | 1 | 9 RMB | 9 RMB | [link](https://e.tb.cn/h.8qUeZkgpcKBiZ6R?tk=239sT7cfg4G) |
 | Terminal wire | 3P 5264 reverse terminal wire, 1000 mm | 1 | 3 RMB | 3 RMB | [link](https://e.tb.cn/h.8oTllunUw9ECpZp?tk=PRvNT60hcKX) |
 | Terminal wire | 3P 5264 reverse terminal wire, 500 mm | 1 | 3 RMB | 3 RMB | [link](https://e.tb.cn/h.8oTllunUw9ECpZp?tk=PRvNT60hcKX) |
 | Terminal wire | 3P 5264 reverse terminal wire, 200 mm | 2 | 3 RMB | 6 RMB | [link](https://e.tb.cn/h.8oTllunUw9ECpZp?tk=PRvNT60hcKX) |
