@@ -456,9 +456,32 @@ class BiHumanaOpenLeader(Teleoperator):
         self.right_arm.setup_motors()
 
     def get_action(self) -> dict[str, float]:
+        # Both arms sit on separate serial buses: read them concurrently so the
+        # teleop loop waits for max(left, right) instead of left + right.
+        # sync_read is thread-safe per bus (each arm owns its own FeetechMotorsBus).
+        import threading
+
+        results: dict[str, dict] = {}
+        errors: list[Exception] = []
+
+        def _read(side, arm):
+            try:
+                results[side] = arm.get_action()
+            except Exception as e:
+                errors.append(e)
+
+        t1 = threading.Thread(target=_read, args=("left", self.left_arm))
+        t2 = threading.Thread(target=_read, args=("right", self.right_arm))
+        t1.start()
+        t2.start()
+        t1.join()
+        t2.join()
+        if errors:
+            raise errors[0]
+
         action: dict[str, float] = {}
-        action.update({f"left_arm_{k}": v for k, v in self.left_arm.get_action().items()})
-        action.update({f"right_arm_{k}": v for k, v in self.right_arm.get_action().items()})
+        action.update({f"left_arm_{k}": v for k, v in results["left"].items()})
+        action.update({f"right_arm_{k}": v for k, v in results["right"].items()})
         return action
 
     def enable_torque(self) -> None:

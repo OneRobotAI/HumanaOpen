@@ -226,6 +226,9 @@ def main():
             def send_action(self, action):
                 _client.send_action(action)
             @property
+            def latency_ms(self):
+                return getattr(_client, "_last_latency_ms", 0.0)
+            @property
             def calibration(self):
                 return {}
             @property
@@ -709,7 +712,8 @@ def main():
                 _last_lift_print = time.time()
                 _actual_h = follower.lift_axis.get_height_mm()
                 _lim = "▲MAX" if _actual_h >= LIFT_MAX_MM else ("▼MIN" if _actual_h <= LIFT_MIN_MM else "")
-                print(f"\rLift: actual={_actual_h:6.1f}mm  target={lift_h:6.1f}mm  limits[{LIFT_MIN_MM:.0f}~{LIFT_MAX_MM:.0f}]  {_lim}", end="", flush=True)
+                _lat = follower.latency_ms
+                print(f"\rLift: actual={_actual_h:6.1f}mm  target={lift_h:6.1f}mm  limits[{LIFT_MIN_MM:.0f}~{LIFT_MAX_MM:.0f}]  {_lim}  net:{_lat:5.1f}ms", end="", flush=True)
 
             follower.send_action(action)
 

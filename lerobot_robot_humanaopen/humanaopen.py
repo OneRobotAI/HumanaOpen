@@ -674,14 +674,15 @@ class HumanaOpen(Robot):
 
         obs: dict[str, Any] = {}
 
-        # High-frequency reads with retries, to avoid sporadic serial communication errors crashing the Host
-        left_pos = self.bus1.sync_read("Present_Position", self.left_arm_motors, num_retry=3)
-        head_pos = self.bus1.sync_read("Present_Position", self.head_motors, num_retry=3)
-        right_pos = self.bus2.sync_read("Present_Position", self.right_arm_motors, num_retry=3)
+        # High-frequency reads. No num_retry: a retry blocks ~35ms (packet timeout)
+        # and with 3 retries a single flaky sync_read stalls the whole 30Hz
+        # loop up to ~140ms (4 dropped frames). One bad sample is cheaper than
+        # a 4-frame freeze — the next frame re-reads the same register anyway.
+        # Left arm + head share bus1, so read them in ONE sync_read round trip.
+        bus1_pos = self.bus1.sync_read("Present_Position", self.left_arm_motors + self.head_motors)
+        right_pos = self.bus2.sync_read("Present_Position", self.right_arm_motors)
 
-        for k, v in left_pos.items():
-            obs[f"{k}.pos"] = v
-        for k, v in head_pos.items():
+        for k, v in bus1_pos.items():
             obs[f"{k}.pos"] = v
         for k, v in right_pos.items():
             obs[f"{k}.pos"] = v

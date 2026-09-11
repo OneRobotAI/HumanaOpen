@@ -118,6 +118,8 @@ class HumanaOpenClient(Robot):
         self._pub: zmq.Socket | None = None
         self._last_obs: dict[str, Any] = {}
         self._last_obs_time = 0.0
+        self._last_t_send = 0.0
+        self._last_latency_ms = 0.0
         # Image frames arrive at a lower rate than joint state (host divider);
         # cache them so fresh non-image obs frames can re-attach them.
         self._img_cache: dict[str, Any] = {}
@@ -165,8 +167,12 @@ class HumanaOpenClient(Robot):
         # Send action commands — PUSH to host PULL (JSON single-frame).
         # CONFLATE=1 keeps only the newest command in-flight so a stale backlog
         # never makes the operator's latest action wait behind obsolete ones.
+        # IMMEDIATE=1: when the TCP link drops, commands are NOT queued into the
+        # dead pipe and replayed in order after reconnect (which looks exactly
+        # like follower lag). Sends instead fail fast with EAGAIN.
         self._pub = self._ctx.socket(zmq.PUSH)
         self._pub.setsockopt(zmq.CONFLATE, 1)
+        self._pub.setsockopt(zmq.IMMEDIATE, 1)
         self._pub.connect(f"tcp://{self.config.remote_ip}:{self.config.port_zmq_cmd}")
 
         # Verify the connection: wait until the host actually streams an
@@ -244,7 +250,7 @@ class HumanaOpenClient(Robot):
             pending = self._sub.poll(0)
 
         if last_parts is not None:
-            obs, _, _ = _parse_observation_multipart(last_parts, camera_names)
+            obs, _, t_send = _parse_observation_multipart(last_parts, camera_names)
             # Persist image frames separately: they arrive less often than
             # joint state (host divider), so retain them across calls.
             for k, v in obs.items():
@@ -253,6 +259,9 @@ class HumanaOpenClient(Robot):
                         self._img_cache[k] = v
             self._last_obs = obs
             self._last_obs_time = time.time()
+            if t_send:
+                self._last_t_send = t_send
+                self._last_latency_ms = (time.time() - t_send) * 1e3
 
         # Re-attach the most recent images to the freshest joint frame.
         with self._img_lock:
