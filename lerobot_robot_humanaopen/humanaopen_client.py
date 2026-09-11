@@ -282,6 +282,55 @@ class HumanaOpenClient(Robot):
 
         return dict(self._last_obs)
 
+    def wait_observation(self, timeout_ms: int = 100) -> dict[str, Any]:
+        """Block until a NEW observation arrives, then return it.
+
+        Used by the teleop loop as a phase-lock: sending the command right
+        after an observation arrives lets it target the host's next loop slot
+        instead of drifting across frames (which costs an extra ~1 frame on
+        average). Falls back to the cached observation on timeout so the loop
+        never hard-stalls on a dropped frame.
+        """
+        if not self.is_connected:
+            raise RuntimeError("Client is not connected")
+
+        import time as _t
+
+        deadline = _t.time() + timeout_ms / 1000.0
+        camera_names = set(self._cameras_ft.keys())
+        while _t.time() < deadline:
+            pending = self._sub.poll(0)
+            if pending:
+                # Drain any backlog, keep only the newest frame, decode once.
+                last_parts = None
+                while True:
+                    try:
+                        last_parts = self._sub.recv_multipart(flags=zmq.NOBLOCK)
+                    except zmq.Again:
+                        break
+                    if self._sub.poll(0) == 0:
+                        break
+                obs, _, t_send, echo_client_perf = _parse_observation_multipart(
+                    last_parts, camera_names
+                )
+                for k, v in obs.items():
+                    if isinstance(v, np.ndarray) and v.ndim == 3:
+                        with self._img_lock:
+                            self._img_cache[k] = v
+                self._last_obs = obs
+                self._last_obs_time = _t.time()
+                if echo_client_perf:
+                    self._last_rtt_ms = (_t.perf_counter_ns() - echo_client_perf) / 1e6
+                if t_send:
+                    self._last_t_send = t_send
+                    self._last_latency_ms = abs(_t.time() - t_send) * 1e3
+                with self._img_lock:
+                    if self._img_cache:
+                        self._last_obs.update(self._img_cache)
+                return dict(self._last_obs)
+            time.sleep(0.001)  # 1ms poll granularity
+        return dict(self._last_obs)
+
     def send_action(self, action: dict[str, Any]) -> dict[str, Any]:
         """Send an action command to the robot host (JSON single-frame)."""
         if not self.is_connected:

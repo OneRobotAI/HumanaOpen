@@ -234,6 +234,9 @@ def main():
             def get_observation(self):
                 self._obs = _client.get_observation()
                 return self._obs
+            def wait_observation(self, timeout_ms=100):
+                self._obs = _client.wait_observation(timeout_ms)
+                return self._obs
             def send_action(self, action):
                 _client.send_action(action)
             @property
@@ -676,6 +679,17 @@ def main():
         while True:
             _frame_t0 = time.perf_counter()
 
+            # Phase-lock the send to the host's observation cadence (ZMQ
+            # dual-machine only): block for the NEXT obs, then send the command
+            # immediately — it lands in the host's freshly-opened cmd slot
+            # instead of drifting across frames (saves ~1 frame on average).
+            # Fixed sleep-based pacing below would otherwise desync the two
+            # loops by up to a full frame. Single-machine (direct serial) has
+            # no obs channel, so it keeps the old pacing.
+            if is_dual and hasattr(follower, "wait_observation"):
+                latest_obs = follower.wait_observation(timeout_ms=int(2000 / max(loop_fps, 1)))
+                _t_phased = time.perf_counter()
+
             # leader readings → both-arm action
             action = leader.get_action()
             _t_leader = time.perf_counter()
@@ -743,11 +757,13 @@ def main():
             # consumption to the host rate keeps the queue empty and every
             # observation fresh. No message queued -> returns the cached
             # observation at ~zero cost (no decode happens).
-            try:
-                latest_obs = follower.get_observation()
-            except Exception as e:
-                latest_obs = {}
-                print(f"  ⚠️ get_observation error: {str(e)[:80]}")
+            # (In phase-locked ZMQ mode this was already consumed at loop top.)
+            if not (is_dual and hasattr(follower, "wait_observation")):
+                try:
+                    latest_obs = follower.get_observation()
+                except Exception as e:
+                    latest_obs = {}
+                    print(f"  ⚠️ get_observation error: {str(e)[:80]}")
             _t_obs = time.perf_counter()
 
             # Every ~150 frames (~5s) show per-stage timing to spot stalls:
@@ -762,17 +778,22 @@ def main():
             _st["obs"] += _t_obs - _t_send
             _st["total"] += time.perf_counter() - _frame_t0
             _st["max_leader"] = max(_st.get("max_leader", 0.0), _t_leader - _frame_t0)
+            if is_dual and hasattr(follower, "wait_observation"):
+                _st["wait"] = _st.get("wait", 0.0) + (_t_phased - _frame_t0)
             if _st["frames"] >= 150:
                 n = _st["frames"]
+                _wait = _st.get("wait", 0.0) / n * 1e3
+                _wait_txt = f"  wait:{_wait:5.1f}ms" if is_dual and hasattr(follower, "wait_observation") else ""
                 print(
                     f"\n  ⏱  leader:{_st['leader']/n*1e3:5.1f}ms  send:{_st['send']/n*1e3:5.1f}ms  "
                     f"obs:{_st['obs']/n*1e3:5.1f}ms  total:{_st['total']/n*1e3:5.1f}ms  "
-                    f"(max leader: {_st.get('max_leader', 0)*1e3:.0f}ms)",
+                    f"(max leader: {_st.get('max_leader', 0)*1e3:.0f}ms){_wait_txt}",
                     flush=True,
                 )
                 _st["frames"] = 0
                 _st["leader"] = _st["send"] = _st["obs"] = _st["total"] = 0.0
                 _st["max_leader"] = 0.0
+                _st["wait"] = 0.0
 
             # Hand the freshest obs+action to the display thread (cheap dict
             # swap under a lock — the display thread logs foxglove only).
@@ -803,7 +824,11 @@ def main():
                 print("\nQuitting...")
                 break
 
-            time.sleep(1 / loop_fps)
+            # Phase-locked ZMQ mode: wait_observation at loop top is the
+            # metronome — no extra sleep (it would push the send past the
+            # host's cmd slot). Single-machine keeps fixed-rate pacing.
+            if not (is_dual and hasattr(follower, "wait_observation")):
+                time.sleep(1 / loop_fps)
 
     except KeyboardInterrupt:
         print("\n⛔ Teleoperation stopped...")
