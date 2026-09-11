@@ -171,7 +171,17 @@ def main():
         help="enable live display: 'rerun' (native Rerun viewer) or 'foxglove' "
         "(Foxglove app, recommended — lower render latency). Omit to run headless.",
     )
+    parser.add_argument(
+        "--fps",
+        type=int,
+        default=FPS,
+        help=f"control loop rate (default {FPS}); 60 halves the 2-frame pipeline "
+        "latency if the host serial/WiFi keep up (~33ms -> ~17ms)",
+    )
     args = parser.parse_args()
+    # make the loop freq configurable without rebinding the module-level FPS
+    # (head/base speed constants divide by it each frame)
+    FPS = max(1, min(args.fps, 100))
 
     cams = build_cameras(args)
     is_dual = args.remote_ip is not None

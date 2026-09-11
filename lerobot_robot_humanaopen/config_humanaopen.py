@@ -182,7 +182,11 @@ class HumanaOpenHostConfig:
     port_zmq_observations: int = 5556
     connection_time_s: int = 3600
     watchdog_timeout_ms: int = 500
-    max_loop_freq_hz: int = 30
+    # 60Hz halves the 2-frame teleop pipeline latency vs 30Hz (~66ms -> ~33ms).
+    # The host loop's serial work is ~9ms worst-case (measured), well inside the
+    # 16.6ms budget; the client loop is ~2ms. Bump only if the serial bus or a
+    # loaded WiFi link starts dropping frames.
+    max_loop_freq_hz: int = 60
     # Divide the main loop rate for image frames: images are attached to the obs
     # every `image_fps_divider` frames, so at max_loop_freq_hz=30 with divider=1
     # the image stream is the full 30Hz, same as the action channel. 3-camera
