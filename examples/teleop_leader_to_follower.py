@@ -46,6 +46,7 @@ from lerobot_robot_humanaopen import HumanaOpen, HumanaOpenConfig
 from lerobot_robot_humanaopen.leader import BiHumanaOpenLeader, BiHumanaOpenLeaderConfig
 
 FPS = 30
+_DEFAULT_FPS = FPS  # parser default; main() runs on a local loop_fps variable
 
 # Keyboard control rates (units/second)
 HEAD_PAN_SPEED = 20.0     # head pan (normalized units/s)
@@ -174,14 +175,14 @@ def main():
     parser.add_argument(
         "--fps",
         type=int,
-        default=FPS,
-        help=f"control loop rate (default {FPS}); 60 halves the 2-frame pipeline "
-        "latency if the host serial/WiFi keep up (~33ms -> ~17ms)",
+        default=_DEFAULT_FPS,
+        help=f"control loop rate (default {_DEFAULT_FPS}); 60 halves the 2-frame "
+        "pipeline latency if the host serial/WiFi keep up (~33ms -> ~17ms)",
     )
     args = parser.parse_args()
-    # make the loop freq configurable without rebinding the module-level FPS
-    # (head/base speed constants divide by it each frame)
-    FPS = max(1, min(args.fps, 100))
+    # Work in a LOCAL loop rate; the module-level FPS stays untouched so the
+    # parser default above (read before assignment) never sees a local binding.
+    loop_fps = max(1, min(args.fps, 100))
 
     cams = build_cameras(args)
     is_dual = args.remote_ip is not None
@@ -679,13 +680,13 @@ def main():
             # keyboard → head (standard WASD semantics: w/s=nod, a/d=shake)
             # head_pan(ID12)=shake, head_tilt(ID13)=nod (physically flashed this way)
             if keys.is_down("w"):
-                head_tilt -= HEAD_TILT_SPEED / FPS
+                head_tilt -= HEAD_TILT_SPEED / loop_fps
             if keys.is_down("s"):
-                head_tilt += HEAD_TILT_SPEED / FPS
+                head_tilt += HEAD_TILT_SPEED / loop_fps
             if keys.is_down("a"):
-                head_pan -= HEAD_PAN_SPEED / FPS
+                head_pan -= HEAD_PAN_SPEED / loop_fps
             if keys.is_down("d"):
-                head_pan += HEAD_PAN_SPEED / FPS
+                head_pan += HEAD_PAN_SPEED / loop_fps
             head_pan = max(head_pan_min, min(head_pan_max, head_pan))
             head_tilt = max(head_tilt_min, min(head_tilt_max, head_tilt))
             action["head_pan.pos"] = head_pan
@@ -799,7 +800,7 @@ def main():
                 print("\nQuitting...")
                 break
 
-            time.sleep(1 / FPS)
+            time.sleep(1 / loop_fps)
 
     except KeyboardInterrupt:
         print("\n⛔ Teleoperation stopped...")
