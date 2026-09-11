@@ -135,6 +135,7 @@ class HumanaOpenLiftAxis:
         self._configured = False
         # absolute position at the last home (for persistence recovery)
         self._abs_tick_at_home: float | None = None
+        self._cached_height_mm: float = 0.0
 
     # ------------------------------------------------------------------
     # Lifecycle
@@ -377,7 +378,11 @@ class HumanaOpenLiftAxis:
         if not self.enabled:
             return 0.0
         self._update_extended_ticks()
-        return (self._extended_deg() - self._z0_deg) * self._mm_per_deg
+        # Refresh the shared cache so apply_action()'s safety guards (which use
+        # the cache to avoid a per-frame real-time bus read) always see the
+        # latest height whenever any code path reads it.
+        self._cached_height_mm = (self._extended_deg() - self._z0_deg) * self._mm_per_deg
+        return self._cached_height_mm
 
     # ------------------------------------------------------------------
     # Homing
@@ -495,6 +500,9 @@ class HumanaOpenLiftAxis:
         """Add ``{name}.height_mm`` and ``{name}.vel`` to the observation dict."""
         if not self.enabled:
             return
+        # get_height_mm() refreshes the cache used by apply_action()'s safety
+        # guards; this is also the only place that updates it at observation
+        # time, so the cached height stays within one slow-bus sample.
         obs[f"{self.cfg.name}.height_mm"] = self.get_height_mm()
         try:
             obs[f"{self.cfg.name}.vel"] = float(
@@ -537,7 +545,12 @@ class HumanaOpenLiftAxis:
             v = int(action[key_v])
             v = max(-self.cfg.v_max, min(self.cfg.v_max, v))
             try:
-                cur_mm = self.get_height_mm()
+                # Use the cached height (refreshed by contribute_observation at a
+                # lower rate) instead of a real-time bus read: the lift shares
+                # bus2 with the right arm, and a per-frame Present_Position read
+                # here adds a full serial round-trip that delays the right arm.
+                # The cache is fresh enough for the 3/200mm soft-limit guards.
+                cur_mm = self._cached_height_mm
                 v = int(self._apply_safety_limits(v, cur_mm))
                 orig_v = int(action[key_v])
                 if orig_v != 0:

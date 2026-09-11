@@ -687,17 +687,25 @@ class HumanaOpen(Robot):
         for k, v in right_pos.items():
             obs[f"{k}.pos"] = v
 
-        if self.wheel_motors:
-            wheel_bus = self.bus3 if self.bus3 is not None else self.bus2
-            wheel_vel = wheel_bus.sync_read("Present_Velocity", self.wheel_motors)
-            body = self._wheel_raw_to_body(
-                wheel_vel.get("base_left_wheel", 0),
-                wheel_vel.get("base_right_wheel", 0),
-            )
-            obs["x.vel"] = body["x.vel"]
-            obs["theta.vel"] = body["theta.vel"]
+        slow_now = getattr(self, "_slow_bus_frame", 0)
+        self._slow_bus_frame = slow_now + 1
+        # Wheels + lift share bus2 (right arm) in 2-bus mode. Reading them every
+        # frame costs ~5 extra serial round-trips on the right-arm bus, making
+        # the right arm lag the left (which has an uncontended bus1). They
+        # change slowly during teleop, so sample them at ~host_fps/10 (6Hz at
+        # 60Hz) instead of every frame; the right arm keeps its bus to itself.
+        if slow_now % 10 == 0:
+            if self.wheel_motors:
+                wheel_bus = self.bus3 if self.bus3 is not None else self.bus2
+                wheel_vel = wheel_bus.sync_read("Present_Velocity", self.wheel_motors)
+                body = self._wheel_raw_to_body(
+                    wheel_vel.get("base_left_wheel", 0),
+                    wheel_vel.get("base_right_wheel", 0),
+                )
+                obs["x.vel"] = body["x.vel"]
+                obs["theta.vel"] = body["theta.vel"]
 
-        self.lift_axis.contribute_observation(obs)
+            self.lift_axis.contribute_observation(obs)
         return obs
 
     # ── Action ─────────────────────────────────────────────────────────────
