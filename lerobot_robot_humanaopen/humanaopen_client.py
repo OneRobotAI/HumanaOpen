@@ -262,7 +262,11 @@ class HumanaOpenClient(Robot):
             self._last_obs_time = time.time()
             if t_send:
                 self._last_t_send = t_send
-                self._last_latency_ms = (time.time() - t_send) * 1e3
+                # Host and client clocks are NOT synchronized across machines,
+                # so (now - t_send) can be negative for a few ms to seconds of
+                # clock skew. Report the magnitude — a negative "latency" is
+                # meaningless and confuses diagnosis.
+                self._last_latency_ms = abs(time.time() - t_send) * 1e3
 
         # Re-attach the most recent images to the freshest joint frame.
         with self._img_lock:
