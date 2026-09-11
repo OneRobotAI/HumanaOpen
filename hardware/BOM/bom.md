@@ -13,9 +13,9 @@ The control board is optional. Fasteners are yet to be added.
 | Mechanical / structure | 290 |
 | 3D printed parts | 300 |
 | Motion / actuation | 4,110 |
-| Electronics (excl. control board) | 793 |
+| Electronics (excl. control board) | 953 |
 | Cables / misc | 49 |
-| **Total (excl. control board, excl. fasteners)** | **≈ 5,542** |
+| **Total (excl. control board, excl. fasteners)** | **≈ 5,702** |
 
 ## Mechanical / structure
 
@@ -83,6 +83,7 @@ Filament: Bambu Lab PLA Basic / Anycubic PLA. A large-build-volume printer
 | Leader (master) power supply | 7.3V 3A | 2 | 20 RMB | 40 RMB | — |
 | Bus servo driver board | Waveshare (微雪) bus servo driver | 2 | 27 RMB | 54 RMB | [link](https://e.tb.cn/h.8Lya2xQuOF0N34m?tk=HTlUTT8TJLG) |
 | Battery | 20000mAh 140W dual Type-C + USB-A | 1 | 399 RMB | 399 RMB | [link](https://e.tb.cn/h.8oI8XjbzbNgEeyh?tk=o73uTT8juXp) |
+| Display (optional) | 7" touch with case, 1024×600 | 1 | 160 RMB | 160 RMB | [link](https://e.tb.cn/h.8JQRkOZKPsCPwZ7?tk=60rcT7YLj2W) |
 
 ## Cables / misc
 
