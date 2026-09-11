@@ -84,7 +84,7 @@ def _parse_observation_multipart(
                 continue
             obs[cam_name] = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
-    return obs, cam_ts, t_send
+    return obs, cam_ts, t_send, echo_client_perf
 
 
 def _serialize_cmd(action: dict[str, Any]) -> str:
