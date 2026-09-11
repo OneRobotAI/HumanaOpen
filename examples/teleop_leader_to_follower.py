@@ -660,8 +660,11 @@ def main():
 
 
         while True:
+            _frame_t0 = time.perf_counter()
+
             # leader readings → both-arm action
             action = leader.get_action()
+            _t_leader = time.perf_counter()
 
             # keyboard → head (standard WASD semantics: w/s=nod, a/d=shake)
             # head_pan(ID12)=shake, head_tilt(ID13)=nod (physically flashed this way)
@@ -716,6 +719,7 @@ def main():
                 print(f"\rLift: actual={_actual_h:6.1f}mm  target={lift_h:6.1f}mm  limits[{LIFT_MIN_MM:.0f}~{LIFT_MAX_MM:.0f}]  {_lim}  net:{_lat:5.1f}ms", end="", flush=True)
 
             follower.send_action(action)
+            _t_send = time.perf_counter()
 
             # Consume the newest observation EVERY loop (not only inside the
             # display branches): the host PUSH+SNDHWM=1 drops NEW frames when its
@@ -730,6 +734,31 @@ def main():
             except Exception as e:
                 latest_obs = {}
                 print(f"  ⚠️ get_observation error: {str(e)[:80]}")
+            _t_obs = time.perf_counter()
+
+            # Every ~150 frames (~5s) show per-stage timing to spot stalls:
+            # leader serial read / ZMQ send / obs receive / total frame.
+            _st = getattr(follower, "_timing", None)
+            if _st is None:
+                _st = {"frames": 0, "leader": 0.0, "send": 0.0, "obs": 0.0, "total": 0.0}
+                setattr(follower, "_timing", _st)
+            _st["frames"] += 1
+            _st["leader"] += _t_leader - _frame_t0
+            _st["send"] += _t_send - _t_leader
+            _st["obs"] += _t_obs - _t_send
+            _st["total"] += time.perf_counter() - _frame_t0
+            _st["max_leader"] = max(_st.get("max_leader", 0.0), _t_leader - _frame_t0)
+            if _st["frames"] >= 150:
+                n = _st["frames"]
+                print(
+                    f"\n  ⏱  leader:{_st['leader']/n*1e3:5.1f}ms  send:{_st['send']/n*1e3:5.1f}ms  "
+                    f"obs:{_st['obs']/n*1e3:5.1f}ms  total:{_st['total']/n*1e3:5.1f}ms  "
+                    f"(max leader: {_st.get('max_leader', 0)*1e3:.0f}ms)",
+                    flush=True,
+                )
+                _st["frames"] = 0
+                _st["leader"] = _st["send"] = _st["obs"] = _st["total"] = 0.0
+                _st["max_leader"] = 0.0
 
             # Hand the freshest obs+action to the display thread (cheap dict
             # swap under a lock — the display thread logs foxglove only).
