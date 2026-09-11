@@ -37,6 +37,19 @@ pre-1.0 so breaking changes may occur until a stable release.
   same-model swaps even when the raw encoder tick coincidentally matches.
   A stale zero file now invalidates automatically → re-home, no manual
   `rm lift_zero.json` needed.
+- Dual-machine teleop latency overhaul: host control loop 30→60Hz
+  (`max_loop_freq_hz=60`) and teleop `--fps` option (halves the 2-frame
+  pipeline delay ~66ms→~33ms); host drains the command queue each frame and
+  applies only the newest so stale commands never replay after a stall; teleop
+  reads both leader arms concurrently (two serial buses in parallel); serial
+  retries removed from the hot path (a flaky sync_read no longer stalls the
+  whole 30/60Hz loop up to 140ms); client PUSH `SNDTIMEO=10ms` + send
+  fault-tolerance so a stalled peer never freezes the loop; lift bus-write
+  failures no longer crash the host. Latency display rewritten as a **skew-free
+  command→obs RTT**: every command carries the client's `perf_counter_ns`, the
+  host echoes it in the next observation, and the client computes RTT on its
+  own monotonic clock — immune to cross-machine wall-clock skew (the old
+  `net:` reading was meaningless, often negative).
 
 ## [0.1.0] - 2026-09
 

@@ -1041,6 +1041,63 @@ No. HumanaOpen deliberately declares no lerobot dependency, so `--no-deps` is
 required to avoid pip resolving/upgrading anything. And remember to verify the
 import from `/tmp` (Section 2.4), not from inside the repo.
 
+### Q: Dual-machine (ZMQ) teleop laggy / follower lags leader?
+
+A: Latency = physical link + control-loop rate + code overhead. Debug from the
+bottom up:
+
+**1. Physical layer (check first — most common).** Weak WiFi signal on either
+end causes latency spikes:
+```bash
+iw dev <iface> link | grep signal     # target > -60dBm; -70 to -80 gives 100ms+ spikes
+# -79dBm measured: degraded from "occasional 200ms spikes" to "19-second freezes"
+# (TCP retransmission storm)
+```
+- **Fix weak signal**: seat/replace the M.2 antenna (Jetson Orin's default small
+  ceramic antenna has low gain; an external stick antenna gains 20dB+), move
+  closer to the router, use the 5GHz band.
+- Measured: at -79dBm RTT swung to 19s; after fitting the antenna (-59dBm) RTT
+  stabilized at 18-36ms.
+- If spikes remain at good signal, disable WiFi power-save + periodic scanning:
+```bash
+sudo iw dev <iface> set power_save off
+sudo killall -STOP NetworkManager   # Tegra/Nexus boards scan periodically → ~3s spikes
+```
+
+**2. Proxy does NOT affect ZMQ (skippable).** ZMQ is raw TCP — it **never reads**
+`http_proxy`/`all_proxy` env vars (libzmq source has zero references; only the
+explicit `ZMQ_SOCKS_PROXY` option applies). System-proxy mode cannot hijack
+ports 5555/5556; only Clash **TUN mode** (virtual NIC) can. Confirm no TUN:
+```bash
+ip link show | grep -iE 'utun|tun|meta|mihomo'   # no output = proxy does not affect teleop
+```
+
+**3. Control-loop rate.** At 30Hz each end waits a full frame (33ms); the 2-frame
+pipeline delay is ~66ms. 60Hz is supported:
+```bash
+# Host already defaults to 60Hz (max_loop_freq_hz=60)
+# Match the teleop side with --fps=60:
+python3 examples/teleop_leader_to_follower.py --remote_ip=192.168.1.9 --fps=60
+```
+- At 60Hz theoretical delay halves (→ ~33ms); host worst serial frame 8ms, teleop
+  side 1.7ms — ample headroom.
+- If the host logs "worst frame > 17ms" (60Hz budget), the serial bus is busy —
+  drop to 30Hz or inspect the bus.
+
+**4. Read the REAL latency.** The status line `rtt:` is **skew-free** round-trip
+(the client stamps each command with its perf timestamp, the host echoes it, and
+the client computes RTT on its own monotonic clock — immune to wall-clock skew).
+Typical values:
+- `18ms` = 60Hz theoretical optimum (1 frame)
+- `36ms` = common (frame-alignment adds one frame)
+- occasional `55-146ms` = residual WiFi jitter (disappears once signal improves)
+
+**5. Code-side optimizations already built-in** (nothing to configure): host
+drains the command queue each frame and applies only the newest, teleop reads
+both leader arms concurrently, serial retries removed, `SNDTIMEO` + send
+fault-tolerance. If still laggy, check the host log for `Dropping observation`
+(client not consuming) or `No command` (commands not arriving).
+
 ---
 
 ## 12. Project Structure

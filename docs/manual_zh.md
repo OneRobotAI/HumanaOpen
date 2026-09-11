@@ -814,6 +814,44 @@ python3 examples/switch_phase_bit2.py          # 切 BIT2=0
 
 A: 本项目实际用的是 **2 总线**（`port3=None`）：升降和轮子并入 bus2，已实测可用。3 总线模式（默认）是完整形态，Waveshare 板够多、想让升降/轮子独占一条总线时用默认即可。
 
+### Q: 双机（ZMQ）遥操延迟大 / 从臂跟不上？
+
+A: 延迟 = 网络链路 + 控制循环 + 代码开销三层叠加。从下到上排查：
+
+**1. 物理层（先查，最常见）**——遥操端或机器人端的 WiFi 信号差导致延迟尖峰：
+```bash
+iw dev <接口名> link | grep signal     # 目标 > -60dBm；-70~-80 会有 100ms+ 尖峰
+# -79dBm 实测会从"偶发 200ms 尖峰"恶化到"19 秒卡死"（TCP 重传风暴）
+```
+- **信号差的修复**：插好/更换 M.2 天线（Jetson Orin 默认小陶瓷天线增益低，外置棒状天线可改善 20dB+）、靠近路由器、换 5GHz 频段。
+- 实测：-79dBm 时 RTT 波动到 19 秒；插天线后 -59dBm，RTT 稳定 18-36ms。
+- 信号正常后仍偶发尖峰 → 关 WiFi 省电 + 停 NetworkManager 扫频：
+```bash
+sudo iw dev <接口名> set power_save off
+sudo killall -STOP NetworkManager        # Nexus/Tegra 板周期扫频会造成 ~3 秒级尖峰
+```
+
+**2. 代理不影响 ZMQ（可跳过）**——ZMQ 是裸 TCP，**不读** `http_proxy`/`all_proxy` 环境变量（libzmq 源码零引用，仅显式 `ZMQ_SOCKS_PROXY` 生效）。系统代理模式不会劫持 5555/5556；只有 Clash **TUN 模式**（虚拟网卡）会劫持。确认无 TUN：
+```bash
+ip link show | grep -iE 'utun|tun|meta|mihomo'   # 无输出 = 代理不影响遥操
+```
+
+**3. 控制循环频率**——默认 30Hz 时两端各一整帧（33ms）的等待，2 帧管道延迟约 66ms。已支持 60Hz：
+```bash
+# host 端默认已是 60Hz（max_loop_freq_hz=60）
+# 遥操端加 --fps=60 与 host 对齐：
+python3 examples/teleop_leader_to_follower.py --remote_ip=192.168.1.9 --fps=60
+```
+- 60Hz 后理论延迟减半（→ ~33ms），host 串口最差帧 8ms、遥操端 1.7ms，余量充足。
+- 若 host 日志出现 "worst frame > 17ms"（60Hz 预算）说明串口繁忙，退回 30Hz 或检查总线。
+
+**4. 查看真实延迟**——状态行显示 `rtt:` 是**无时钟偏差**的往返延迟（client 命令带 perf 时间戳 → host 回显 → client 用自己的单调时钟算），比墙钟差可靠。正常值：
+- `18ms` = 60Hz 理论最优（1 帧）
+- `36ms` = 常见（帧对齐多等 1 帧）
+- 偶发 `55-146ms` = WiFi jitter 残留（信号改善后消失）
+
+**5. 代码层已内置的优化**（无需手配）：host 每帧 drain 命令队列只执行最新、遥操端双臂并行读取、去串口重试、`SNDTIMEO` + 发送容错。若仍卡顿，检查 host 日志有无 `Dropping observation`（client 未消费）或 `No command`（命令未到达）。
+
 ---
 
 ## 十二、项目结构
