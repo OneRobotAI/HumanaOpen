@@ -854,6 +854,7 @@ On exit, it will prompt for torque release confirmation (ENTER to release).
 | BOM | ☐ |
 | Assembly | ☐ |
 | CAD | ☐ |
+| Lite version | ☐ |
 | URDF | ☐ |
 | Agent | ☐ |
 | Vision-based grasping | ☐ |

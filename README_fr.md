@@ -793,6 +793,7 @@ l'arrêt du Host.
 | BOM | ☐ |
 | Assembly | ☐ |
 | CAD | ☐ |
+| Version Lite | ☐ |
 | URDF | ☐ |
 | Agent | ☐ |
 | Préhension basée vision | ☐ |

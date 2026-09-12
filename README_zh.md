@@ -806,6 +806,7 @@ python3 examples/eval_data.py ... --enable-lift=true
 | BOM | ☐ |
 | Assembly | ☐ |
 | CAD | ☐ |
+| Lite 版本 | ☐ |
 | URDF | ☐ |
 | Agent | ☐ |
 | 视觉抓取 | ☐ |

@@ -777,6 +777,7 @@ python3 examples/eval_data.py ... --enable-lift=true
 | BOM | ☐ |
 | Assembly | ☐ |
 | CAD | ☐ |
+| Lite 버전 | ☐ |
 | URDF | ☐ |
 | Agent | ☐ |
 | 비전 기반 파지 | ☐ |
