@@ -510,6 +510,13 @@ class HumanaOpen(Robot):
         def _config_arm(bus, names):
             for n in names:
                 bus.write("Operating_Mode", n, OperatingMode.POSITION.value)
+                # Acceleration (SRAM) resets to 0 on power-up. 0 = very slow
+                # velocity ramp: when the follower chases a fast leader move it
+                # creeps toward the target, so teleop feels laggy/jumpy on
+                # high-inertia joints (shoulder_lift against gravity). Match the
+                # lift fix: 254 = fastest ramp so the arm reaches commanded
+                # speed promptly.
+                bus.write("Acceleration", n, 254)
                 bus.write("P_Coefficient", n, 16)
                 bus.write("I_Coefficient", n, 0)
                 bus.write("D_Coefficient", n, 43)
