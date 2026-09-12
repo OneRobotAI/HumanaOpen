@@ -162,6 +162,10 @@ class HumanaOpenLeaderConfig(TeleoperatorConfig):
     calibration_mode: str = "full"
     flip_joints: dict[str, list[str]] | None = None  # None -> use official default table
     joint_remap: dict[str, str] | None = None  # None -> use official default remapping
+    # EMA smoothing on leader positions (0..1). 1 = no smoothing; lower = more
+    # smoothing. 0.35 kills hand tremor (~8-12Hz) for smooth follower tracking;
+    # tune down if follower feels sluggish, up if it feels jittery.
+    smoothing: float = 0.35
 
 
 @TeleoperatorConfig.register_subclass("bi_humanaopen_leader")
@@ -178,6 +182,7 @@ class BiHumanaOpenLeaderConfig(TeleoperatorConfig):
     use_degrees: bool = False  # must match the follower's normalization space
     flip_joints: dict[str, list[str]] | None = None  # None -> use official default table
     joint_remap: dict[str, str] | None = None  # None -> use official default remapping
+    smoothing: float = 0.35  # leader EMA smoothing (see HumanaOpenLeaderConfig)
 
 
 @TeleoperatorConfig.register_subclass("humanaopen_teleop")
@@ -206,6 +211,8 @@ class HumanaOpenLeader(Teleoperator):
         flip_table = config.flip_joints or DEFAULT_SIDE_MOTORS_TO_FLIP
         self._motors_to_flip: list[str] = flip_table.get(config.side, []) if config.side else []
         self._joint_remap: dict[str, str] = config.joint_remap if config.joint_remap is not None else DEFAULT_JOINT_REMAP
+        self._ema: dict[str, float] = {}
+        self._ema_alpha: float = getattr(config, "smoothing", 0.35)
 
         motors = {}
         arm_mode = MotorNormMode.DEGREES if config.use_degrees else MotorNormMode.RANGE_M100_100
@@ -345,6 +352,12 @@ class HumanaOpenLeader(Teleoperator):
 
         The gripper outputs its normalized [0,100] value directly (0=closed,
         100=open), isomorphic with the follower's RANGE_0_100.
+
+        Positions are EMA-smoothed: human hands have ~8-12Hz tremor that the
+        leader encoder reads; without smoothing the follower chases every
+        micro-jitter and feels "sticky"/non-smooth on high-inertia joints
+        (shoulder_lift against gravity). alpha=0.35 keeps brisk moves intact
+        while killing tremor (introduces ~1 frame of lag at 60Hz).
         """
         positions = self.bus.sync_read("Present_Position")
         action: dict[str, float] = {}
@@ -353,7 +366,12 @@ class HumanaOpenLeader(Teleoperator):
             if motor == "gripper":
                 action[f"{target}.pos"] = val
             else:
-                action[f"{target}.pos"] = -val if motor in self._motors_to_flip else val
+                raw = -val if motor in self._motors_to_flip else val
+                # Per-joint EMA state kept across calls.
+                prev = self._ema.get(target, raw)
+                smoothed = self._ema_alpha * raw + (1 - self._ema_alpha) * prev
+                self._ema[target] = smoothed
+                action[f"{target}.pos"] = smoothed
         return action
 
     def enable_torque(self) -> None:
@@ -407,6 +425,7 @@ class BiHumanaOpenLeader(Teleoperator):
             use_degrees=config.use_degrees,
             flip_joints=config.flip_joints,
             joint_remap=config.joint_remap,
+            smoothing=getattr(config, "smoothing", 0.35),
         )
         right_config = HumanaOpenLeaderConfig(
             id=f"{config.id}_right" if config.id else None,
@@ -416,6 +435,7 @@ class BiHumanaOpenLeader(Teleoperator):
             use_degrees=config.use_degrees,
             flip_joints=config.flip_joints,
             joint_remap=config.joint_remap,
+            smoothing=getattr(config, "smoothing", 0.35),
         )
 
         self.left_arm = HumanaOpenLeader(left_config)
