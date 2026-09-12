@@ -238,7 +238,7 @@ python3 examples/teleop_leader_to_follower.py --remote_ip=192.168.1.100 ...
 
 ### Performance
 
-- **Control loop**: 30Hz (joint state read + action command)
+- **Control loop**: 60Hz (joint state read + action command)
 - **Image capture**: 30fps (running in a dedicated background thread — does not block control)
 - **Low latency**: image capture is decoupled from the control loop, so teleop arms respond
   instantly even at full 30fps image streaming
@@ -335,7 +335,7 @@ python3 examples/teleop_leader_to_follower.py --no-cameras
 
 `teleop_leader_to_follower.py` supports two visualization backends. Images are
 decoded once by the control loop, then handed to a background display thread
-so the 30 Hz control loop is never blocked.
+so the 60 Hz control loop is never blocked.
 
 | Flag | Backend | Notes |
 |------|---------|-------|

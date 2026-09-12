@@ -224,7 +224,7 @@ python3 examples/teleop_leader_to_follower.py --remote_ip=192.168.1.100 ...
 
 ### 성능
 
-- 제어 루프: 30Hz (조인트 상태 읽기 + 액션 명령)
+- 제어 루프: 60Hz (조인트 상태 읽기 + 액션 명령)
 - 이미지 캡처: 30fps (전용 백그라운드 스레드 — 제어를 차단하지 않음)
 - 낮은 지연: 이미지 캡처가 제어 루프에서 분리
 - 설정 가능: `image_fps_divider`(제어/영상 주파수 비율) 및 `max_loop_freq_hz`(제어 주파수)
@@ -318,7 +318,7 @@ python3 examples/teleop_leader_to_follower.py --no-cameras
 
 `teleop_leader_to_follower.py`는 두 가지 시각화 백엔드를 지원합니다.
 이미지는 제어 루프에서 한 번 디코딩된 후 백그라운드 디스플레이 스레드로 전달되어
-**30Hz 제어 루프가 차단되지 않습니다**.
+**60Hz 제어 루프가 차단되지 않습니다**.
 
 | 플래그 | 백엔드 | 설명 |
 |--------|--------|------|

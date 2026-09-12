@@ -225,7 +225,7 @@ python3 examples/teleop_leader_to_follower.py --remote_ip=192.168.1.100 ...
 
 ### Performances
 
-- Boucle de contrôle : 30Hz (lecture état + commande action)
+- Boucle de contrôle : 60Hz (lecture état + commande action)
 - Capture image : 30fps (thread dédié — ne bloque pas le contrôle)
 - Faible latence : la capture image est découplée de la boucle de contrôle
 - Configurable : `image_fps_divider` (ratio boucle/image) et `max_loop_freq_hz` (fréquence contrôle) dans
@@ -319,7 +319,7 @@ python3 examples/teleop_leader_to_follower.py --no-cameras
 
 `teleop_leader_to_follower.py` prend en charge deux backends de visualisation.
 Les images sont décodées une seule fois par la boucle de contrôle, puis
-déléguées à un thread d'affichage en arrière-plan — la boucle de 30 Hz
+déléguées à un thread d'affichage en arrière-plan — la boucle de 60 Hz
 n'est jamais bloquée.
 
 | Option | Backend | Notes |
