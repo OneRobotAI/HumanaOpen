@@ -125,11 +125,12 @@ class HumanaOpenConfig(RobotConfig):
     max_relative_target: int | None = None
 
     # ---- Arm position-loop P gain ------------------------------------------
-    # Written to P_Coefficient on every arm joint at configure(). Default 16
-    # (maker.lab stock). Raising to ~48 makes the follower chase leader moves
-    # tighter (less perceived tracking lag), at the cost of slightly stiffer
-    # behavior / potential oscillation on high-inertia joints. Tune per bench.
-    arm_p_gain: int = 16
+    # Written to P_Coefficient on every arm joint at configure(). Default 48:
+    # bench-verified with Acceleration=254 to give tight leader tracking with
+    # minimal jitter on this hardware (16 was noticeably laggier). Raise if the
+    # follower still seems to chase too slowly; lower toward 32 if it feels
+    # stiff or oscillates on a specific joint.
+    arm_p_gain: int = 48
 
     # ---- Cameras -----------------------------------------------------------
     cameras: dict[str, CameraConfig] = field(default_factory=default_cameras)
