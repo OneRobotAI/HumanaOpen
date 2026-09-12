@@ -45,7 +45,10 @@ from lerobot.cameras.opencv.configuration_opencv import OpenCVCameraConfig
 from lerobot_robot_humanaopen import HumanaOpen, HumanaOpenConfig
 from lerobot_robot_humanaopen.leader import BiHumanaOpenLeader, BiHumanaOpenLeaderConfig
 
-FPS = 30
+# Teleop control-loop rate. 60 matches the Host's default max_loop_freq_hz=60,
+# keeping the phase-locked ZMQ send in sync (30 would waste the alignment and
+# put both frames of pipeline delay back).
+FPS = 60
 _DEFAULT_FPS = FPS  # parser default; main() runs on a local loop_fps variable
 
 # Keyboard control rates (units/second)
