@@ -746,8 +746,14 @@ class HumanaOpen(Robot):
         # ── Wheel velocity commands ─────────────────────────────────────
         if base_cmd and self.wheel_motors:
             wheel_raw = self._body_to_wheel_raw(base_cmd.get("x.vel", 0.0), base_cmd.get("theta.vel", 0.0))
-            wheel_bus = self.bus3 if self.bus3 is not None else self.bus2
-            wheel_bus.sync_write("Goal_Velocity", wheel_raw)
+            # Deduplicate: teleop sends x.vel=0, theta.vel=0 every frame, so the
+            # raw values rarely change. Skipping unchanged writes keeps the bus
+            # free for the right arm (wheels share bus2) — the same bandwidth
+            # win as the lowered wheel read rate above.
+            if wheel_raw != getattr(self, "_last_wheel_raw", None):
+                wheel_bus = self.bus3 if self.bus3 is not None else self.bus2
+                wheel_bus.sync_write("Goal_Velocity", wheel_raw)
+                self._last_wheel_raw = wheel_raw
 
         # ── Lift command ────────────────────────────────────────────────
         try:

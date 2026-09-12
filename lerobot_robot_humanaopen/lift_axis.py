@@ -136,6 +136,7 @@ class HumanaOpenLiftAxis:
         # absolute position at the last home (for persistence recovery)
         self._abs_tick_at_home: float | None = None
         self._cached_height_mm: float = 0.0
+        self._last_vel_cmd: int | None = None
 
     # ------------------------------------------------------------------
     # Lifecycle
@@ -567,7 +568,13 @@ class HumanaOpenLiftAxis:
             except Exception:
                 pass
             # Positive velocity = up (consistent with the P-controller path; dir_sign semantics in docstring)
-            self._bus.write("Goal_Velocity", name, v)
+            # Deduplicate: teleop sends lift_axis.vel=0 every frame while idle;
+            # skip the unchanged write so the lift's bus2 traffic stays low
+            # while the right arm is moving. Safety: an explicit stop (v==0) is
+            # written the first time, so the motor never keeps moving forever.
+            if v != getattr(self, "_last_vel_cmd", None):
+                self._bus.write("Goal_Velocity", name, v)
+                self._last_vel_cmd = v
 
     def _apply_safety_limits(self, v_cmd: float, cur_mm: float) -> float:
         """Clamp velocity when at soft limits or descent floor."""
