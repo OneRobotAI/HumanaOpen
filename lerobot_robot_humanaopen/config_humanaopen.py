@@ -124,6 +124,13 @@ class HumanaOpenConfig(RobotConfig):
     # Clamp per-step position changes to this value (degrees or %).
     max_relative_target: int | None = None
 
+    # ---- Arm position-loop P gain ------------------------------------------
+    # Written to P_Coefficient on every arm joint at configure(). Default 16
+    # (maker.lab stock). Raising to ~48 makes the follower chase leader moves
+    # tighter (less perceived tracking lag), at the cost of slightly stiffer
+    # behavior / potential oscillation on high-inertia joints. Tune per bench.
+    arm_p_gain: int = 16
+
     # ---- Cameras -----------------------------------------------------------
     cameras: dict[str, CameraConfig] = field(default_factory=default_cameras)
 

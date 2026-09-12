@@ -517,7 +517,7 @@ class HumanaOpen(Robot):
                 # lift fix: 254 = fastest ramp so the arm reaches commanded
                 # speed promptly.
                 bus.write("Acceleration", n, 254)
-                bus.write("P_Coefficient", n, 16)
+                bus.write("P_Coefficient", n, self.config.arm_p_gain)
                 bus.write("I_Coefficient", n, 0)
                 bus.write("D_Coefficient", n, 43)
 
