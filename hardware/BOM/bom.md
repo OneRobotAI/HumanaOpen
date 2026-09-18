@@ -49,12 +49,13 @@ The control board is optional.
 
 ## 3D printed parts
 
-Filament: Bambu Lab PLA Basic / Anycubic PLA. A large-build-volume printer
-(e.g. Anycubic Kobra 3 MAX) is required for the large printed parts.
+Filament: **PLA / PETG** (Bambu Lab PLA Basic / Anycubic PLA, or PETG for
+stronger structural parts). A large-build-volume printer (e.g. Anycubic Kobra
+3 MAX) is required for the large printed parts.
 
 | Part / description | STL file | Qty | Total cost | Notes |
 |--------------------|----------|-----|------------|-------|
-| _see `stl/`_        |          | 6   | ≈ 300 RMB | Requires a large-format printer (Anycubic Kobra 3 MAX) |
+| PLA / PETG printed parts | _see `stl/`_ | 6 | ≈ 300 RMB | Requires a large-format printer (Anycubic Kobra 3 MAX) |
 
 ## Fasteners
 
