@@ -1,243 +1,257 @@
-# Assembly组装
+# HumanaOpen Assembly Guide
 
-# 1\.底盘安装
+Step-by-step instructions to assemble a HumanaOpen robot. Chinese version:
+[Assembly_zh.md](Assembly_zh.md).
 
-## （1）舵机固定在支架上
+# 1. Chassis Assembly
 
-用舵机自带的螺丝将ST3215 C018舵机固定在舵机支架\(基座\)内
+## (1) Mount the servo to the bracket
 
-![图片\.png](图片和附件/图片%201.png)
+Fix the ST3215 C018 servo into the servo bracket (base) using the screws that
+come with the servo.
 
-备注：将支架内部的支撑清理干净
+![image](images/chassis-servo-bracket.png)
 
-## （2）舵机支架固定在底盘上
+Note: clear out the supporting structure inside the bracket.
 
-使用8颗 M3\*22的螺丝将ST3215 C018舵机基座固定在底盘上
+## (2) Fix the servo bracket to the chassis
 
-![b6a0c1315cff66cef4b472250fb52eb1\.jpg](图片和附件/b6a0c1315cff66cef4b472250fb52eb1.jpg)
+Use 8 pcs M3*22 screws to fix the ST3215 C018 servo base to the chassis.
 
-![b49d180958feb39ef146a5c78751186f\.jpg](图片和附件/b49d180958feb39ef146a5c78751186f.jpg)
+![b6a0c1315cff66cef4b472250fb52eb1.jpg](images/b6a0c1315cff66cef4b472250fb52eb1.jpg)
 
-## （3）在底盘安装万向论
+![b49d180958feb39ef146a5c78751186f.jpg](images/b49d180958feb39ef146a5c78751186f.jpg)
 
-使用8颗 M3\*12螺丝将万象轮固定在底盘上
+## (3) Install the caster wheel on the chassis
 
-![9c73198ebf7d9371422a090660fcc92c\.jpg](图片和附件/9c73198ebf7d9371422a090660fcc92c.jpg)
+Use 8 pcs M3*12 screws to fix the caster wheel to the chassis.
 
-备注：螺丝从下往上穿
+![9c73198ebf7d9371422a090660fcc92c.jpg](images/9c73198ebf7d9371422a090660fcc92c.jpg)
 
+Note: pass the screws from bottom to top.
 
+## (4) Install the drive wheel hubs
 
-## （4）安装主动轮轮毂
+Slide the 37*30*4mm bearing onto the hub; the bearing should spin freely.
 
-将37\*30\*4mm轴承套在轮毂上，轴承可以自由转动
+![b0d2452c8344f8330b3d3a776e4f7616.jpg](images/b0d2452c8344f8330b3d3a776e4f7616.jpg)
 
-![b0d2452c8344f8330b3d3a776e4f7616\.jpg](图片和附件/b0d2452c8344f8330b3d3a776e4f7616.jpg)
+Mount the hubs onto the drive wheels using 8 pcs M3*12 screws and M3 washers
+(add the M3 washers during installation).
 
-使用8颗M3\*12螺丝和M3垫片将轮毂安装到主动轮上，安装时加入M3垫片
+![dc0b90b06eea2e7822cb603158af0651.jpg](images/dc0b90b06eea2e7822cb603158af0651.jpg)
 
-![dc0b90b06eea2e7822cb603158af0651\.jpg](图片和附件/dc0b90b06eea2e7822cb603158af0651.jpg)
+## (5) Install the drive wheels
 
-## （5）安装主动轮
+Use 10 pcs M3*25 screws to mount the drive wheels onto the chassis.
 
-使用10颗M3\*25的螺丝将主动轮安装到底盘上。
+![e1c7fc5c167ea292ff7be0890313d536.jpg](images/e1c7fc5c167ea292ff7be0890313d536.jpg)
 
-![e1c7fc5c167ea292ff7be0890313d536\.jpg](图片和附件/e1c7fc5c167ea292ff7be0890313d536.jpg)
+![7df1c6d818937e59a7b485a9c594b388.jpg](images/7df1c6d818937e59a7b485a9c594b388.jpg)
 
-![7df1c6d818937e59a7b485a9c594b388\.jpg](图片和附件/7df1c6d818937e59a7b485a9c594b388.jpg)
+## (6) Set chassis servo IDs and connect servo cables
 
+Use the FEETECH servo software to set the servo IDs: left wheel 10, right
+wheel 11. Connect the servos with servo cables.
 
+![ee2e5fa9219382cc9be7204f2b60cf01.png](images/ee2e5fa9219382cc9be7204f2b60cf01.png)
 
-## （6）底盘舵机编号，连接端子线
+## (7) Install the chassis top cover
 
-使用飞特舵机软件给舵机编号，左轮10，右轮11。同时用端子线连接舵机。
+Pass the 500mm servo cable through the hole at the front of the top cover.
 
-![ee2e5fa9219382cc9be7204f2b60cf01\.png](图片和附件/ee2e5fa9219382cc9be7204f2b60cf01.png)
+![6d3371175673aaed50f61d0bf8453f8a.jpg](images/6d3371175673aaed50f61d0bf8453f8a.jpg)
 
-## （7）安装底盘上盖
+Snap on the cover and tighten with 24 pcs M3*20 self-tapping screws.
 
-将500mm长端子线从上盖前面的孔穿过
+![e753e25c06c4f8a67f440b205d920ada.png](images/e753e25c06c4f8a67f440b205d920ada.png)
 
-![6d3371175673aaed50f61d0bf8453f8a\.jpg](图片和附件/6d3371175673aaed50f61d0bf8453f8a.jpg)
+Flip the chassis over, insert the base, tighten with 8 pcs M3*22 self-tapping
+screws, and route the servo cables out through the hole in the base.
 
-扣上盖子，使用24颗 M3\*20的自攻螺丝拧紧\.
+![e39b24b37dc8074a317c7cca31fd6318.jpg](images/e39b24b37dc8074a317c7cca31fd6318.jpg)
 
-![e753e25c06c4f8a67f440b205d920ada\.png](图片和附件/e753e25c06c4f8a67f440b205d920ada.png)
+# 2. Lift Axis Assembly
 
-翻转底盘，插入基座，并用8颗 M3\*22自攻螺丝拧紧，端子线从基座孔穿出
+## (1) Install the lift servo mount
 
-![e39b24b37dc8074a317c7cca31fd6318\.jpg](图片和附件/e39b24b37dc8074a317c7cca31fd6318.jpg)
+Use the FEETECH software to set the ST3250 servo ID to 9. Insert the servo into
+the servo mount and tighten with screws.
 
-# 2\.升降轴安装
+![image](images/lift-servo-mount.png)
 
-## （1）升降轴舵机座安装
+![1a7a906ffb37a8c6d6b4382b31a7260f.jpg](images/1a7a906ffb37a8c6d6b4382b31a7260f.jpg)
 
-使用FEETECH软件给ST 3250舵机编号9。将舵机插进舵机座并用螺丝拧紧
+Install the flange onto the servo shaft.
 
-![图片\.png](图片和附件/图片.png)
+![dbc847b4ca6b92d69689460f33d416cb.jpg](images/dbc847b4ca6b92d69689460f33d416cb.jpg)
 
+## (2) Install the lift axis
 
+Use 4 pcs M3*10 screws to fix two graphite-copper bushings and the brass nut
+that comes with the lead screw onto the lift axis connector.
 
-![1a7a906ffb37a8c6d6b4382b31a7260f\.jpg](图片和附件/1a7a906ffb37a8c6d6b4382b31a7260f.jpg)
+![f52b7eccf8822be8520d4ac717261c26.jpg](images/f52b7eccf8822be8520d4ac717261c26.jpg)
 
-将法兰盘安装在舵机轴上
+Pass the 300mm lead screw through the brass nut.
 
-![dbc847b4ca6b92d69689460f33d416cb\.jpg](图片和附件/dbc847b4ca6b92d69689460f33d416cb.jpg)
+![ed658bbb76fceba5c5d790b9a25728a2.jpg](images/ed658bbb76fceba5c5d790b9a25728a2.jpg)
 
-## （2）升降轴安装
+Fix the bottom of the lead screw onto the coupling and tighten with a hex key.
 
-使用4颗M3\*10螺丝将两个石墨铜衬轴承和丝杠自带的铜螺母固定在升降轴连接件上
+![2eac22171c3371b258bff57b47f4c911.jpg](images/2eac22171c3371b258bff57b47f4c911.jpg)
 
-![f52b7eccf8822be8520d4ac717261c26\.jpg](图片和附件/f52b7eccf8822be8520d4ac717261c26.jpg)
+Embed an 8 × 22 × 7mm bearing into the top printed part of the lift axis and
+insert the two guide shafts into the top printed part.
 
-将300mm丝杠从铜螺母中穿过
+![c2ee38b0eab9d0040c9fcacb46ed8dac.jpg](images/c2ee38b0eab9d0040c9fcacb46ed8dac.jpg)
 
-![ed658bbb76fceba5c5d790b9a25728a2\.jpg](图片和附件/ed658bbb76fceba5c5d790b9a25728a2.jpg)
+Use 4 pcs M6*12 hex socket screws to fix the top and bottom of the aluminum
+extrusion.
 
-将丝杠底部固定在联轴器上，使用内六角螺丝刀拧紧
+![0d0baa2d8572037936feaa9db5bffe46.png](images/0d0baa2d8572037936feaa9db5bffe46.png)
 
-![2eac22171c3371b258bff57b47f4c911\.jpg](图片和附件/2eac22171c3371b258bff57b47f4c911.jpg)
+Plug the 500mm and 1000mm servo cables that come out from the bottom into the
+ST3250 servo.
 
-在升降轴顶部打印件嵌入8 × 22 × 7mm轴承，将两根光轴插入顶部打印件
+![cae5ab64e43276d715f048eda8342672.jpg](images/cae5ab64e43276d715f048eda8342672.jpg)
 
-![c2ee38b0eab9d0040c9fcacb46ed8dac\.jpg](图片和附件/c2ee38b0eab9d0040c9fcacb46ed8dac.jpg)
+![a33775ca94ccc7d6fa6981ba7fb6cf12.jpg](images/a33775ca94ccc7d6fa6981ba7fb6cf12.jpg)
 
-使用四颗M6\*12内六角螺丝固定铝型材顶部和底部
+Use 8–16 pcs M5*22 screws to fix the inner printed part of the lift axis onto
+the lift axis. Fix the assembled lift axis onto the base and tighten with 4 pcs
+M3*20 self-tapping screws.
 
-![0d0baa2d8572037936feaa9db5bffe46\.png](图片和附件/0d0baa2d8572037936feaa9db5bffe46.png)
+![167cd1e9a0d5a73336f04a22fb040c1b.jpg](images/167cd1e9a0d5a73336f04a22fb040c1b.jpg)
 
-将底部穿出的500mm端子线和1000mm端子线插在ST3250舵机上
+Route the 1000mm servo cable out through the right side inside the inner
+printed part.
 
-![cae5ab64e43276d715f048eda8342672\.jpg](图片和附件/cae5ab64e43276d715f048eda8342672.jpg)
+![image](images/lift-cable-routing.png)
 
+## (3) Install the lift axis outer rollers
 
+Use 4 pcs M4*16 screws to fix 4 U-groove bearings onto the outer printed part
+of the lift axis.
 
-![a33775ca94ccc7d6fa6981ba7fb6cf12\.jpg](图片和附件/a33775ca94ccc7d6fa6981ba7fb6cf12.jpg)
+![3581d7bd16382d28e05459967a276cc4.jpg](images/3581d7bd16382d28e05459967a276cc4.jpg)
 
-使用8～16颗M5\*22螺丝将升降轴内侧打印件固定在升降轴上。将拼装好的升降轴固定在底座上，并用4颗M3\*20自攻螺丝拧紧
+Fix the outer printed part of the lift axis onto the base.
 
-![167cd1e9a0d5a73336f04a22fb040c1b\.jpg](图片和附件/167cd1e9a0d5a73336f04a22fb040c1b.jpg)
+![c3b7720e208481953118d9a1cc1465aa.jpg](images/c3b7720e208481953118d9a1cc1465aa.jpg)
 
-将1000mm端子线从内侧打印件内部右侧穿出
+# 3. Arm Assembly
 
-![image\.png](图片和附件/image%201.png)
+## (1) Follower arm assembly
 
-## （3）升降轴外侧滑轮安装
+Use 16 pcs ST3215 C018 servos and printed parts to assemble the follower arms.
 
-使用4颗 M4\*16螺丝将4个U型槽轴承固定在升降轴外侧打印件上
+Follower arm, right:
 
-![3581d7bd16382d28e05459967a276cc4\.jpg](图片和附件/3581d7bd16382d28e05459967a276cc4.jpg)
+![b047aecb448993b789f8358091221671.jpg](images/b047aecb448993b789f8358091221671.jpg)
 
-将升降轴外侧打印件固定在基座上
+Follower arm, left:
 
-![c3b7720e208481953118d9a1cc1465aa\.jpg](图片和附件/c3b7720e208481953118d9a1cc1465aa.jpg)
+![578c308b1c199657c8fc65a8a01f3ec0.jpg](images/578c308b1c199657c8fc65a8a01f3ec0.jpg)
 
+## (2) Leader arm assembly
 
+Use 16 pcs ST3215 C046 servos and printed parts to assemble the leader arms.
 
-# 3\.机械臂安装
+![a08aad0c985e5a817695028b4b92d1d2.jpg](images/a08aad0c985e5a817695028b4b92d1d2.jpg)
 
-## （1）从臂安装
+Use 8 pcs M6*20 screws to fix the leader arms and the connector together, then
+fix them onto the 3060 aluminum extrusion.
 
-使用16个ST3215 C018舵机和打印件安装从臂
+![42ca3a4b892e88aaf5216562ac998cf9.png](images/42ca3a4b892e88aaf5216562ac998cf9.png)
 
-从臂右臂
+# 4. Body Assembly
 
-![b047aecb448993b789f8358091221671\.jpg](图片和附件/b047aecb448993b789f8358091221671.jpg)
+## (1) Fix the arms
 
-从臂左臂
+Use 8 pcs M6*22 screws to fix the arms onto the body.
 
-![578c308b1c199657c8fc65a8a01f3ec0\.jpg](图片和附件/578c308b1c199657c8fc65a8a01f3ec0.jpg)
+![image](images/arm-body-mount.png)
 
-## （2）主臂安装
+![3457097654ab5f827b84957ad11e8df0.jpg](images/3457097654ab5f827b84957ad11e8df0.jpg)
 
-使用16个ST3215 C046舵机和打印件安装主臂
+## (2) Chest camera mount (optional)
 
-![a08aad0c985e5a817695028b4b92d1d2\.jpg](图片和附件/a08aad0c985e5a817695028b4b92d1d2.jpg)
+Use 4 pcs M2*12 screws to fix the camera.
 
-使用8颗M6\*20螺丝将主臂和连接件固定在一起，并固定在3060铝型材上。
+![80124d9fe38db52b20f18ee6398d6ad3.jpg](images/80124d9fe38db52b20f18ee6398d6ad3.jpg)
 
-![42ca3a4b892e88aaf5216562ac998cf9\.png](图片和附件/42ca3a4b892e88aaf5216562ac998cf9.png)
+(3) Insert the body onto the lift axis and fix it with 4 pcs M3*10 self-tapping
+screws.
 
-# 4\.身体安装
+![ef3a583f0427353fa20c94e92aec3802.jpg](images/ef3a583f0427353fa20c94e92aec3802.jpg)
 
-## （1）机械臂固定
+# 5. Neck and Head Assembly
 
-使用8颗M6\*22螺丝将机械臂固定在身体上
+## (1) Joint assembly
 
-![image\.png](图片和附件/image.png)
+Set the IDs of the two ST3215 C018 servos (12, 13), tighten them onto the neck
+printed part with the screws that come with the servos, and daisy-chain them
+with servo cables.
 
-![3457097654ab5f827b84957ad11e8df0\.jpg](图片和附件/3457097654ab5f827b84957ad11e8df0.jpg)
+![05909e4ffe699c9bb0dea567622f38b8.png](images/05909e4ffe699c9bb0dea567622f38b8.png)
 
-## （2）胸部相机固定（可选）
+Use the screws that come with the servos to fix the neck onto the head.
 
-使用4颗M2\*12的螺丝固定相机
+![8db30fb9ee52882cffeaa01cc4c94d60.jpg](images/8db30fb9ee52882cffeaa01cc4c94d60.jpg)
 
-![80124d9fe38db52b20f18ee6398d6ad3\.jpg](图片和附件/80124d9fe38db52b20f18ee6398d6ad3.jpg)
+## (2) Camera mount
 
-（3）将身体插入升降轴上，并用4颗M3\*10自攻螺丝固定
+Fix an RGB camera or a depth camera onto the head and connect the camera cable.
 
-![ef3a583f0427353fa20c94e92aec3802\.jpg](图片和附件/ef3a583f0427353fa20c94e92aec3802.jpg)
+![2ae84d3cbdc23d90c454c3ab8f5c7c0a.jpg](images/2ae84d3cbdc23d90c454c3ab8f5c7c0a.jpg)
 
-# 5\.颈部和头部安装
+Use 2 pcs M3*20 screws to fix the neck onto the body.
 
-## （1）关节安装
+![b7e2b0f3d00f162bcd3f8fc1999be629.jpg](images/b7e2b0f3d00f162bcd3f8fc1999be629.jpg)
 
-将两个ST3215 C018舵机编号（12,13），使用舵机自带螺丝拧紧在颈部打印件上并通过舵机线串联。
+# 6. Display Assembly
 
-![05909e4ffe699c9bb0dea567622f38b8\.png](图片和附件/05909e4ffe699c9bb0dea567622f38b8.png)
+Use 4 pcs M3.5*8 screws to fix the display and its connector.
 
-使用舵机自带螺丝将颈部固定在头部
+![f4facb26cc91b41c8873d3875c201658.jpg](images/f4facb26cc91b41c8873d3875c201658.jpg)
 
-![8db30fb9ee52882cffeaa01cc4c94d60\.jpg](图片和附件/8db30fb9ee52882cffeaa01cc4c94d60.jpg)
+Insert the connector into the slot on the back.
 
-## （2）相机固定
+![eac418d359c61ac851fee7d3209b3fab.jpg](images/eac418d359c61ac851fee7d3209b3fab.jpg)
 
-将RGB相机或者深度相机固定在头部，并插入相机线
+# 7. Wiring
 
-![2ae84d3cbdc23d90c454c3ab8f5c7c0a\.jpg](图片和附件/2ae84d3cbdc23d90c454c3ab8f5c7c0a.jpg)
+Put the dock and battery on the lower level, and the Raspberry Pi or Jetson on
+the upper level. (1) Use a splitter Type-C-to-DC cable to connect the battery
+(140W high-power port) and the arm control board to power the arms. (2) Use
+another USB-to-DC / Type-C-to-DC cable to connect the battery and the Raspberry
+Pi / Jetson. (3) Plug all the cameras directly into the Raspberry Pi or Jetson.
 
-使用两颗M3\*20螺丝将颈部固定在身体上
+![a094665b526abeabebf0d8c0aab20cbe.jpg](images/a094665b526abeabebf0d8c0aab20cbe.jpg)
 
-![b7e2b0f3d00f162bcd3f8fc1999be629\.jpg](图片和附件/b7e2b0f3d00f162bcd3f8fc1999be629.jpg)
+# 8. Finished Assembly
 
-# 6\.显示屏安装
+![c4ecc98c762eefd250180a53632652be.jpg](images/c4ecc98c762eefd250180a53632652be.jpg)
 
-使用4颗M3\.5\*8螺丝固定显示屏和连接器
+# 9. Servo IDs and Bus Wiring
 
-![f4facb26cc91b41c8873d3875c201658\.jpg](图片和附件/f4facb26cc91b41c8873d3875c201658.jpg)
+## (1) Servo ID map
 
-将连接器插入背部卡槽
-
-![eac418d359c61ac851fee7d3209b3fab\.jpg](图片和附件/eac418d359c61ac851fee7d3209b3fab.jpg)
-
-# 7\.接线
-
-下层装拓展坞和电池，上层装树莓派或Jetson。（1）使用一分二的TypeC转DC线连接电池（140W大功率接口）和机械臂的控制板给机械臂供电。（2）使用另一根USB转DC/TypeC转DC连接电池和树莓派/Jetson。（3）将所有相机单独插在树莓派或Jetson上。
-
-![a094665b526abeabebf0d8c0aab20cbe\.jpg](图片和附件/a094665b526abeabebf0d8c0aab20cbe.jpg)
-
-# 8\.组装成品
-
-![c4ecc98c762eefd250180a53632652be\.jpg](图片和附件/c4ecc98c762eefd250180a53632652be.jpg)
-
-# 9\.舵机编号与总线接线
-
-## （1）舵机编号总表
-
-| ID | 舵机 | 型号 | 总线 / 端口 |
+| ID | Motor | Model | Bus / Port |
 |----|-------|-------|------------|
-| 1–8 | 左臂（`left_arm_*`，7 自由度 + 夹爪） | ST3215 C018 | bus1（`port1`） |
-| 12 | 头部俯仰（pan） | ST3215 C018 | bus1（`port1`） |
-| 13 | 头部偏航（tilt） | ST3215 C018 | bus1（`port1`） |
-| 1–8 | 右臂（`right_arm_*`，7 自由度 + 夹爪） | ST3215 C018 | bus2（`port2`） |
-| 9  | 升降轴（`lift_axis`） | ST3250 | bus2（`port2`） |
-| 10 | 底盘左轮 | ST3215 C018 | bus2（`port2`）或 bus3 |
-| 11 | 底盘右轮 | ST3215 C018 | bus2（`port2`）或 bus3 |
+| 1–8 | Left arm (`left_arm_*`, 7-DOF + gripper) | ST3215 C018 | bus1 (`port1`) |
+| 12 | Head pan | ST3215 C018 | bus1 (`port1`) |
+| 13 | Head tilt | ST3215 C018 | bus1 (`port1`) |
+| 1–8 | Right arm (`right_arm_*`, 7-DOF + gripper) | ST3215 C018 | bus2 (`port2`) |
+| 9  | Lift (`lift_axis`) | ST3250 | bus2 (`port2`) |
+| 10 | Base left wheel | ST3215 C018 | bus2 (`port2`) or bus3 |
+| 11 | Base right wheel | ST3215 C018 | bus2 (`port2`) or bus3 |
 
-> 2-bus 模式（`port3=None`）：升降轴和轮子与右臂共用 bus2。
-> 3-bus 模式：轮子移到 bus3（`port3`）。
+> 2-bus mode (`port3=None`): the lift and wheels share bus2 with the right arm.
+> 3-bus mode: the wheels move to bus3 (`port3`).
 
-## （2）接线图（2-bus 模式）
+## (2) Wiring diagram (2-bus mode)
 
 ```mermaid
 graph TD
@@ -258,7 +272,7 @@ graph TD
     Bus2 --> B2["to control board port2"]
 ```
 
-## （3）接线图（3-bus 模式）
+## (3) Wiring diagram (3-bus mode)
 
 ```mermaid
 graph TD
@@ -276,5 +290,5 @@ graph TD
     Bus3 --> P3["port3"]
 ```
 
-> Mermaid 在 GitHub 上自动渲染；如果查看器不渲染，可对照上面的舵机编号总表。
-
+> Mermaid renders automatically on GitHub. If your viewer does not render it,
+> refer to the servo ID map above for the same wiring relationship.
