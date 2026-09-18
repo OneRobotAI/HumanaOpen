@@ -831,7 +831,7 @@ NO_PROXY="192.168.1.12" python3 examples/lightnav_navigation.py \
 - 하드웨어 설계는 [xlerobot](https://github.com/xrobot/xlerobot)을 참고했습니다:
   머리 자유도와 차동 구동 베이스 설계가 그 방식을 따릅니다.
 
-## 문의
+## 문의 및 협력
 
 - **제품 문의** : QR 코드를 스캔하여 제품 팀에 문의하세요 :
 

@@ -909,7 +909,7 @@ Key points:
   the head degrees-of-freedom and the differential-drive base follow its
   approach.
 
-## Contact
+## Contact & Cooperation
 
 - **Product Communication**: scan the QR code to reach our product team:
 

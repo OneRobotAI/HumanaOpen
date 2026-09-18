@@ -860,7 +860,7 @@ NO_PROXY="192.168.1.12" python3 examples/lightnav_navigation.py \
 - 硬件设计参考了 [xlerobot](https://github.com/xrobot/xlerobot)：
   头部自由度和差速底盘的设计借鉴了其方案。
 
-## 交流
+## 交流与合作
 
 - **产品咨询**：扫描二维码联系产品团队：
 

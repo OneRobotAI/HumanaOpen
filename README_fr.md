@@ -849,7 +849,7 @@ Points clés :
   les degrés de liberté de la tête et la base à entraînement différentiel suivent
   son approche.
 
-## Contact
+## Contact & Coopération
 
 - **Communication produit** : scannez le QR code pour contacter l'équipe produit :
 
