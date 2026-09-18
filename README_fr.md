@@ -1,5 +1,7 @@
 # HumanaOpen
 
+<img src="docs/HumanaOpen.png" alt="HumanaOpen" width="100%">
+
 [English](README.md) | [中文](README_zh.md) | [Français](README_fr.md) | [한국어](README_ko.md)
 
 **Robot semi-humoïde open source — 7 DOF double bras, différentiel, et vérin de levage.**

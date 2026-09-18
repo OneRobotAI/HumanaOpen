@@ -1,5 +1,7 @@
 # HumanaOpen
 
+<img src="docs/HumanaOpen.png" alt="HumanaOpen" width="100%">
+
 [English](README.md) | [中文](README_zh.md) | [Français](README_fr.md) | [한국어](README_ko.md)
 
 **开源半人形机器人 — 7自由度双臂、差速底盘、丝杠升降。**

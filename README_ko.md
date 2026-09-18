@@ -1,5 +1,7 @@
 # HumanaOpen
 
+<img src="docs/HumanaOpen.png" alt="HumanaOpen" width="100%">
+
 [English](README.md) | [中文](README_zh.md) | [Français](README_fr.md) | [한국어](README_ko.md)
 
 **오픈소스 줜휴머노이드 로봇 — 7-DOF 듀얼 암, 차동 구동, 리드스크류 리프트.**
