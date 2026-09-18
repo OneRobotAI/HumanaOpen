@@ -828,8 +828,7 @@ Points clés :
 
 | Module | État |
 |--------|------|
-| ACT | ✅ |
-| SmolVLA | ✅ |
+| ACT, SmolVLA | ✅ |
 | BOM | ✅ |
 | Assembly | ✅ |
 | CAD | ☐ |

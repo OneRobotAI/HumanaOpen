@@ -841,8 +841,7 @@ NO_PROXY="192.168.1.12" python3 examples/lightnav_navigation.py \
 
 | 模块 | 状态 |
 |------|------|
-| ACT | ✅ |
-| SmolVLA | ✅ |
+| ACT, SmolVLA | ✅ |
 | BOM | ✅ |
 | Assembly | ✅ |
 | CAD | ☐ |

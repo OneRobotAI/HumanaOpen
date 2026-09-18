@@ -889,8 +889,7 @@ Key points:
 
 | Module | Status |
 |--------|--------|
-| ACT | ✅ |
-| SmolVLA | ✅ |
+| ACT, SmolVLA | ✅ |
 | BOM | ✅ |
 | Assembly | ✅ |
 | CAD | ☐ |
