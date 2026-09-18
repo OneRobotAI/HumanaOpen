@@ -46,19 +46,35 @@ import websockets
 # Control period (s). Keep equal to the Host cycle so velocities are consistent.
 DT = 0.25
 
-# ── Trajectory-tracking controller (ported from LightNav's mujoco demo) ─────
-# Gains and thresholds below are the official ones — do not tune blindly.
+# ── Trajectory-tracking controller ──────────────────────────────────────────
+# Based on LightNav's official mujoco demo control law (mujoco_demo/vln_mujoco/
+# control.py): angular = 1.8*bearing + 0.25*target_yaw, linear = 0.75*distance*
+# cos(bearing), zero linear when |bearing| > 65 deg. The official thresholds are
+# tuned for the demo (0.35 m min distance). On HumanaOpen the RVQ action
+# tokenizer quantizes waypoints to coarse levels (yaw sits at exactly ±0.314 rad
+# == ±π/10 for "no turn", and forward steps are ~0.15 m), so the noise gate must
+# be tighter and both bearing and yaw need deadbands. Tune via CLI if needed.
 
 
 def _clamp(value: float, lower: float, upper: float) -> float:
     return max(lower, min(upper, value))
 
 
-def _dist_ok(point) -> bool:
-    """True if the waypoint is far enough to be a real intent, not quantizer noise."""
+def _valid_point(point) -> bool:
     return len(point) >= 3 and all(
         math.isfinite(float(value)) for value in point[:3]
-    ) and math.hypot(float(point[0]), float(point[1])) >= 0.35
+    )
+
+
+# Waypoint below this (forward,lateral) distance is pure quantizer noise — gone.
+# The official demo uses 0.35 m; HumanaOpen real robot steps are ~0.15 m.
+MIN_TARGET_DIST = 0.08
+# Bearing smaller than this contributes nothing (quantizer noise on lateral).
+# Official law uses raw bearing; here lateral steps are ~0.02 m — too noisy.
+BEARING_DEADBAND_RAD = math.radians(8.0)
+# Yaw smaller than this is the "no-turn" quantizer level (±π/10). Official law
+# keeps 0.25*target_yaw; here yaw=±0.314 would sort as a real turn — it isn't.
+YAW_DEADBAND_RAD = math.radians(30.0)
 
 
 def waypoint_command(
@@ -69,26 +85,40 @@ def waypoint_command(
 ) -> tuple[float, float]:
     """Turn a body-frame VLN path into a conservative differential-drive command.
 
-    Returns (linear m/s, angular deg/s). Uses the same control law as LightNav's
-    mujoco_demo/vln_mujoco/control.py — a target-point tracker that:
-      * picks the first waypoint at least 0.35 m away (noise gate)
-      * angular = 1.8*bearing + 0.25*target_yaw  (rad/s), clamped
-      * linear  = 0.75*distance*cos(bearing)     (m/s), 0 when bearing > 65 deg
+    Returns (linear m/s, angular deg/s). Same control law as LightNav's official
+    mujoco demo (target-point tracker) but with deadbands for the RVQ quantizer
+    levels observed on the real robot:
+      * a waypoint under MIN_TARGET_DIST is noise; if ALL are noise → (0, 0)
+      * angular = 1.8*bearing + 0.25*target_yaw (rad/s), bearing/yaw deadbanded
+      * linear  = 0.75*distance*cos(bearing), 0 when |bearing| > 65 deg
     """
     if not waypoints:
         return 0.0, 0.0
-    valid = [
-        point
-        for point in waypoints
-        if len(point) >= 3 and all(math.isfinite(float(value)) for value in point[:3])
-    ]
+    valid = [point for point in waypoints if _valid_point(point)]
     if not valid:
         return 0.0, 0.0
 
-    target = next((p for p in valid if _dist_ok(p)), valid[-1])
+    # Prefer the first waypoint with a meaningful displacement; if none exists
+    # the model is not commanding motion → stand still (official falls back to
+    # valid[-1], which on a near-zero trajectory amplifies atan2 noise).
+    target = next(
+        (p for p in valid
+         if math.hypot(float(p[0]), float(p[1])) >= MIN_TARGET_DIST),
+        None,
+    )
+    if target is None:
+        return 0.0, 0.0
+
     forward, lateral, target_yaw = (float(value) for value in target[:3])
     distance = math.hypot(forward, lateral)
     bearing = math.atan2(lateral, forward)
+
+    # Deadband the noisy channels (quantizer levels) before applying gains.
+    if abs(bearing) < BEARING_DEADBAND_RAD:
+        bearing = 0.0
+    if abs(target_yaw) < YAW_DEADBAND_RAD:
+        target_yaw = 0.0
+
     angular_rad = _clamp(
         1.8 * bearing + 0.25 * target_yaw,
         -max_angular_rad,
