@@ -784,6 +784,44 @@ Ainsi, même si le processus PC est tué brutalement (`kill -9`) ou se déconnec
 pendant que la base bouge, elle s'arrête d'elle-même au lieu de continuer jusqu'à
 l'arrêt du Host.
 
+## Navigation
+
+Navigation pilotée par le langage grâce à [LightNav-0](https://github.com/kyonofx/LightNav-0) — un modèle vision-langage-action exécuté sur votre PC GPU. Le robot ne fait tourner qu'un adaptateur ZMQ léger ; pas d'installation LightNav, pas de ROS, pas de lidar, pas de carte. Juste une caméra RGB frontale + le serveur GPU sur le réseau.
+
+```
+[caméra poitrine /dev/video0] ──cv2──> [adaptateur sur Jetson] ──WS──> lightnav-serve (PC GPU, :8050)
+        ^                                   |
+        |                                   | 10×SE(2) waypoints / pas
+  HumanaOpenHost <──ZMQ :5555── [loi de commande : waypoint_command officiel]
+```
+
+Démarrage rapide (sur le robot, deux terminaux) :
+
+```bash
+# Terminal 1 — Host en mode base seule (pas de streaming caméra ; l'adaptateur lit la caméra poitrine)
+python3 -c "
+from lerobot_robot_humanaopen.humanaopen_host import HumanaOpenHost
+from lerobot_robot_humanaopen import HumanaOpenConfig
+
+HumanaOpenHost(HumanaOpenConfig(
+    port1='/dev/ttyACM0', port2='/dev/ttyACM1', port3=None,
+    cameras={},
+    wheel_dir_signs={'base_left_wheel': -1, 'base_right_wheel': 1}
+)).run()
+"
+
+# Terminal 2 — adaptateur de navigation (le PC GPU doit exécuter lightnav-serve sur 0.0.0.0:8050)
+NO_PROXY="192.168.1.12" python3 examples/lightnav_navigation.py \
+    --lightnav ws://192.168.1.12:8050 \
+    --camera /dev/video0 \
+    --instruction "walk forward slowly"
+```
+
+Points clés :
+- **Instructions en anglais uniquement** (modèle entraîné en anglais) ; ex. `"walk forward slowly"`, `"go to the object on your left"`.
+- `NO_PROXY=<ip_gpu>` est requis sur le robot : le client `websockets` lit les variables d'environnement de proxy et échouera à joindre le serveur GPU local sinon.
+- Les pièges de quantification RVQ (yaw = ±0.314 rad pour « pas de virage », pas de 0,15 m) sont gérés dans l'adaptateur via la loi de commande `waypoint_command` officielle + zones mortes — voir `docs/navigation/lightnav_integration.md` §八/§九 pour le journal complet des pièges.
+
 ## Feuille de route
 
 | Module | État |
@@ -797,7 +835,7 @@ l'arrêt du Host.
 | URDF | ☐ |
 | Agent | ☐ |
 | Préhension basée vision | ☐ |
-| Navigation | ☐ |
+| Navigation | ✅ |
 | Collecte de données | ☐ |
 | Modèles du monde incarnés | ☐ |
 

@@ -845,6 +845,44 @@ instead of continuing to drive until the Host is stopped.
 On startup, the script will prompt for calibration confirmation (ENTER to restore).
 On exit, it will prompt for torque release confirmation (ENTER to release).
 
+## Navigation
+
+Language-driven navigation powered by [LightNav-0](https://github.com/kyonofx/LightNav-0) — a vision-language-action model running on your GPU PC. The robot only runs a light ZMQ adapter; no LightNav install, no ROS, no lidar, no map needed. Just a forward RGB camera plus the GPU server over the network.
+
+```
+[chest camera /dev/video0] ──cv2──> [adapter on Jetson] ──WS──> lightnav-serve (GPU PC, :8050)
+        ^                                   |
+        |                                   | 10×SE(2) waypoints / step
+  HumanaOpenHost <──ZMQ :5555── [control law: official waypoint_command]
+```
+
+Quick start (on the robot, two terminals):
+
+```bash
+# Terminal 1 — Host in pure-base mode (no camera streaming; adapter reads the chest cam itself)
+python3 -c "
+from lerobot_robot_humanaopen.humanaopen_host import HumanaOpenHost
+from lerobot_robot_humanaopen import HumanaOpenConfig
+
+HumanaOpenHost(HumanaOpenConfig(
+    port1='/dev/ttyACM0', port2='/dev/ttyACM1', port3=None,
+    cameras={},
+    wheel_dir_signs={'base_left_wheel': -1, 'base_right_wheel': 1}
+)).run()
+"
+
+# Terminal 2 — navigation adapter (GPU PC must have lightnav-serve listening on 0.0.0.0:8050)
+NO_PROXY="192.168.1.12" python3 examples/lightnav_navigation.py \
+    --lightnav ws://192.168.1.12:8050 \
+    --camera /dev/video0 \
+    --instruction "walk forward slowly"
+```
+
+Key points:
+- **English instructions only** (model is English-trained); e.g. `"walk forward slowly"`, `"go to the object on your left"`.
+- `NO_PROXY=<gpu_ip>` is required on the robot: the `websockets` client reads proxy env vars and will fail to reach the LAN GPU server otherwise.
+- RVQ quantization traps (waypoint yaw = ±0.314 rad for "no turn", 0.15 m steps) are handled inside the adapter via the official `waypoint_command` control law + deadbands — see `docs/navigation/lightnav_integration.md` §八/§九 for the full pitfall log.
+
 ## Roadmap
 
 | Module | Status |
@@ -858,7 +896,7 @@ On exit, it will prompt for torque release confirmation (ENTER to release).
 | URDF | ☐ |
 | Agent | ☐ |
 | Vision-based grasping | ☐ |
-| Navigation | ☐ |
+| Navigation | ✅ |
 | Data collection | ☐ |
 | Embodied world models | ☐ |
 

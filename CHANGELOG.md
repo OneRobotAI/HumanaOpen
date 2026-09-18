@@ -17,6 +17,13 @@ pre-1.0 so breaking changes may occur until a stable release.
 - Foxglove visualization backend for teleop / record / eval.
 - `hardware/` directory: BOM, assembly, CAD (Fusion 360 + STEP), STL, URDF,
   electronics wiring.
+- **Language-driven navigation** (`examples/lightnav_navigation.py`): LightNav-0
+  vision-language-action model on a GPU PC drives the base through a lightweight
+  ZMQ adapter — no LightNav install / ROS / lidar / map on the robot. Uses the
+  official `waypoint_command` control law + RVQ-quantization deadbands
+  (fail-safe zero on stop/disconnect). Real-robot verified: straight walk
+  0.113 m/s, left-turn arc, exact idle zero. English instructions only.
+  Docs: `docs/navigation/lightnav_integration.md`.
 
 ### Fixed
 - Teleop native Rerun (`--display`) now logs on the main control thread to avoid

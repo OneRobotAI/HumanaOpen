@@ -768,6 +768,44 @@ python3 examples/eval_data.py ... --enable-lift=true
 움직이는 중에 연결이 끊겨도 Host가 정지될 때까지 계속 달리는 것이 아니라 베이스가
 스스로 정지합니다.
 
+## 내비게이션
+
+[LightNav-0](https://github.com/kyonofx/LightNav-0) 기반 언어 지시 내비게이션 — 비전-언어-행동 모델이 GPU PC에서 실행됩니다. 로봇 쪽은 가벼운 ZMQ 어댑터만 실행하면 됩니다. LightNav 설치, ROS, 라이다, 지도 없이 전방 RGB 카메라와 네트워크상의 GPU 서버만 있으면 됩니다.
+
+```
+[chest 카메라 /dev/video0] ──cv2──> [Jetson의 어댑터] ──WS──> lightnav-serve (GPU PC, :8050)
+        ^                                   |
+        |                                   | 스텝당 10×SE(2) 웨이포인트
+  HumanaOpenHost <──ZMQ :5555── [제어 법칙: 공식 waypoint_command]
+```
+
+빠른 시작 (로봇에서, 터미널 두 개):
+
+```bash
+# 터미널 1 — Host 순수 베이스 모드 (카메라 스트리밍 없음; 어댑터가 chest 카메라 직접 읽음)
+python3 -c "
+from lerobot_robot_humanaopen.humanaopen_host import HumanaOpenHost
+from lerobot_robot_humanaopen import HumanaOpenConfig
+
+HumanaOpenHost(HumanaOpenConfig(
+    port1='/dev/ttyACM0', port2='/dev/ttyACM1', port3=None,
+    cameras={},
+    wheel_dir_signs={'base_left_wheel': -1, 'base_right_wheel': 1}
+)).run()
+"
+
+# 터미널 2 — 내비게이션 어댑터 (GPU PC에서 lightnav-serve가 0.0.0.0:8050에 떠 있어야 함)
+NO_PROXY="192.168.1.12" python3 examples/lightnav_navigation.py \
+    --lightnav ws://192.168.1.12:8050 \
+    --camera /dev/video0 \
+    --instruction "walk forward slowly"
+```
+
+핵심 포인트:
+- **영어 지시어만 지원** (모델이 영어로 훈련됨); 예: `"walk forward slowly"`, `"go to the object on your left"`.
+- 로봇 쪽에서 `NO_PROXY=<gpu_ip>` 필수: `websockets` 클라이언트가 프록시 환경 변수를 읽기 때문에, 설정하지 않으면 로컬 GPU 서버에 연결되지 않습니다.
+- RVQ 양자화 함정("회전 없음" yaw=±0.314 rad, 0.15m 스텝)은 공식 `waypoint_command` 제어 법칙 + 데드밴드로 어댑터 내부에서 처리됨 — 전체 함정 기록은 `docs/navigation/lightnav_integration.md` §八/§九 참조.
+
 ## 로드맵
 
 | 모듈 | 상태 |
@@ -781,7 +819,7 @@ python3 examples/eval_data.py ... --enable-lift=true
 | URDF | ☐ |
 | Agent | ☐ |
 | 비전 기반 파지 | ☐ |
-| 내비게이션 | ☐ |
+| 내비게이션 | ✅ |
 | 데이터 수집 | ☐ |
 | 구현형 세계 모델 | ☐ |
 

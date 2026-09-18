@@ -797,6 +797,44 @@ python3 examples/eval_data.py ... --enable-lift=true
 未收到动作命令，就自动把轮速归零并保持升降。即使 PC 进程被异常终止（`kill -9`）或断开时轮子
 正在转动，底盘也会自行停止，而不是一直转到 Host 被停止为止。
 
+## 导航
+
+基于 [LightNav-0](https://github.com/kyonofx/LightNav-0) 的语言驱动导航——模型运行在 GPU PC 上。机器人端只跑一个轻量 ZMQ adapter，无需安装 LightNav、无需 ROS、无需激光雷达、无需地图。只需要一个前向 RGB 相机 + 局域网内的 GPU 服务器。
+
+```
+[chest 相机 /dev/video0] ──cv2──> [Jetson 上的 adapter] ──WS──> lightnav-serve（GPU PC, :8050）
+        ^                                   |
+        |                                   | 每步 10×SE(2) 航点
+  HumanaOpenHost <──ZMQ :5555── [控制律：官方 waypoint_command]
+```
+
+快速开始（在机器人上，两个终端）：
+
+```bash
+# 终端 1 — Host 纯底盘模式（不传相机画面；adapter 自己读 chest 相机）
+python3 -c "
+from lerobot_robot_humanaopen.humanaopen_host import HumanaOpenHost
+from lerobot_robot_humanaopen import HumanaOpenConfig
+
+HumanaOpenHost(HumanaOpenConfig(
+    port1='/dev/ttyACM0', port2='/dev/ttyACM1', port3=None,
+    cameras={},
+    wheel_dir_signs={'base_left_wheel': -1, 'base_right_wheel': 1}
+)).run()
+"
+
+# 终端 2 — 导航 adapter（GPU PC 需已启动 lightnav-serve 并监听 0.0.0.0:8050）
+NO_PROXY="192.168.1.12" python3 examples/lightnav_navigation.py \
+    --lightnav ws://192.168.1.12:8050 \
+    --camera /dev/video0 \
+    --instruction "walk forward slowly"
+```
+
+关键点：
+- **指令仅支持英文**（模型英文训练）；例如 `"walk forward slowly"`、`"go to the object on your left"`。
+- 机器人端必须设 `NO_PROXY=<gpu_ip>`：`websockets` 客户端会读取代理环境变量，否则连不上局域网 GPU 服务器。
+- RVQ 量化陷阱（"不转"档 yaw=±0.314 rad、航点步长 0.15m）已在 adapter 内通过官方 `waypoint_command` 控制律 + 死区处理——完整踩坑记录见 `docs/navigation/lightnav_integration.md` 第 八/九 节。
+
 ## 未来规划
 
 | 模块 | 状态 |
@@ -810,7 +848,7 @@ python3 examples/eval_data.py ... --enable-lift=true
 | URDF | ☐ |
 | Agent | ☐ |
 | 视觉抓取 | ☐ |
-| 导航 | ☐ |
+| 导航 | ✅ |
 | 数据采集 | ☐ |
 | 具身世界模型 | ☐ |
 
