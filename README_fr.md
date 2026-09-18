@@ -828,7 +828,7 @@ Points clés :
 |--------|------|
 | ACT | ✅ |
 | SmolVLA | ✅ |
-| BOM | ☐ |
+| BOM | ✅ |
 | Assembly | ✅ |
 | CAD | ☐ |
 | Version Lite | ☐ |

@@ -889,7 +889,7 @@ Key points:
 |--------|--------|
 | ACT | ✅ |
 | SmolVLA | ✅ |
-| BOM | ☐ |
+| BOM | ✅ |
 | Assembly | ✅ |
 | CAD | ☐ |
 | Lite version | ☐ |

@@ -812,7 +812,7 @@ NO_PROXY="192.168.1.12" python3 examples/lightnav_navigation.py \
 |------|------|
 | ACT | ✅ |
 | SmolVLA | ✅ |
-| BOM | ☐ |
+| BOM | ✅ |
 | Assembly | ✅ |
 | CAD | ☐ |
 | Lite 버전 | ☐ |

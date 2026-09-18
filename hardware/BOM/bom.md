@@ -6,7 +6,7 @@ Complete parts list to build one HumanaOpen. Quantities are per robot.
 
 ## Cost summary
 
-The control board is optional. Fasteners are yet to be added.
+The control board is optional.
 
 | Section | Subtotal (RMB) |
 |---------|----------------|
@@ -58,9 +58,26 @@ Filament: Bambu Lab PLA Basic / Anycubic PLA. A large-build-volume printer
 
 ## Fasteners
 
-| Part / description | Spec | Qty | Source / link |
-|--------------------|------|-----|---------------|
-|                   |      |     |               |
+| Part / description | Spec | Qty |
+|--------------------|------|-----|
+| Chassis servo bracket screws | M3*22 | 8 |
+| Chassis caster wheel screws | M3*12 | 8 |
+| Drive wheel hub screws | M3*12 | 8 |
+| Drive wheel hub washers | M3 | 8 |
+| Drive wheel screws | M3*25 | 10 |
+| Chassis self-tapping screws | M3*20 (self-tapping) | 32 |
+| Lift aluminium extrusion screws | M6*12 (hex socket) | 4 |
+| Lift connector screws | M3*10 | 4 |
+| Lift base mounting screws | M3*20 (self-tapping) | 4 |
+| Lift inner printed part screws | M5*22 | 8–16 |
+| Lift outer bearing screws | M4*16 (flat head) | 4 |
+| Lift outer bearing nuts | M4 | 4 |
+| Arm shoulder screws | M6*20 | 16 |
+| Chest RGB camera screws | M2*12 | 4 |
+| Body mounting screws | M3*10 (self-tapping) | 4 |
+| Neck screws | M3*20 | 2 |
+| Head RGB camera screws | M2*10 | 4 |
+| Display screws | M3.5*8 | 4 |
 
 ## Motion / actuation
 
