@@ -829,7 +829,7 @@ Points clés :
 | ACT | ✅ |
 | SmolVLA | ✅ |
 | BOM | ☐ |
-| Assembly | ☐ |
+| Assembly | ✅ |
 | CAD | ☐ |
 | Version Lite | ☐ |
 | URDF | ☐ |
