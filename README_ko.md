@@ -831,20 +831,11 @@ NO_PROXY="192.168.1.12" python3 examples/lightnav_navigation.py \
 - 하드웨어 설계는 [xlerobot](https://github.com/xrobot/xlerobot)을 참고했습니다:
   머리 자유도와 차동 구동 베이스 설계가 그 방식을 따릅니다.
 
-## 문의 및 구매
-
-- **타오바오 스토어** : [onerobot](https://m.tb.cn/h.8L4yb9vlYloGQMV) — HumanaOpen
-  전체 하드웨어 / BOM 키트 구매.
-
-<img src="docs/Official_Shop.jpg.png" alt="onerobot 스토어 QR 코드" width="25%">
+## 문의
 
 - **제품 문의** : QR 코드를 스캔하여 제품 팀에 문의하세요 :
 
 <img src="docs/Product_Communication" alt="제품 문의 QR 코드" width="25%">
-
-- **비즈니스 협력** : 비즈니스 기회를 위해 QR 코드를 스캔하세요 :
-
-<img src="docs/Business_Cooperation.jpg" alt="비즈니스 협력 QR 코드" width="25%">
 
 ## 라이선스
 

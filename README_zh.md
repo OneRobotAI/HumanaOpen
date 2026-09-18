@@ -860,19 +860,11 @@ NO_PROXY="192.168.1.12" python3 examples/lightnav_navigation.py \
 - 硬件设计参考了 [xlerobot](https://github.com/xrobot/xlerobot)：
   头部自由度和差速底盘的设计借鉴了其方案。
 
-## 交流与购买
-
-- **淘宝店铺**：[onerobot](https://m.tb.cn/h.8L4yb9vlYloGQMV) — 购买 HumanaOpen 全套硬件 / BOM 套件。
-
-<img src="docs/Official_Shop.jpg.png" alt="onerobot 店铺二维码" width="25%">
+## 交流
 
 - **产品咨询**：扫描二维码联系产品团队：
 
 <img src="docs/Product_Communication" alt="产品咨询二维码" width="25%">
-
-- **商务合作**：扫描二维码洽谈合作：
-
-<img src="docs/Business_Cooperation.jpg" alt="商务合作二维码" width="25%">
 
 ## 许可证
 

@@ -909,20 +909,11 @@ Key points:
   the head degrees-of-freedom and the differential-drive base follow its
   approach.
 
-## Contact & Purchase
-
-- **Taobao store**: [onerobot](https://m.tb.cn/h.8L4yb9vlYloGQMV) — buy the full
-  hardware / BOM kit for HumanaOpen.
-
-<img src="docs/Official_Shop.jpg.png" alt="onerobot store QR code" width="25%">
+## Contact
 
 - **Product Communication**: scan the QR code to reach our product team:
 
 <img src="docs/Product_Communication" alt="Product communication QR code" width="25%">
-
-- **Business Cooperation**: scan the QR code for business opportunities:
-
-<img src="docs/Business_Cooperation.jpg" alt="Business cooperation QR code" width="25%">
 
 ## License
 

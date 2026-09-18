@@ -849,20 +849,11 @@ Points clés :
   les degrés de liberté de la tête et la base à entraînement différentiel suivent
   son approche.
 
-## Contact & Achat
-
-- **Boutique Taobao** : [onerobot](https://m.tb.cn/h.8L4yb9vlYloGQMV) — achetez le
-  kit matériel / BOM complet de HumanaOpen.
-
-<img src="docs/Official_Shop.jpg.png" alt="QR code boutique onerobot" width="25%">
+## Contact
 
 - **Communication produit** : scannez le QR code pour contacter l'équipe produit :
 
 <img src="docs/Product_Communication" alt="QR code communication produit" width="25%">
-
-- **Coopération commerciale** : scannez le QR code pour les opportunités business :
-
-<img src="docs/Business_Cooperation.jpg" alt="QR code coopération commerciale" width="25%">
 
 ## Licence
 
