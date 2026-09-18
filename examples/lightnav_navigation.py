@@ -94,20 +94,18 @@ def waypoint_command(
     """
     if not waypoints:
         return 0.0, 0.0
-    valid = [point for point in waypoints if _valid_point(point)]
-    if not valid:
+    first = waypoints[0]
+    if not _valid_point(first):
         return 0.0, 0.0
 
-    # Prefer the first waypoint with a meaningful displacement; if none exists
-    # the model is not commanding motion → stand still (official falls back to
-    # valid[-1], which on a near-zero trajectory amplifies atan2 noise).
-    target = next(
-        (p for p in valid
-         if math.hypot(float(p[0]), float(p[1])) >= MIN_TARGET_DIST),
-        None,
-    )
-    if target is None:
+    # The model's waypoint[0] is the action for the CURRENT frame; later
+    # waypoints are its predicted future path. Acting on a later waypoint while
+    # [0] is near-zero caused full-rate spins on real robot (a noisy far point
+    # with huge bearing). Gate on waypoint[0] alone: near-zero → stand still.
+    if math.hypot(float(first[0]), float(first[1])) < MIN_TARGET_DIST:
         return 0.0, 0.0
+
+    target = first
 
     forward, lateral, target_yaw = (float(value) for value in target[:3])
     distance = math.hypot(forward, lateral)
