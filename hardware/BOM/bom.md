@@ -100,7 +100,7 @@ stronger structural parts). A large-build-volume printer (e.g. Anycubic Kobra
 | Follower (from) power supply | 12V 4A | 1 | 20 RMB | 20 RMB | — |
 | Leader (master) power supply | 7.3V 3A | 2 | 20 RMB | 40 RMB | — |
 | Bus servo driver board | Waveshare (微雪) bus servo driver | 2 | 27 RMB | 54 RMB | [link](https://e.tb.cn/h.8Lya2xQuOF0N34m?tk=HTlUTT8TJLG) |
-| Battery | 20000mAh 140W dual Type-C + USB-A | 1 | 399 RMB | 399 RMB | [link](https://e.tb.cn/h.8oI8XjbzbNgEeyh?tk=o73uTT8juXp) |
+| Battery | 20000mAh 140W dual Type-C + USB-A | 1 | 399 RMB | 399 RMB | — |
 | Display (optional) | 7" touch with case, 1024×600 | 1 | 160 RMB | 160 RMB | [link](https://e.tb.cn/h.8JQRkOZKPsCPwZ7?tk=60rcT7YLj2W) |
 
 ## Cables / misc
