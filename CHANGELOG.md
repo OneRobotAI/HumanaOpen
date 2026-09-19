@@ -22,6 +22,10 @@ pre-1.0 so breaking changes may occur until a stable release.
   (20 parts: J1-J8 arm joints, holders, trigger, WaveShare plate).
 - 3D-print STL files (38 files): `hardware/stl/HumanaOpen_stl/` (17 parts) and
   `hardware/stl/Open-arms-mini-stl/` (21 parts), in mm, revision-named.
+- Complete robot URDF: `hardware/urdf/humanaopen.urdf` — full kinematic tree
+  (base wheels, lift, torso, head pan/tilt, 2× 7-DOF arm + gripper) with 26
+  STL meshes in `hardware/urdf/meshes/`, collision boxes, and estimated
+  inertial. Joint names mirror `lerobot_robot_humanaopen/humanaopen.py`.
 - **Language-driven navigation** (`examples/lightnav_navigation.py`): LightNav-0
   vision-language-action model on a GPU PC drives the base through a lightweight
   ZMQ adapter — no LightNav install / ROS / lidar / map on the robot. Uses the

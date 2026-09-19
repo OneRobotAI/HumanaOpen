@@ -894,7 +894,7 @@ Key points:
 | Assembly | ✅ |
 | CAD | ✅ |
 | Lite version | ☐ |
-| URDF | ☐ |
+| URDF | ✅ |
 | Agent | ☐ |
 | Vision-based grasping | ☐ |
 | Navigation | ✅ |

@@ -817,7 +817,7 @@ NO_PROXY="192.168.1.12" python3 examples/lightnav_navigation.py \
 | Assembly | ✅ |
 | CAD | ✅ |
 | Lite 버전 | ☐ |
-| URDF | ☐ |
+| URDF | ✅ |
 | Agent | ☐ |
 | 비전 기반 파지 | ☐ |
 | 내비게이션 | ✅ |

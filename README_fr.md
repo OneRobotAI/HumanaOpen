@@ -833,7 +833,7 @@ Points clés :
 | Assembly | ✅ |
 | CAD | ✅ |
 | Version Lite | ☐ |
-| URDF | ☐ |
+| URDF | ✅ |
 | Agent | ☐ |
 | Préhension basée vision | ☐ |
 | Navigation | ✅ |
