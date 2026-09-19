@@ -1,29 +1,4 @@
 <?xml version='1.0' encoding='utf-8'?>
-<!--
-  HumanaOpen URDF.
-
-  Joint/link names mirror the software (see lerobot_robot_humanaopen/humanaopen.py):
-    left_arm_*, right_arm_* (8 joints each: 7-DOF + gripper)
-    head_pan, head_tilt
-    lift_axis (prismatic)
-    base (differential)
-
-  MESHES: STL files copied into meshes/ from hardware/stl/ (HumanaOpen_stl +
-  Open-arms-mini-stl). STL is millimetres -> every <mesh> is scale="0.001".
-  Arm joint mapping follows open-arms-mini: J1=shoulder_pan, J2=shoulder_lift,
-  J3=shoulder_roll, J4=elbow_flex, J5=forearm_rotation, J6=wrist_flex,
-  J7=wrist_yaw, J8=gripper (J8 L/R for left/right).
-
-  MESH ORIGIN FIX (2026-09): the HumanaOpen body STLs were CAD-exported with
-  geometry centred around (165, 160)mm in each file's own +XY quadrant; visual
-  origins carry compensating offsets so meshes sit centred on their link frames.
-  Right-arm joint X offsets are mirrored w.r.t. the left arm. Gripper fins mount
-  on the inboard side of each J8 jaw.
-
-  ESTIMATES: link origins, collision boxes and inertial values are reasonable
-  estimates from the physical design. Measured values from the CAD export
-  should eventually replace them; mesh filenames are authoritative.
--->
 <robot name="humanaopen">
 
   <link name="base_link">
@@ -46,8 +21,8 @@
       </geometry>
     </visual>
     <collision>
-      <origin xyz="0 0 0" />
-      <geometry><box size="0.20 0.20 0.10" /></geometry>
+      <origin xyz="0 0 0.03" />
+      <geometry><box size="0.18 0.18 0.06" /></geometry>
     </collision>
     <inertial>
       <origin xyz="0 0 -0.01" rpy="0 0 0" />
@@ -71,7 +46,7 @@
       </geometry>
     </visual>
     <collision>
-      <origin xyz="0 0 0" />
+      <origin xyz="0 0 0" rpy="1.5707963 0 0" />
       <geometry><cylinder radius="0.032" length="0.02" /></geometry>
     </collision>
     <inertial>
@@ -95,7 +70,7 @@
       </geometry>
     </visual>
     <collision>
-      <origin xyz="0 0 0" />
+      <origin xyz="0 0 0" rpy="1.5707963 0 0" />
       <geometry><cylinder radius="0.032" length="0.02" /></geometry>
     </collision>
     <inertial>
