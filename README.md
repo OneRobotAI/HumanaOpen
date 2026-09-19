@@ -892,7 +892,7 @@ Key points:
 | ACT, SmolVLA | ✅ |
 | BOM | ✅ |
 | Assembly | ✅ |
-| CAD | ☐ |
+| CAD | ✅ |
 | Lite version | ☐ |
 | URDF | ☐ |
 | Agent | ☐ |

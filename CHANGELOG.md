@@ -17,6 +17,11 @@ pre-1.0 so breaking changes may occur until a stable release.
 - Foxglove visualization backend for teleop / record / eval.
 - `hardware/` directory: BOM, assembly, CAD (Fusion 360 + STEP), STL, URDF,
   electronics wiring.
+- CAD STEP exports (36 files): `hardware/cad/step/HumanaOpen_step/` (16 parts:
+  chassis, torso, head, lift) and `hardware/cad/step/Open-arms-mini_step/`
+  (20 parts: J1-J8 arm joints, holders, trigger, WaveShare plate).
+- 3D-print STL files (38 files): `hardware/stl/HumanaOpen_stl/` (17 parts) and
+  `hardware/stl/Open-arms-mini-stl/` (21 parts), in mm, revision-named.
 - **Language-driven navigation** (`examples/lightnav_navigation.py`): LightNav-0
   vision-language-action model on a GPU PC drives the base through a lightweight
   ZMQ adapter — no LightNav install / ROS / lidar / map on the robot. Uses the

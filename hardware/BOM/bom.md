@@ -55,7 +55,7 @@ stronger structural parts). A large-build-volume printer (e.g. Anycubic Kobra
 
 | Part / description | STL file | Qty | Total cost | Notes |
 |--------------------|----------|-----|------------|-------|
-| PLA / PETG printed parts | _see `stl/`_ | 6 | ≈ 300 RMB | Requires a large-format printer (Anycubic Kobra 3 MAX) |
+| PLA / PETG printed parts | [`stl/HumanaOpen_stl/`](../stl/HumanaOpen_stl/) (17 parts), [`stl/Open-arms-mini-stl/`](../stl/Open-arms-mini-stl/) (21 parts) | 6 | ≈ 300 RMB | Requires a large-format printer (Anycubic Kobra 3 MAX) |
 
 ## Fasteners
 
