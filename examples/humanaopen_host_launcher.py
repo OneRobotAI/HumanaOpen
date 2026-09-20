@@ -119,7 +119,30 @@ def main() -> None:
 
 
 if __name__ == "__main__":
+    import faulthandler
+
+    # Ctrl+C while hung: dump every thread's Python stack BEFORE exiting, so
+    # the exact frames where connect() blocked (bus handshake / ping / lift)
+    # show up instead of silently returning to the prompt.
+    faulthandler.enable()
+    original_int = signal.getsignal(signal.SIGINT)
+
+    def _on_sigint(signum, frame):
+        print("\n\n⏸ Ctrl+C — dumping thread stacks (use these to find the hang):", flush=True)
+        for thread_id, stack in sys._current_frames().items():
+            cur = sys._current_frames()[thread_id]
+            print(f"\n── thread {thread_id} ──", flush=True)
+            import traceback
+
+            for f in traceback.extract_stack(stack):
+                print(f"   {f.filename}:{f.lineno} in {f.name}", flush=True)
+        print("\nExiting (Ctrl+C). Re-pull & rerun if you need the exact hang stack.", flush=True)
+        sys.exit(130)
+
+    signal.signal(signal.SIGINT, _on_sigint)
+    signal.signal(signal.SIGTERM, _on_sigint)
+
     try:
         main()
     except KeyboardInterrupt:
-        sys.exit(0)
+        sys.exit(130)
