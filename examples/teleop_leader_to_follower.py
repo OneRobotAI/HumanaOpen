@@ -58,6 +58,13 @@ BASE_LINEAR_SPEED = 0.2   # base linear speed m/s (base level, × level multipli
 BASE_ANGULAR_SPEED = 30.0  # base angular speed deg/s (base level, × level multiplier)
 BASE_SPEED_LEVELS = [0.3, 0.6, 1.0]  # base speed level multipliers (toggled with n/m)
 LIFT_SPEED_MM = 15.0      # lift mm/s
+
+
+def _parse_port(s: str | None) -> str | None:
+    """argparse turns 'None' into a string; convert it back to a real None (2-bus mode)."""
+    if s is None or str(s).strip().lower() == "none" or str(s).strip() == "":
+        return None
+    return str(s)
 LIFT_MIN_MM = 3.0         # lift soft lower limit (descent_floor hard-protects at 3mm)
 LIFT_MAX_MM = 200.0       # lift soft upper limit (200mm, user-specified)
 
@@ -156,6 +163,9 @@ def main():
     parser.add_argument("--remote_ip", default=None, help="Host IP for ZMQ (omit for direct serial)")
     parser.add_argument("--port_zmq_cmd", type=int, default=5555)
     parser.add_argument("--port_zmq_obs", type=int, default=5556)
+    parser.add_argument("--robot.port1", default="/dev/ttyACM0", help="follower bus 1 (left arm + head)")
+    parser.add_argument("--robot.port2", default="/dev/ttyACM1", help="follower bus 2 (right arm)")
+    parser.add_argument("--robot.port3", default=None, help="follower bus 3 (lift + wheels); 'None' = 2-bus mode (wheels+lift on port2)")
     parser.add_argument("--no-cameras", action="store_true", help="skip all cameras (pure teleoperation; takes effect in single-machine mode, only suppresses rerun image display in dual-machine mode)")
     parser.add_argument(
         "--cameras",
@@ -183,6 +193,8 @@ def main():
         "pipeline latency if the host serial/WiFi keep up (~33ms -> ~17ms)",
     )
     args = parser.parse_args()
+    # port3='None' string -> real None: `--robot.port3 None` selects 2-bus mode.
+    args.robot_port3 = _parse_port(getattr(args, "robot.port3", None))
     # Work in a LOCAL loop rate; the module-level FPS stays untouched so the
     # parser default above (read before assignment) never sees a local binding.
     loop_fps = max(1, min(args.fps, 100))
@@ -264,8 +276,10 @@ def main():
     else:
         # ── Direct serial mode ──────────────────────────────
         follower_cfg = HumanaOpenConfig(
-            id="follower", port1="/dev/ttyACM0", port2="/dev/ttyACM1",
-            port3=None, cameras=cams,
+            id="follower",
+            port1=getattr(args, "robot.port1", "/dev/ttyACM0"),
+            port2=getattr(args, "robot.port2", "/dev/ttyACM1"),
+            port3=args.robot_port3, cameras=cams,
             wheel_dir_signs={"base_left_wheel": -1, "base_right_wheel": 1},
         )
         follower = HumanaOpen(follower_cfg)

@@ -26,6 +26,13 @@ pre-1.0 so breaking changes may occur until a stable release.
   - Mock-verified: `tests/test_leader_jitter.py` (run without hardware) proves
     stationary output stays bit-identical under ±0.1 noise over 2000 frames,
     fast steps are tracked in ~0.3s, and slow ramps never drift.
+- **`teleop_leader_to_follower.py`: command-line bus-topology switch**
+  (`--robot.port1/port2/port3`). `--robot.port3 None` (default) keeps the
+  2-bus layout (wheels+lift on port2); passing a device name (e.g.
+  `--robot.port3 /dev/ttyACM2`) moves lift+wheels to a dedicated third bus —
+  right arm gets an uncontended bus2 (cleaner 60Hz frame timing, less
+  move-start latency). Same `None` string parsing as `record_data.py` /
+  `eval_data.py`.
 - Dual-machine (ZMQ) data collection and inference examples in all four READMEs.
 - Unified `--display=rerun|foxglove` display flag across teleop / record / eval
   (omit `--display` for headless; `--display=foxglove` auto-opens the web viewer).
