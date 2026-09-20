@@ -857,7 +857,7 @@ NO_PROXY="192.168.1.12" python3 examples/lightnav_navigation.py \
 
 - 软件基于 [LeRobot](https://github.com/huggingface/lerobot) 和
   [open-arms-mini](https://github.com/TheRobotStudio/open-arms-mini) 构建。
-- 机械臂参考了 open-arms-mini：在 open-arms-mini 末端增加了夹爪。
+- 机械臂参考了 open-arms-mini：在 open-arms-mini 末端增加了夹爪 [PincOpen](https://github.com/pollen-robotics/PincOpen?tab=readme-ov-file)。
 - 硬件设计参考了 [xlerobot](https://github.com/xrobot/xlerobot)：
   头部自由度和差速底盘的设计借鉴了其方案。
 

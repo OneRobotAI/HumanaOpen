@@ -844,7 +844,7 @@ Points clés :
 
 - Le logiciel est construit sur [LeRobot](https://github.com/huggingface/lerobot)
   et [open-arms-mini](https://github.com/TheRobotStudio/open-arms-mini).
-- Les bras sont basés sur open-arms-mini, avec une pince ajoutée à l'extrémité
+- Les bras sont basés sur open-arms-mini, avec une pince [PincOpen](https://github.com/pollen-robotics/PincOpen?tab=readme-ov-file) ajoutée à l'extrémité
   de chaque bras.
 - La conception matérielle s'inspire de [xlerobot](https://github.com/xrobot/xlerobot) :
   les degrés de liberté de la tête et la base à entraînement différentiel suivent
