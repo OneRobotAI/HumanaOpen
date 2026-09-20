@@ -125,7 +125,12 @@ if __name__ == "__main__":
     # Ctrl+C while hung: dump every thread's Python stack BEFORE exiting, so
     # the exact frames where connect() blocked (bus handshake / ping / lift)
     # show up instead of silently returning to the prompt.
+    # faulthandler.enable() registers crash-signals only (SEGV/FPE/ABRT/...).
+    # Ctrl+\ (SIGQUIT) & SIGUSR1 are not among them, so without explicit
+    # register() Ctrl+\ keeps doing default "Quit (core dumped)" — no stacks.
     faulthandler.enable()
+    faulthandler.register(signal.SIGQUIT, all_threads=True)
+    faulthandler.register(signal.SIGUSR1, all_threads=True)
     original_int = signal.getsignal(signal.SIGINT)
 
     def _on_sigint(signum, frame):
