@@ -836,7 +836,7 @@ Points clés :
 | URDF | ☐ |
 | Agent | ☐ |
 | Préhension basée vision | ☐ |
-| Navigation | ✅ |
+| Navigation basée vision | ✅ |
 | Modèles du monde incarnés | ☐ |
 
 ### Remerciements

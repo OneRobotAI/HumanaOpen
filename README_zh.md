@@ -849,7 +849,7 @@ NO_PROXY="192.168.1.12" python3 examples/lightnav_navigation.py \
 | URDF | ☐ |
 | Agent | ☐ |
 | 视觉抓取 | ☐ |
-| 导航 | ✅ |
+| 视觉导航 | ✅ |
 | 具身世界模型 | ☐ |
 
 ### 致谢

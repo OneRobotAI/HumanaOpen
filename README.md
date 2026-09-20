@@ -897,7 +897,7 @@ Key points:
 | URDF | ☐ |
 | Agent | ☐ |
 | Vision-based grasping | ☐ |
-| Navigation | ✅ |
+| Vision-based navigation | ✅ |
 | Embodied world models | ☐ |
 
 ### Acknowledgements
