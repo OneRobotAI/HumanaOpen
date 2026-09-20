@@ -33,6 +33,14 @@ pre-1.0 so breaking changes may occur until a stable release.
   right arm gets an uncontended bus2 (cleaner 60Hz frame timing, less
   move-start latency). Same `None` string parsing as `record_data.py` /
   `eval_data.py`.
+- **`humanaopen_host_launcher.py`: command-line Host startup** for
+  dual-machine (ZMQ) mode. Same flag style as the other scripts:
+  `--robot.port1/port2/port3` (`None` = 2-bus, any device name = 3-bus),
+  `--no-cameras` (pure control, no video), and per-camera overrides
+  (`--head-camera`, `--left-wrist-camera`, `--right-wrist-camera`,
+  `--chest-camera`). Covers all four 2-bus/3-bus × cameras on/off
+  combinations without editing a `python3 -c` one-liner. All four READMEs
+  updated to recommend it (inline form kept as equivalent alternative).
 - Dual-machine (ZMQ) data collection and inference examples in all four READMEs.
 - Unified `--display=rerun|foxglove` display flag across teleop / record / eval
   (omit `--display` for headless; `--display=foxglove` auto-opens the web viewer).

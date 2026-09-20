@@ -119,7 +119,15 @@ print(robot.get_observation().keys())
 
 # 6. 双机 ZMQ 模式（⚠️ 仅限 Jetson/树莓派双机部署 — 单机跳过）
 # 在机器人端 (Jetson/RPi) 运行，不在开发机上运行
-# 启动 Host（带摄像头）。纯摇操不需要画面？改用 cameras={} 即可。
+# 启动 Host — 推荐用 launcher 脚本（总线拓扑、摄像头用命令行参数切换，与 teleop/record/eval 脚本一致）
+#   2-bus，无摄像头（纯控制）        python3 examples/humanaopen_host_launcher.py --no-cameras
+#   2-bus，带摄像头（默认）          python3 examples/humanaopen_host_launcher.py
+#   3-bus，带摄像头                  python3 examples/humanaopen_host_launcher.py --robot.port3 /dev/ttyACM2
+#   3-bus，无摄像头                  python3 examples/humanaopen_host_launcher.py --robot.port3 /dev/ttyACM2 --no-cameras
+#   覆盖某一路摄像头设备号           python3 examples/humanaopen_host_launcher.py --head-camera /dev/video1
+#   （--robot.port3 None = 2-bus；任意设备名 = 3-bus。默认：head=/dev/video0, left_wrist=/dev/video2, right_wrist=/dev/video4）
+#
+# 等价内联写法（同样可用）：
 python3 -c "
 from lerobot_robot_humanaopen.humanaopen_host import HumanaOpenHost
 from lerobot_robot_humanaopen import HumanaOpenConfig
@@ -169,7 +177,15 @@ pip install pyzmq feetech-servo-sdk
 cd ~/ && git clone https://github.com/OneRobotAI/HumanaOpen.git
 cd HumanaOpen && pip3 install -e . --no-deps
 
-# 启动 Host（带摄像头）。纯摇操不需要画面？改用 cameras={} 即可。
+# 启动 Host — 推荐用 launcher 脚本（总线拓扑、摄像头用命令行参数切换，与 teleop/record/eval 脚本一致）
+#   2-bus，无摄像头（纯控制）        python3 examples/humanaopen_host_launcher.py --no-cameras
+#   2-bus，带摄像头（默认）          python3 examples/humanaopen_host_launcher.py
+#   3-bus，带摄像头                  python3 examples/humanaopen_host_launcher.py --robot.port3 /dev/ttyACM2
+#   3-bus，无摄像头                  python3 examples/humanaopen_host_launcher.py --robot.port3 /dev/ttyACM2 --no-cameras
+#   覆盖某一路摄像头设备号           python3 examples/humanaopen_host_launcher.py --head-camera /dev/video1
+#   （--robot.port3 None = 2-bus；任意设备名 = 3-bus。默认：head=/dev/video0, left_wrist=/dev/video2, right_wrist=/dev/video4）
+#
+# 等价内联写法（同样可用）：
 python3 -c "
 from lerobot_robot_humanaopen.humanaopen_host import HumanaOpenHost
 from lerobot_robot_humanaopen import HumanaOpenConfig
@@ -202,7 +218,15 @@ pip install pyzmq feetech-servo-sdk
 cd ~/ && git clone https://github.com/OneRobotAI/HumanaOpen.git
 cd HumanaOpen && pip3 install -e . --no-deps
 
-# 启动 Host（带摄像头）。纯摇操不需要画面？改用 cameras={} 即可。
+# 启动 Host — 推荐用 launcher 脚本（总线拓扑、摄像头用命令行参数切换，与 teleop/record/eval 脚本一致）
+#   2-bus，无摄像头（纯控制）        python3 examples/humanaopen_host_launcher.py --no-cameras
+#   2-bus，带摄像头（默认）          python3 examples/humanaopen_host_launcher.py
+#   3-bus，带摄像头                  python3 examples/humanaopen_host_launcher.py --robot.port3 /dev/ttyACM2
+#   3-bus，无摄像头                  python3 examples/humanaopen_host_launcher.py --robot.port3 /dev/ttyACM2 --no-cameras
+#   覆盖某一路摄像头设备号           python3 examples/humanaopen_host_launcher.py --head-camera /dev/video1
+#   （--robot.port3 None = 2-bus；任意设备名 = 3-bus。默认：head=/dev/video0, left_wrist=/dev/video2, right_wrist=/dev/video4）
+#
+# 等价内联写法（同样可用）：
 python3 -c "
 from lerobot_robot_humanaopen.humanaopen_host import HumanaOpenHost
 from lerobot_robot_humanaopen import HumanaOpenConfig

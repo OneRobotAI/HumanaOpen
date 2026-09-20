@@ -119,7 +119,15 @@ print(robot.get_observation().keys())
 "
 
 # 6. Mode ZMQ double machine (exécuter sur le robot)
-# Démarrer le Host (avec caméras). Téléop pure sans image ? Utilisez cameras={} à la place.
+# Démarrer le Host — recommandé : script launcher (topologie de bus + caméras via arguments, comme les scripts teleop/record/eval)
+#   2-bus, sans caméras (contrôle pur)      python3 examples/humanaopen_host_launcher.py --no-cameras
+#   2-bus, avec caméras (défaut)            python3 examples/humanaopen_host_launcher.py
+#   3-bus, avec caméras                     python3 examples/humanaopen_host_launcher.py --robot.port3 /dev/ttyACM2
+#   3-bus, sans caméras                     python3 examples/humanaopen_host_launcher.py --robot.port3 /dev/ttyACM2 --no-cameras
+#   Surcharger un périphérique caméra       python3 examples/humanaopen_host_launcher.py --head-camera /dev/video1
+#   (--robot.port3 None = 2-bus ; tout nom de périphérique = 3-bus. Défauts : head=/dev/video0, left_wrist=/dev/video2, right_wrist=/dev/video4)
+#
+# Forme inline équivalente (fonctionne aussi) :
 python3 -c "
 from lerobot_robot_humanaopen.humanaopen_host import HumanaOpenHost
 from lerobot_robot_humanaopen import HumanaOpenConfig
@@ -155,7 +163,15 @@ conda activate humanaopen
 pip install pyzmq feetech-servo-sdk
 cd ~/ && git clone https://github.com/OneRobotAI/HumanaOpen.git
 cd HumanaOpen && pip3 install -e . --no-deps
-# Démarrer le Host (avec caméras). Téléop pure sans image ? Utilisez cameras={} à la place.
+# Démarrer le Host — recommandé : script launcher (topologie de bus + caméras via arguments, comme les scripts teleop/record/eval)
+#   2-bus, sans caméras (contrôle pur)      python3 examples/humanaopen_host_launcher.py --no-cameras
+#   2-bus, avec caméras (défaut)            python3 examples/humanaopen_host_launcher.py
+#   3-bus, avec caméras                     python3 examples/humanaopen_host_launcher.py --robot.port3 /dev/ttyACM2
+#   3-bus, sans caméras                     python3 examples/humanaopen_host_launcher.py --robot.port3 /dev/ttyACM2 --no-cameras
+#   Surcharger un périphérique caméra       python3 examples/humanaopen_host_launcher.py --head-camera /dev/video1
+#   (--robot.port3 None = 2-bus ; tout nom de périphérique = 3-bus. Défauts : head=/dev/video0, left_wrist=/dev/video2, right_wrist=/dev/video4)
+#
+# Forme inline équivalente (fonctionne aussi) :
 python3 -c "
 from lerobot_robot_humanaopen.humanaopen_host import HumanaOpenHost
 from lerobot_robot_humanaopen import HumanaOpenConfig
@@ -185,7 +201,15 @@ pip install pyzmq feetech-servo-sdk
 
 cd ~/ && git clone https://github.com/OneRobotAI/HumanaOpen.git
 cd HumanaOpen && pip3 install -e . --no-deps
-# Démarrer le Host (avec caméras). Téléop pure sans image ? Utilisez cameras={} à la place.
+# Démarrer le Host — recommandé : script launcher (topologie de bus + caméras via arguments, comme les scripts teleop/record/eval)
+#   2-bus, sans caméras (contrôle pur)      python3 examples/humanaopen_host_launcher.py --no-cameras
+#   2-bus, avec caméras (défaut)            python3 examples/humanaopen_host_launcher.py
+#   3-bus, avec caméras                     python3 examples/humanaopen_host_launcher.py --robot.port3 /dev/ttyACM2
+#   3-bus, sans caméras                     python3 examples/humanaopen_host_launcher.py --robot.port3 /dev/ttyACM2 --no-cameras
+#   Surcharger un périphérique caméra       python3 examples/humanaopen_host_launcher.py --head-camera /dev/video1
+#   (--robot.port3 None = 2-bus ; tout nom de périphérique = 3-bus. Défauts : head=/dev/video0, left_wrist=/dev/video2, right_wrist=/dev/video4)
+#
+# Forme inline équivalente (fonctionne aussi) :
 python3 -c "
 from lerobot_robot_humanaopen.humanaopen_host import HumanaOpenHost
 from lerobot_robot_humanaopen import HumanaOpenConfig

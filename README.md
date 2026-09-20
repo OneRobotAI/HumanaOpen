@@ -149,8 +149,15 @@ pip install pyzmq feetech-servo-sdk
 cd ~/ && git clone https://github.com/OneRobotAI/HumanaOpen.git
 cd HumanaOpen && pip3 install -e . --no-deps
 
-# Start Host (with cameras — required for camera views / recording)
-# Pure teleop without camera views? Use cameras={} instead (no images are streamed).
+# Start Host — recommended: launcher script (bus topology + cameras via flags; same as teleop/record/eval scripts)
+#   2-bus, no cameras                  python3 examples/humanaopen_host_launcher.py --no-cameras
+#   2-bus, with cameras (default)      python3 examples/humanaopen_host_launcher.py
+#   3-bus, with cameras                python3 examples/humanaopen_host_launcher.py --robot.port3 /dev/ttyACM2
+#   3-bus, no cameras                  python3 examples/humanaopen_host_launcher.py --robot.port3 /dev/ttyACM2 --no-cameras
+#   Override a camera device           python3 examples/humanaopen_host_launcher.py --head-camera /dev/video1
+#   (--robot.port3 None = 2-bus; any device name = 3-bus. Defaults: head=/dev/video0, left_wrist=/dev/video2, right_wrist=/dev/video4)
+#
+# Equivalent inline form (also works):
 python3 -c "
 from lerobot_robot_humanaopen.humanaopen_host import HumanaOpenHost
 from lerobot_robot_humanaopen import HumanaOpenConfig
@@ -183,8 +190,15 @@ pip install pyzmq feetech-servo-sdk
 cd ~/ && git clone https://github.com/OneRobotAI/HumanaOpen.git
 cd HumanaOpen && pip3 install -e . --no-deps
 
-# Start Host (with cameras — required for camera views / recording)
-# Pure teleop without camera views? Use cameras={} instead (no images are streamed).
+# Start Host — recommended: launcher script (bus topology + cameras via flags; same as teleop/record/eval scripts)
+#   2-bus, no cameras                  python3 examples/humanaopen_host_launcher.py --no-cameras
+#   2-bus, with cameras (default)      python3 examples/humanaopen_host_launcher.py
+#   3-bus, with cameras                python3 examples/humanaopen_host_launcher.py --robot.port3 /dev/ttyACM2
+#   3-bus, no cameras                  python3 examples/humanaopen_host_launcher.py --robot.port3 /dev/ttyACM2 --no-cameras
+#   Override a camera device           python3 examples/humanaopen_host_launcher.py --head-camera /dev/video1
+#   (--robot.port3 None = 2-bus; any device name = 3-bus. Defaults: head=/dev/video0, left_wrist=/dev/video2, right_wrist=/dev/video4)
+#
+# Equivalent inline form (also works):
 python3 -c "
 from lerobot_robot_humanaopen.humanaopen_host import HumanaOpenHost
 from lerobot_robot_humanaopen import HumanaOpenConfig

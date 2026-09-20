@@ -118,7 +118,15 @@ print(robot.get_observation().keys())
 "
 
 # 6. 듀얼 머신 ZMQ 모드 (로봇에서 실행)
-# Host 시작 (카메라 포함). 영상 없이 순수 원격조작만? cameras={} 사용.
+# Host 시작 — 권장: launcher 스크립트 (버스 토폴로지 + 카메라를 명령줄 인자로 전환, teleop/record/eval 스크립트와 동일)
+#   2-bus, 카메라 없음 (순수 제어)         python3 examples/humanaopen_host_launcher.py --no-cameras
+#   2-bus, 카메라 포함 (기본)              python3 examples/humanaopen_host_launcher.py
+#   3-bus, 카메라 포함                     python3 examples/humanaopen_host_launcher.py --robot.port3 /dev/ttyACM2
+#   3-bus, 카메라 없음                     python3 examples/humanaopen_host_launcher.py --robot.port3 /dev/ttyACM2 --no-cameras
+#   카메라 장치 하나만 재정의              python3 examples/humanaopen_host_launcher.py --head-camera /dev/video1
+#   (--robot.port3 None = 2-bus; 장치 이름이면 3-bus. 기본: head=/dev/video0, left_wrist=/dev/video2, right_wrist=/dev/video4)
+#
+# 동등한 인라인 형식 (동일하게 동작):
 python3 -c "
 from lerobot_robot_humanaopen.humanaopen_host import HumanaOpenHost
 from lerobot_robot_humanaopen import HumanaOpenConfig
@@ -154,7 +162,15 @@ conda activate humanaopen
 pip install pyzmq feetech-servo-sdk
 cd ~/ && git clone https://github.com/OneRobotAI/HumanaOpen.git
 cd HumanaOpen && pip3 install -e . --no-deps
-# Host 시작 (카메라 포함). 영상 없이 순수 원격조작만? cameras={} 사용.
+# Host 시작 — 권장: launcher 스크립트 (버스 토폴로지 + 카메라를 명령줄 인자로 전환, teleop/record/eval 스크립트와 동일)
+#   2-bus, 카메라 없음 (순수 제어)         python3 examples/humanaopen_host_launcher.py --no-cameras
+#   2-bus, 카메라 포함 (기본)              python3 examples/humanaopen_host_launcher.py
+#   3-bus, 카메라 포함                     python3 examples/humanaopen_host_launcher.py --robot.port3 /dev/ttyACM2
+#   3-bus, 카메라 없음                     python3 examples/humanaopen_host_launcher.py --robot.port3 /dev/ttyACM2 --no-cameras
+#   카메라 장치 하나만 재정의              python3 examples/humanaopen_host_launcher.py --head-camera /dev/video1
+#   (--robot.port3 None = 2-bus; 장치 이름이면 3-bus. 기본: head=/dev/video0, left_wrist=/dev/video2, right_wrist=/dev/video4)
+#
+# 동등한 인라인 형식 (동일하게 동작):
 python3 -c "
 from lerobot_robot_humanaopen.humanaopen_host import HumanaOpenHost
 from lerobot_robot_humanaopen import HumanaOpenConfig
@@ -184,7 +200,15 @@ pip install pyzmq feetech-servo-sdk
 
 cd ~/ && git clone https://github.com/OneRobotAI/HumanaOpen.git
 cd HumanaOpen && pip3 install -e . --no-deps
-# Host 시작 (카메라 포함). 영상 없이 순수 원격조작만? cameras={} 사용.
+# Host 시작 — 권장: launcher 스크립트 (버스 토폴로지 + 카메라를 명령줄 인자로 전환, teleop/record/eval 스크립트와 동일)
+#   2-bus, 카메라 없음 (순수 제어)         python3 examples/humanaopen_host_launcher.py --no-cameras
+#   2-bus, 카메라 포함 (기본)              python3 examples/humanaopen_host_launcher.py
+#   3-bus, 카메라 포함                     python3 examples/humanaopen_host_launcher.py --robot.port3 /dev/ttyACM2
+#   3-bus, 카메라 없음                     python3 examples/humanaopen_host_launcher.py --robot.port3 /dev/ttyACM2 --no-cameras
+#   카메라 장치 하나만 재정의              python3 examples/humanaopen_host_launcher.py --head-camera /dev/video1
+#   (--robot.port3 None = 2-bus; 장치 이름이면 3-bus. 기본: head=/dev/video0, left_wrist=/dev/video2, right_wrist=/dev/video4)
+#
+# 동등한 인라인 형식 (동일하게 동작):
 python3 -c "
 from lerobot_robot_humanaopen.humanaopen_host import HumanaOpenHost
 from lerobot_robot_humanaopen import HumanaOpenConfig
