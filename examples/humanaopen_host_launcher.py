@@ -34,6 +34,7 @@ right_wrist=/dev/video4. Check your board with ``lerobot-find-cameras``
 from __future__ import annotations
 
 import argparse
+import signal
 import sys
 
 from lerobot.cameras.opencv.configuration_opencv import OpenCVCameraConfig
