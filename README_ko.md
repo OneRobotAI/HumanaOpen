@@ -821,7 +821,6 @@ NO_PROXY="192.168.1.12" python3 examples/lightnav_navigation.py \
 | Agent | ☐ |
 | 비전 기반 파지 | ☐ |
 | 내비게이션 | ✅ |
-| 데이터 수집 | ☐ |
 | 구현형 세계 모델 | ☐ |
 
 ### 감사의 말

@@ -898,7 +898,6 @@ Key points:
 | Agent | ☐ |
 | Vision-based grasping | ☐ |
 | Navigation | ✅ |
-| Data collection | ☐ |
 | Embodied world models | ☐ |
 
 ### Acknowledgements

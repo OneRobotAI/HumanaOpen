@@ -837,7 +837,6 @@ Points clés :
 | Agent | ☐ |
 | Préhension basée vision | ☐ |
 | Navigation | ✅ |
-| Collecte de données | ☐ |
 | Modèles du monde incarnés | ☐ |
 
 ### Remerciements

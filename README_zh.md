@@ -850,7 +850,6 @@ NO_PROXY="192.168.1.12" python3 examples/lightnav_navigation.py \
 | Agent | ☐ |
 | 视觉抓取 | ☐ |
 | 导航 | ✅ |
-| 数据采集 | ☐ |
 | 具身世界模型 | ☐ |
 
 ### 致谢
