@@ -166,6 +166,19 @@ class HumanaOpenLeaderConfig(TeleoperatorConfig):
     # smoothing. 0.35 kills hand tremor (~8-12Hz) for smooth follower tracking;
     # tune down if follower feels sluggish, up if it feels jittery.
     smoothing: float = 0.35
+    # Adaptive-alpha lower bound: at rest (slow joint motion) the EMA alpha
+    # drops toward `alpha_min` for stronger tremor filtering; as the joint
+    # speeds up alpha rises toward `smoothing` so brisk moves are not dragged.
+    alpha_min: float = 0.15
+    # Joint speed (normalized units/frame) at which alpha reaches `smoothing`.
+    # Speeds below this get proportionally stronger filtering.
+    alpha_speed_ref: float = 1.0
+    # Output deadband (normalized units): if the smoothed value moved less
+    # than this from the last emitted action, keep the previous value. Kills
+    # the ~1-2 tick encoder quantization noise a stationary leader emits
+    # (which otherwise re-targets the follower every frame and reads as
+    # micro-jitter). Scale: ±100 space, 1 unit ≈ 20.5 raw ticks.
+    deadband: float = 0.1
 
 
 @TeleoperatorConfig.register_subclass("bi_humanaopen_leader")
@@ -183,6 +196,9 @@ class BiHumanaOpenLeaderConfig(TeleoperatorConfig):
     flip_joints: dict[str, list[str]] | None = None  # None -> use official default table
     joint_remap: dict[str, str] | None = None  # None -> use official default remapping
     smoothing: float = 0.35  # leader EMA smoothing (see HumanaOpenLeaderConfig)
+    alpha_min: float = 0.15  # adaptive-alpha floor at rest (see HumanaOpenLeaderConfig)
+    alpha_speed_ref: float = 1.0  # speed (units/frame) at which alpha reaches `smoothing`
+    deadband: float = 0.1  # leader output deadband in normalized units (see HumanaOpenLeaderConfig)
 
 
 @TeleoperatorConfig.register_subclass("humanaopen_teleop")
@@ -212,7 +228,11 @@ class HumanaOpenLeader(Teleoperator):
         self._motors_to_flip: list[str] = flip_table.get(config.side, []) if config.side else []
         self._joint_remap: dict[str, str] = config.joint_remap if config.joint_remap is not None else DEFAULT_JOINT_REMAP
         self._ema: dict[str, float] = {}
-        self._ema_alpha: float = getattr(config, "smoothing", 0.35)
+        self._ema_alpha_max: float = getattr(config, "smoothing", 0.35)
+        self._ema_alpha_min: float = getattr(config, "alpha_min", 0.15)
+        self._alpha_speed_ref: float = max(getattr(config, "alpha_speed_ref", 1.0), 1e-3)
+        self._deadband: float = getattr(config, "deadband", 0.1)
+        self._emitted: dict[str, float] = {}
 
         motors = {}
         arm_mode = MotorNormMode.DEGREES if config.use_degrees else MotorNormMode.RANGE_M100_100
@@ -358,20 +378,58 @@ class HumanaOpenLeader(Teleoperator):
         micro-jitter and feels "sticky"/non-smooth on high-inertia joints
         (shoulder_lift against gravity). alpha=0.35 keeps brisk moves intact
         while killing tremor (introduces ~1 frame of lag at 60Hz).
+
+        Two refinements over a fixed-alpha EMA:
+
+        * **Speed-adaptive alpha** — a stationary arm only needs light
+          filtering, but a moving one must not lag the hand. Alpha ramps
+          from ``alpha_min`` (at ~zero joint speed) up to ``smoothing``
+          (at ``alpha_speed_ref`` units/frame), so slow exact positioning
+          gets strong noise rejection while fast moves keep full tracking
+          bandwidth.
+        * **Output deadband** — the ST3215 encoder still produces ~1-2 raw
+          ticks of self-noise at rest (≈0.05-0.1 in ±100 normalized space).
+          Without a deadband the follower re-targets these ghost movements
+          every frame and visibly micro-jitters. If the smoothed value has
+          moved less than ``deadband`` from the last emitted value, the
+          previous value is re-emitted unchanged, freezing the follower at
+          rest; once real motion exceeds the band the EMA tracks it again.
         """
         positions = self.bus.sync_read("Present_Position")
         action: dict[str, float] = {}
         for motor, val in positions.items():
             target = self._joint_remap.get(motor, motor)
             if motor == "gripper":
-                action[f"{target}.pos"] = val
+                # Gripper: no EMA (it is driven open/closed by hand, not
+                # tremor-prone), but the encoder self-noise deadband still
+                # applies so a resting gripper does not dither the follower.
+                prev_emit = self._emitted.setdefault(target, val)
+                if abs(val - prev_emit) < self._deadband:
+                    action[f"{target}.pos"] = prev_emit
+                else:
+                    self._emitted[target] = val
+                    action[f"{target}.pos"] = val
             else:
                 raw = -val if motor in self._motors_to_flip else val
                 # Per-joint EMA state kept across calls.
                 prev = self._ema.get(target, raw)
-                smoothed = self._ema_alpha * raw + (1 - self._ema_alpha) * prev
+                # Speed-adaptive alpha: faster joint -> closer to smoothing.
+                speed = abs(raw - prev)
+                alpha = self._ema_alpha_min + (self._ema_alpha_max - self._ema_alpha_min) * min(
+                    speed / self._alpha_speed_ref, 1.0
+                )
+                smoothed = alpha * raw + (1 - alpha) * prev
                 self._ema[target] = smoothed
-                action[f"{target}.pos"] = smoothed
+                # Output deadband: hold the last emitted value until the
+                # smoothed signal actually moves more than `deadband`.
+                # setdefault seeds the first frame so a stationary arm stays
+                # frozen at its initial value instead of following encoder noise.
+                prev_emit = self._emitted.setdefault(target, smoothed)
+                if smoothed != prev_emit and abs(smoothed - prev_emit) >= self._deadband:
+                    self._emitted[target] = smoothed
+                    action[f"{target}.pos"] = smoothed
+                else:
+                    action[f"{target}.pos"] = prev_emit
         return action
 
     def enable_torque(self) -> None:
@@ -426,6 +484,9 @@ class BiHumanaOpenLeader(Teleoperator):
             flip_joints=config.flip_joints,
             joint_remap=config.joint_remap,
             smoothing=getattr(config, "smoothing", 0.35),
+            alpha_min=getattr(config, "alpha_min", 0.15),
+            alpha_speed_ref=getattr(config, "alpha_speed_ref", 1.0),
+            deadband=getattr(config, "deadband", 0.1),
         )
         right_config = HumanaOpenLeaderConfig(
             id=f"{config.id}_right" if config.id else None,
@@ -436,6 +497,9 @@ class BiHumanaOpenLeader(Teleoperator):
             flip_joints=config.flip_joints,
             joint_remap=config.joint_remap,
             smoothing=getattr(config, "smoothing", 0.35),
+            alpha_min=getattr(config, "alpha_min", 0.15),
+            alpha_speed_ref=getattr(config, "alpha_speed_ref", 1.0),
+            deadband=getattr(config, "deadband", 0.1),
         )
 
         self.left_arm = HumanaOpenLeader(left_config)

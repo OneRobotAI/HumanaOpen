@@ -7,6 +7,25 @@ pre-1.0 so breaking changes may occur until a stable release.
 ## [Unreleased]
 
 ### Added
+- **Arm/head tremor suppression (leader + follower jitter lock)**:
+  - `leader.py`: speed-adaptive EMA (`alpha_min`, `alpha_speed_ref`) replaces
+    the fixed 0.35 alpha — the arm freezes at rest and stays responsive during
+    fast moves.
+  - `leader.py`: output deadband (`deadband=0.1` ≈ 2 encoder ticks): the
+    emitted action holds its last value until the smoothed signal actually
+    moves, so stationary encoder self-noise (±0.1) never reaches the follower.
+    Gripper gets the same deadband (no EMA).
+  - `humanaopen.py`: follower write deadband (`goal_deadband=0.1`): targets
+    whose delta from the last written value is below the band are skipped
+    (existing wheel-dedup pattern), so a still arm issues zero servo writes —
+    no re-planning, no bus traffic, no micro-motion.
+  - New tunables in `leader.py` / `config_humanaopen.py`:
+    `alpha_min=0.15`, `alpha_speed_ref=1.0`, `deadband=0.1`,
+    `goal_deadband=0.1` — all optional, values above are the backward-
+    compatible defaults.
+  - Mock-verified: `tests/test_leader_jitter.py` (run without hardware) proves
+    stationary output stays bit-identical under ±0.1 noise over 2000 frames,
+    fast steps are tracked in ~0.3s, and slow ramps never drift.
 - Dual-machine (ZMQ) data collection and inference examples in all four READMEs.
 - Unified `--display=rerun|foxglove` display flag across teleop / record / eval
   (omit `--display` for headless; `--display=foxglove` auto-opens the web viewer).

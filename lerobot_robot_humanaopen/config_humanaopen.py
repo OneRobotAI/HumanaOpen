@@ -132,6 +132,16 @@ class HumanaOpenConfig(RobotConfig):
     # stiff or oscillates on a specific joint.
     arm_p_gain: int = 48
 
+    # ---- Goal write deadband (follower side) -------------------------------
+    # POSITION targets whose change from the last written value is below this
+    # threshold (normalized units) are NOT re-written to the servos. The leader
+    # already deadbands its own output; this second gate stops residual
+    # quantization from re-triggering the servo's motion planner every frame
+    # (each re-target costs a fresh acceleration ramp + a full bus transaction,
+    # both sources of micro-jitter). Must stay < ~2x the leader deadband so a
+    # genuine move is never swallowed. Scale: ±100 space, 1 unit ≈ 20.5 ticks.
+    goal_deadband: float = 0.1
+
     # ---- Cameras -----------------------------------------------------------
     cameras: dict[str, CameraConfig] = field(default_factory=default_cameras)
 

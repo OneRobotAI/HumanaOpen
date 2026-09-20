@@ -182,6 +182,10 @@ class HumanaOpen(Robot):
         self.wheel_motors = WHEEL_JOINTS[:]
         self.arm_motors = self.left_arm_motors + self.right_arm_motors + self.head_motors
 
+        # Last written Goal_Position per POSITION motor, for deadband-based
+        # write suppression (see config.goal_deadband). Populated lazily.
+        self._last_goal_pos: dict[str, float] = {}
+
         # ── Cameras ──────────────────────────────────────────────────────
         self.cameras = make_cameras_from_configs(config.cameras)
 
@@ -743,12 +747,29 @@ class HumanaOpen(Robot):
             head_pos = {k: v for k, v in safe.items() if k in head_pos}
 
         # ── Write arm positions ─────────────────────────────────────────
+        # Deadband write suppression: a target that moved less than
+        # `goal_deadband` from the last written value is skipped. The leader
+        # deadbands first, but residual quantization can still re-trigger the
+        # servo motion planner every frame — each re-target costs a fresh
+        # acceleration ramp and a full bus transaction, both read as jitter
+        # and bus contention (esp. bus2, shared with wheels/lift). Skipping
+        # unchanged targets keeps the bus quiet and the arm still.
+        def _db_write(bus, goals: dict[str, float]) -> None:
+            to_write: dict[str, float] = {}
+            for name, val in goals.items():
+                last = self._last_goal_pos.get(name)
+                if last is None or abs(val - last) >= self.config.goal_deadband:
+                    to_write[name] = val
+                    self._last_goal_pos[name] = val
+            if to_write:
+                bus.sync_write("Goal_Position", to_write)
+
         if left_pos:
-            self.bus1.sync_write("Goal_Position", {k.replace(".pos", ""): v for k, v in left_pos.items()})
+            _db_write(self.bus1, {k.replace(".pos", ""): v for k, v in left_pos.items()})
         if right_pos:
-            self.bus2.sync_write("Goal_Position", {k.replace(".pos", ""): v for k, v in right_pos.items()})
+            _db_write(self.bus2, {k.replace(".pos", ""): v for k, v in right_pos.items()})
         if head_pos:
-            self.bus1.sync_write("Goal_Position", {k.replace(".pos", ""): v for k, v in head_pos.items()})
+            _db_write(self.bus1, {k.replace(".pos", ""): v for k, v in head_pos.items()})
 
         # ── Wheel velocity commands ─────────────────────────────────────
         if base_cmd and self.wheel_motors:
