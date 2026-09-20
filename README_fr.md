@@ -317,6 +317,40 @@ python3 examples/teleop_leader_to_follower.py --remote_ip=192.168.1.100 --chest-
 python3 examples/teleop_leader_to_follower.py --no-cameras
 ```
 
+##### Topologie des bus : bascule 2-bus / 3-bus (`--robot.port3`)
+
+Les bus série du follower se choisissent en ligne de commande, sans toucher au code :
+
+| Option | Topologie | Servos par bus |
+|--------|-----------|----------------|
+| *(omis)* / `--robot.port3 None` | **2-bus** (défaut) | bus1 = bras gauche + tête, bus2 = bras droit + **levage + roues** |
+| `--robot.port3 /dev/ttyACM2` | **3-bus** | bus1 = bras gauche + tête, bus2 = bras droit (exclusif), bus3 = levage + roues |
+
+La topologie 3-bus retire le bras droit du bus partagé avec levage/roues, lui
+donnant un bus non partagé (cycle de frame 60 Hz plus stable, latence au
+démarrage réduite — surtout visible sur le bras droit). Même commande pour les
+deux ; `None` (ou valeur vide) = 2-bus, un nom de device = 3-bus :
+
+```bash
+# 2-bus (défaut) : levage + roues partagent port2 avec le bras droit
+python3 examples/teleop_leader_to_follower.py
+
+# Identique, explicite
+python3 examples/teleop_leader_to_follower.py --robot.port3 None
+
+# 3-bus : port série dédié pour levage + roues
+python3 examples/teleop_leader_to_follower.py --robot.port3 /dev/ttyACM2
+
+# Surcharger les autres ports si les noms de device diffèrent
+python3 examples/teleop_leader_to_follower.py --robot.port1 /dev/ttyACM3 --robot.port2 /dev/ttyACM4
+```
+
+> Les servos de la tête (IDs 12, 13) restent sur bus1 dans les deux topologies —
+> comme le bras gauche ils sont à haute fréquence (écrits à chaque frame),
+> tandis que levage/roues sont à basse fréquence (lus toutes les 10 frames) ;
+> le rôle de bus3 est d'isoler le groupe basse fréquence. Câblage : le nouveau
+> port doit partager la **masse (GND)** avec l'alimentation des servos.
+
 #### Modes d'affichage en direct
 
 `teleop_leader_to_follower.py` prend en charge deux backends de visualisation.

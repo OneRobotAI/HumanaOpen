@@ -340,6 +340,33 @@ python3 examples/teleop_leader_to_follower.py --remote_ip=192.168.1.100 --chest-
 python3 examples/teleop_leader_to_follower.py --no-cameras
 ```
 
+##### 总线拓扑：2-bus / 3-bus 切换（`--robot.port3`）
+
+从臂的串口总线通过命令行选择，无需改代码即可切换布局：
+
+| 参数 | 布局 | 各总线上的舵机 |
+|------|------|----------------|
+| *（省略）* / `--robot.port3 None` | **2-bus**（默认）| bus1 = 左臂 + 头，bus2 = 右臂 + **升降 + 轮子** |
+| `--robot.port3 /dev/ttyACM2` | **3-bus** | bus1 = 左臂 + 头，bus2 = 右臂（独占），bus3 = 升降 + 轮子 |
+
+3-bus 布局让右臂离开与升降/轮子共享的总线，独占一路串口（60Hz 帧周期更稳定，起步延迟更低——右臂上感受最明显）。两种布局用同一命令，`None`（或空值）选 2-bus，设备名选 3-bus：
+
+```bash
+# 2-bus（默认）：升降 + 轮子与右臂共用 port2
+python3 examples/teleop_leader_to_follower.py
+
+# 同上，显式声明
+python3 examples/teleop_leader_to_follower.py --robot.port3 None
+
+# 3-bus：给升降 + 轮子独立串口
+python3 examples/teleop_leader_to_follower.py --robot.port3 /dev/ttyACM2
+
+# 设备名不同时覆盖其他端口
+python3 examples/teleop_leader_to_follower.py --robot.port1 /dev/ttyACM3 --robot.port2 /dev/ttyACM4
+```
+
+> 两种布局下头部舵机（ID 12, 13）都留在 bus1——它们和左臂一样是高频（每帧写入），而升降/轮子是低频（每 10 帧读取），bus3 的职责是隔离低频设备组。接线注意：新串口需与舵机电源**共地（GND）**。
+
 #### 实时画面显示模式
 
 `teleop_leader_to_follower.py` 支持两种可视化后端。图像在控制线程解码一次后交给后台显示线程，**不阻塞 60Hz 控制循环**。

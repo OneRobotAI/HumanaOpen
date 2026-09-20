@@ -316,6 +316,39 @@ python3 examples/teleop_leader_to_follower.py --remote_ip=192.168.1.100 --chest-
 python3 examples/teleop_leader_to_follower.py --no-cameras
 ```
 
+##### 버스 토폴로지: 2-bus / 3-bus 전환 (`--robot.port3`)
+
+팔로워의 시리얼 버스는 명령줄에서 선택하므로 코드 수정 없이 레이아웃을 전환할 수 있습니다:
+
+| 플래그 | 레이아웃 | 버스별 서보 |
+|--------|----------|-------------|
+| *(생략)* / `--robot.port3 None` | **2-bus** (기본) | bus1 = 왼팔 + 헤드, bus2 = 오른팔 + **리프트 + 휠** |
+| `--robot.port3 /dev/ttyACM2` | **3-bus** | bus1 = 왼팔 + 헤드, bus2 = 오른팔 (단독), bus3 = 리프트 + 휠 |
+
+3-bus 레이아웃은 오른팔을 리프트/휠과 공유하는 버스에서 분리하여 단독 버스를
+제공합니다 (60Hz 프레임 타이밍 안정, 출발 지연 감소 — 오른팔에서 가장 체감).
+두 레이아웃 모두 같은 명령을 사용하며, `None`(또는 빈 값)은 2-bus,
+디바이스 이름은 3-bus를 선택합니다:
+
+```bash
+# 2-bus (기본): 리프트 + 휠이 port2를 오른팔과 공유
+python3 examples/teleop_leader_to_follower.py
+
+# 동일, 명시적 선언
+python3 examples/teleop_leader_to_follower.py --robot.port3 None
+
+# 3-bus: 리프트 + 휠에 전용 시리얼 포트
+python3 examples/teleop_leader_to_follower.py --robot.port3 /dev/ttyACM2
+
+# 디바이스 이름이 다르면 다른 포트도 오버라이드
+python3 examples/teleop_leader_to_follower.py --robot.port1 /dev/ttyACM3 --robot.port2 /dev/ttyACM4
+```
+
+> 두 레이아웃 모두 헤드 서보(ID 12, 13)는 bus1에 유지됩니다 — 왼팔처럼 고주파
+> (매 프레임 기록)이며 리프트/휠은 저주파(10프레임마다 읽기)이므로 bus3의 역할은
+> 저주파 그룹을 격리하는 것입니다. 배선 주의: 새 포트는 서보 전원과 **공통 GND**가
+> 필요합니다.
+
 #### 실시간 디스플레이 모드
 
 `teleop_leader_to_follower.py`는 두 가지 시각화 백엔드를 지원합니다.

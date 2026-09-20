@@ -333,6 +333,41 @@ python3 examples/teleop_leader_to_follower.py --remote_ip=192.168.1.100 --chest-
 python3 examples/teleop_leader_to_follower.py --no-cameras
 ```
 
+##### Bus topology: 2-bus / 3-bus switch (`--robot.port3`)
+
+The follower's serial buses are selected on the command line, so you can move
+between layouts without editing code:
+
+| Flag | Layout | Servos on each bus |
+|------|--------|--------------------|
+| *(omit)* / `--robot.port3 None` | **2-bus** (default) | bus1 = left arm + head, bus2 = right arm + **lift + wheels** |
+| `--robot.port3 /dev/ttyACM2` | **3-bus** | bus1 = left arm + head, bus2 = right arm (exclusive), bus3 = lift + wheels |
+
+The 3-bus layout takes the right arm off the bus shared with the lift/wheels,
+giving it an uncontended bus (cleaner 60 Hz frame timing, less move-start
+latency — most noticeable on the right arm). Both layouts run the same command;
+`None` (or an empty value) selects 2-bus, a device name selects 3-bus:
+
+```bash
+# 2-bus (default): lift + wheels share port2 with the right arm
+python3 examples/teleop_leader_to_follower.py
+
+# Same thing, explicit
+python3 examples/teleop_leader_to_follower.py --robot.port3 None
+
+# 3-bus: give the lift + wheels their own serial port
+python3 examples/teleop_leader_to_follower.py --robot.port3 /dev/ttyACM2
+
+# Override other ports if your device names differ
+python3 examples/teleop_leader_to_follower.py --robot.port1 /dev/ttyACM3 --robot.port2 /dev/ttyACM4
+```
+
+> The head servos (IDs 12, 13) stay on bus1 in both layouts — they are
+> high-frequency (written every frame) like the left arm, while the lift/wheels
+> are low-frequency (read every 10th frame), so bus3's job is to isolate the
+> low-frequency group. Wiring note: the new port needs the same **GND
+> common-ground** with the servo power supply.
+
 #### Live display modes
 
 `teleop_leader_to_follower.py` supports two visualization backends. Images are
