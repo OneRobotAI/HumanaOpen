@@ -632,6 +632,40 @@ class HumanaOpen(Robot):
 
     # ── Observation ────────────────────────────────────────────────────────
 
+    def _unwrap_joint(self, name: str, raw: int) -> int:
+        """Unwrap a continuous-rotation joint so multi-turn movement stays monotonic.
+
+        These servos report Present_Position wrapped at ±2048 raw (= half of the
+        4096-step-per-revolution resolution, see `_degps_to_raw`). A joint that
+        rotates past ±180° (in DEGREES mode) or ±100 (in RANGE_M100_100 mode)
+        snaps back to the other side; that snap is exactly this ±2048 boundary
+        crossing. We track the previous raw per joint and add/subtract a full
+        revolution (4096) whenever the step-from-last exceeds half a turn, so the
+        caller sees a continuous multi-turn value instead of the wraparound.
+
+        State lives on `self._unwrap` ({name: prev_raw}); it is created lazily
+        here so a cold start (or reconnect) simply seeds from the first read
+        without unwrapping anything.
+        """
+        cycle = 4096  # raw steps per full revolution (4096/360 per degree)
+        half = cycle // 2
+        state = getattr(self, "_unwrap", None)
+        if state is None:
+            state = {}
+            setattr(self, "_unwrap", state)
+        prev = state.get(name)
+        if prev is None:
+            # First frame: nothing to unwrap against, just seed and pass raw.
+            state[name] = raw
+            return raw
+        delta = raw - prev
+        if delta > half:
+            raw -= cycle
+        elif delta < -half:
+            raw += cycle
+        state[name] = raw
+        return raw
+
     def get_observation(self) -> dict[str, Any]:
         if not self.is_connected:
             raise DeviceNotConnectedError(f"{self} is not connected.")
@@ -643,6 +677,39 @@ class HumanaOpen(Robot):
         left_pos = self.bus1.sync_read("Present_Position", self.left_arm_motors)
         head_pos = self.bus1.sync_read("Present_Position", self.head_motors)
         right_pos = self.bus2.sync_read("Present_Position", self.right_arm_motors)
+
+        # Continuous-rotation joints report Present_Position raw that wraps at
+        # ±2048 (half the 4096 step/rev scale; see `_motor_specs`). Without
+        # unwrapping, lerobot's RANGE_M100_100/DEGREES norm folds a multi-turn
+        # joint back at the boundary (e.g. 179° snaps to -179°), reading as a
+        # violent flip to the controller. Track each joint's previous raw and
+        # add/subtract a full revolution (4096) whenever the step-delta exceeds
+        # half a turn, keeping the value monotonic across turns. Gripper is a
+        # single-stroke joint (never crosses the wrap), so it is skipped.
+        state = getattr(self, "_unwrap_state", None)
+        if state is None:
+            state = {}
+            setattr(self, "_unwrap_state", state)
+
+        def _unwrap(raw_map: dict[str, int], skip_gripper: bool) -> None:
+            for name, raw in list(raw_map.items()):
+                if skip_gripper and name.endswith("gripper"):
+                    continue
+                prev = state.get(name)
+                if prev is None:
+                    state[name] = raw
+                    continue
+                delta = raw - prev
+                if delta > 2048:
+                    raw -= 4096
+                elif delta < -2048:
+                    raw += 4096
+                state[name] = raw
+                raw_map[name] = raw
+
+        _unwrap(left_pos, True)
+        _unwrap(head_pos, False)
+        _unwrap(right_pos, True)
 
         for k, v in left_pos.items():
             obs[f"{k}.pos"] = v
