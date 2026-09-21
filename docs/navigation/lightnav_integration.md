@@ -85,7 +85,7 @@ MODEL_PATH=checkpoints/LightNav-0 bash scripts/smoke_gpu.sh
 ```bash
 cd ~/LightNav-0 && conda activate lightnav
 CUDA_VISIBLE_DEVICES=0 GPU_MEM_UTIL=0.78 \
-PORT=8050 lightnav-serve \
+HOST=0.0.0.0 PORT=8050 lightnav-serve \
     --task vln \
     --model_path checkpoints/LightNav-0 \
     --backend vllm_local
