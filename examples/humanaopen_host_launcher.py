@@ -34,13 +34,48 @@ right_wrist=/dev/video4. Check your board with ``lerobot-find-cameras``
 from __future__ import annotations
 
 import argparse
-import signal
+import os
 import sys
+import time
 
 from lerobot.cameras.opencv.configuration_opencv import OpenCVCameraConfig
 
 from lerobot_robot_humanaopen import HumanaOpenConfig
 from lerobot_robot_humanaopen.humanaopen_host import HumanaOpenHost
+
+
+def _hard_reset_ch9102_acm0() -> None:
+    """
+    Hard-reset the CH9102 controller behind /dev/ttyACM0 by toggling its
+    USB `authorized` sysfs attribute (0 → 1). This is equivalent to a
+    physical unplug/replug but fully scriptable and runs before any serial
+    port is opened, preventing the firmware deadlock that occurs when the
+    launcher's rapid ping burst hits a freshly-enumerated CH9102.
+    """
+    try:
+        st = os.stat("/dev/ttyACM0")
+    except FileNotFoundError:
+        return
+
+    # Walk up from /sys/class/tty/ttyACM0/device to the USB device directory
+    tty_sys = "/sys/class/tty/ttyACM0/device"
+    if not os.path.islink(tty_sys):
+        return
+    usb_dev = os.path.dirname(os.path.realpath(tty_sys))  # strip ":1.0" interface suffix
+    authorized = os.path.join(usb_dev, "authorized")
+    if not os.path.exists(authorized):
+        return
+
+    try:
+        with open(authorized, "w") as f:
+            f.write("0")
+        time.sleep(0.5)
+        with open(authorized, "w") as f:
+            f.write("1")
+        time.sleep(1.5)  # allow re-enumeration + cdc_acm probe
+    except PermissionError:
+        # Non-root: skip silently; launcher will surface the real error later
+        pass
 
 DEFAULT_CAM_DEVICES = {
     "head": "/dev/video0",
@@ -84,6 +119,10 @@ def build_cameras(args) -> dict[str, OpenCVCameraConfig]:
 
 
 def main() -> None:
+    # Must run before any serial port is opened; otherwise the CH9102
+    # firmware can deadlock on the launcher's initial ping burst.
+    _hard_reset_ch9102_acm0()
+
     parser = argparse.ArgumentParser(
         description="HumanaOpen ZMQ host (robot side). Ctrl+C to stop.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
@@ -120,34 +159,6 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    import faulthandler
-
-    # Ctrl+C while hung: dump every thread's Python stack BEFORE exiting, so
-    # the exact frames where connect() blocked (bus handshake / ping / lift)
-    # show up instead of silently returning to the prompt.
-    # faulthandler.enable() registers crash-signals only (SEGV/FPE/ABRT/...).
-    # Ctrl+\ (SIGQUIT) & SIGUSR1 are not among them, so without explicit
-    # register() Ctrl+\ keeps doing default "Quit (core dumped)" — no stacks.
-    faulthandler.enable()
-    faulthandler.register(signal.SIGQUIT, all_threads=True)
-    faulthandler.register(signal.SIGUSR1, all_threads=True)
-    original_int = signal.getsignal(signal.SIGINT)
-
-    def _on_sigint(signum, frame):
-        print("\n\n⏸ Ctrl+C — dumping thread stacks (use these to find the hang):", flush=True)
-        for thread_id, stack in sys._current_frames().items():
-            cur = sys._current_frames()[thread_id]
-            print(f"\n── thread {thread_id} ──", flush=True)
-            import traceback
-
-            for f in traceback.extract_stack(stack):
-                print(f"   {f.filename}:{f.lineno} in {f.name}", flush=True)
-        print("\nExiting (Ctrl+C). Re-pull & rerun if you need the exact hang stack.", flush=True)
-        sys.exit(130)
-
-    signal.signal(signal.SIGINT, _on_sigint)
-    signal.signal(signal.SIGTERM, _on_sigint)
-
     try:
         main()
     except KeyboardInterrupt:
